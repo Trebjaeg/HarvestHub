@@ -1,11 +1,84 @@
 "use client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { validateEmail } from "@/lib/validate-email";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [nextStep, setNextStep] = useState<boolean>(false);
+  const [password, setPassword] = useState<string>("");
+
+  const emailValid = useMemo(() => {
+    if (email === "") return true;
+    return !validateEmail(email);
+  }, [email]);
+  useEffect(() => {
+    if (emailValid) setError("Email must be correct");
+    if (!emailValid) setError("")
+  }, [emailValid, email]);
+
+  const showInput = useMemo(() => {
+    if (nextStep)
+      return (
+        <div>
+          <Label
+            htmlFor="initialPassword"
+            className="block text-md font-medium text-gray-700 mb-2"
+          >
+            Password
+          </Label>
+          <Input
+            id="initialPassword"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={`w-full rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent mb-2
+              ${
+                error
+                  ? "border border-red-500 focus:ring-red-500"
+                  : "border border-gray-300 focus:ring-green-600"
+              }`}
+          />
+          {error && (
+            <p className="text-red-600 text-sm m-0 mb-2 flex items-center">
+              <span className="mr-1">⚠️</span> {error}
+            </p>
+          )}
+        </div>
+      );
+    return (
+      <div>
+        <Label
+          htmlFor="initialEmail"
+          className="block text-md font-medium text-gray-700 mb-2"
+        >
+          Email
+        </Label>
+        <Input
+          id="initialEmail"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className={`w-full rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent mb-2
+              ${
+                error
+                  ? "border border-red-500 focus:ring-red-500"
+                  : "border border-gray-300 focus:ring-green-600"
+              }`}
+        />
+        {error && (
+          <p className="text-red-600 text-sm m-0 mb-2 flex items-center">
+            <span className="mr-1">⚠️</span> {error}
+          </p>
+        )}
+      </div>
+    );
+  }, [nextStep, email, password, error]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,36 +150,16 @@ export default function LoginPage() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <label
-              htmlFor="initialEmail"
-              className="block text-md font-medium text-gray-700 mb-2"
-            >
-              Email
-            </label>
-            <input
-              id="initialEmail"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={`w-full rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:border-transparent 
-              ${
-                error
-                  ? "border border-red-500 focus:ring-red-500"
-                  : "border border-gray-300 focus:ring-green-600"
-              }`}
-            />
-            {error && (
-              <p className="text-red-600 text-sm m-0 -mt-2 mb-2 flex items-center">
-                <span className="mr-1">⚠️</span> {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              className="w-full bg-green-700 text-white font-semibold py-3 rounded-md hover:bg-green-800 transition cursor-pointer"
+            {showInput}
+            <Button
+              disabled={emailValid}
+              variant={"default"}
+              type="button"
+              onClick={() => setNextStep(true)}
+              className="w-full text-white font-semibold py-3 rounded-md transition cursor-pointer"
             >
               Proceed
-            </button>
+            </Button>
           </form>
 
           <p className="text-center mt-4">
@@ -115,7 +168,7 @@ export default function LoginPage() {
               href="/login"
               className="text-green-700 font-semibold hover:underline"
             >
-              Login here 
+              Login here
             </Link>
           </p>
         </div>
