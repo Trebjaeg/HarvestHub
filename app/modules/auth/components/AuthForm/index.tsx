@@ -18,6 +18,30 @@ export interface AuthFormProps {
   password?: string;
   setPassword?: (password: string) => void;
   handleSubmit?: (e: React.FormEvent) => void;
+  isNewUser?: boolean;
+  confirmPassword?: string;
+  setConfirmPassword?: (password: string) => void;
+  fullName?: string;
+  setFullName?: (name: string) => void;
+  firstName?: string;
+  setFirstName?: (name: string) => void;
+  lastName?: string;
+  setLastName?: (name: string) => void;
+  acceptTerms?: boolean;
+  setAcceptTerms?: (accept: boolean) => void;
+  acceptPrivacy?: boolean;
+  setAcceptPrivacy?: (accept: boolean) => void;
+  acceptMarketing?: boolean;
+  setAcceptMarketing?: (accept: boolean) => void;
+  // Error states
+  firstNameError?: string;
+  lastNameError?: string;
+  passwordError?: string;
+  confirmPasswordError?: string;
+  termsError?: string;
+  privacyError?: string;
+  // Validation function
+  validateCreateAccount?: () => boolean;
 }
 
 const AuthForm: FC<AuthFormProps> = ({
@@ -30,6 +54,27 @@ const AuthForm: FC<AuthFormProps> = ({
   setError,
   handleSubmit,
   setNextStep,
+  confirmPassword,
+  setConfirmPassword,
+  fullName,
+  setFullName,
+  firstName,
+  setFirstName,
+  lastName,
+  setLastName,
+  acceptTerms,
+  setAcceptTerms,
+  acceptPrivacy,
+  setAcceptPrivacy,
+  acceptMarketing,
+  setAcceptMarketing,
+  firstNameError,
+  lastNameError,
+  passwordError,
+  confirmPasswordError,
+  termsError,
+  privacyError,
+  validateCreateAccount,
 }) => {
   const emailValid = useMemo(() => {
     if (email === "") return true;
@@ -37,7 +82,7 @@ const AuthForm: FC<AuthFormProps> = ({
   }, [email]);
 
   useEffect(() => {
-    if (emailValid) setError?.("Email must be correct");
+    if (!emailValid) setError?.("Email must be correct");
     if (!emailValid) setError?.("");
   }, [emailValid, email]);
 
@@ -77,18 +122,47 @@ const AuthForm: FC<AuthFormProps> = ({
             nextStep={nextStep}
             password={password}
             setPassword={setPassword}
+            confirmPassword={confirmPassword}
+            setConfirmPassword={setConfirmPassword}
+            fullName={fullName}
+            setFullName={setFullName}
+            firstName={firstName}
+            setFirstName={setFirstName}
+            lastName={lastName}
+            setLastName={setLastName}
+            acceptTerms={acceptTerms}
+            setAcceptTerms={setAcceptTerms}
+            acceptPrivacy={acceptPrivacy}
+            setAcceptPrivacy={setAcceptPrivacy}
+            acceptMarketing={acceptMarketing}
+            setAcceptMarketing={setAcceptMarketing}
+            firstNameError={firstNameError}
+            lastNameError={lastNameError}
+            passwordError={passwordError}
+            confirmPasswordError={confirmPasswordError}
+            termsError={termsError}
+            privacyError={privacyError}
           />
           <Button
             disabled={emailValid}
             variant={"default"}
             type="button"
             onClick={() => {
-              setNextStep?.(emailValid);
-              if (emailValid) toast.success("Email passed!");
+              if (nextStep) {
+                // On create account step, validate all fields
+                if (validateCreateAccount?.()) {
+                  toast.success("Account created successfully!");
+                  // Here you would normally submit the form to your backend
+                }
+              } else {
+                // On proceed step, go to next step
+                setNextStep?.(!emailValid);
+                if (!emailValid) toast.success("Email passed!");
+              }
             }}
             className="w-full text-white font-semibold py-3 rounded-md transition cursor-pointer"
           >
-            Proceed
+            {nextStep ? "Create account" : "Proceed"}
           </Button>
         </form>
 
