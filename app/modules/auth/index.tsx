@@ -134,8 +134,6 @@ export default function AuthLanding() {
         setAcceptTerms={setAcceptTerms}
         acceptPrivacy={acceptPrivacy}
         setAcceptPrivacy={setAcceptPrivacy}
-        acceptMarketing={acceptMarketing}
-        setAcceptMarketing={setAcceptMarketing}
         firstNameError={firstNameError}
         lastNameError={lastNameError}
         passwordError={passwordError}
