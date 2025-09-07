@@ -1,0 +1,50 @@
+{
+  "auth": {
+    "title": "Ilagay ang inyong email upang magpatuloy",
+    "subtitle": "Mag-log in sa Harvest Hub gamit ang inyong email. Kung wala pa kayong account, magagawa ninyo ito.",
+    "email": "Email",
+    "name": "Pangalan",
+    "firstName": "Unang pangalan",
+    "lastName": "Apelyido",
+    "password": "Password",
+    "confirmPassword": "Kumpirmahin ang password",
+    "proceed": "Magpatuloy",
+    "createAccount": "Gumawa ng account",
+    "alreadyHaveAccount": "May account na ba kayo?",
+    "loginHere": "Mag-login dito",
+    "acceptTerms": "Tanggapin ko ang Terms and Conditions",
+    "acceptPrivacy": "Tanggapin ko ang Privacy Policy",
+    "termsLink": "Mga Tuntunin at Kondisyon",
+    "privacyLink": "Patakaran sa Privacy",
+    "errors": {
+      "emailRequired": "Pakisulatat ang inyong email address",
+      "emailInvalid": "Pakisulatat ang tamang email address",
+      "emailCorrect": "Dapat tamang email",
+      "firstNameRequired": "Kailangan ang unang pangalan",
+      "lastNameRequired": "Kailangan ang apelyido",
+      "passwordRequired": "Kailangan ang password",
+      "passwordMinLength": "Dapat may 8 character o higit pa ang password",
+      "confirmPasswordRequired": "Pakikumpirma ang password",
+      "passwordsNoMatch": "Hindi magkatugma ang mga password",
+      "termsRequired": "Dapat tanggapin ang Terms and Conditions",
+      "privacyRequired": "Dapat tanggapin ang Privacy Policy"
+    },
+    "success": {
+      "emailPassed": "Tama ang email!",
+      "accountCreated": "Matagumpay na nagawa ang account!"
+    }
+  },
+  "banner": {
+    "title": "Direkta mula sa Bukid. Diretso sa Inyo."
+  },
+  "modal": {
+    "termsTitle": "Harvest Hub - Mga Tuntunin at Kondisyon",
+    "privacyTitle": "Harvest Hub - Patakaran sa Privacy",
+    "acceptTerms": "Tatanggapin ko ang Mga Tuntunin at Kondisyon",
+    "acceptPrivacy": "Tatanggapin ko ang Patakaran sa Privacy",
+    "cancel": "Kanselahin",
+    "scrollMessage": "Pakibalasa ang buong dokumento bago tanggapin",
+    "registrationTitle": "Form ng Pagpaparehistro",
+    "registrationSubtitle": "Punan ang form nang maingat para sa pagpaparehistro"
+  }
+}

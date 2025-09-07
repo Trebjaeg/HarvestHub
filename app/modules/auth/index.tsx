@@ -6,8 +6,13 @@ import { validateEmail } from "@/lib/validate-email";
 import { useEffect, useMemo, useState } from "react";
 import AuthBanner from "./components/AuthBanner";
 import AuthForm from "./components/AuthForm";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import I18nProvider from "@/components/I18nProvider";
 
 export default function AuthLanding() {
+  const { t } = useTranslation();
+  
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [nextStep, setNextStep] = useState<boolean>(false);
@@ -38,50 +43,49 @@ export default function AuthLanding() {
     setLastNameError("");
     setPasswordError("");
     setConfirmPasswordError("");
-    setTermsError("");
-    setPrivacyError("");
+    // Remove terms and privacy validation since they're handled in modals
+    // setTermsError("");
+    // setPrivacyError("");
 
     // Validate first name
     if (!firstName.trim()) {
-      setFirstNameError("First name is required");
+      setFirstNameError(t('auth.errors.firstNameRequired'));
       isValid = false;
     }
 
     // Validate last name
     if (!lastName.trim()) {
-      setLastNameError("Last name is required");
+      setLastNameError(t('auth.errors.lastNameRequired'));
       isValid = false;
     }
 
     // Validate password
     if (!password.trim()) {
-      setPasswordError("Password is required");
+      setPasswordError(t('auth.errors.passwordRequired'));
       isValid = false;
     } else if (password.length < 8) {
-      setPasswordError("Password must be at least 8 characters");
+      setPasswordError(t('auth.errors.passwordMinLength'));
       isValid = false;
     }
 
     // Validate confirm password
     if (!confirmPassword.trim()) {
-      setConfirmPasswordError("Please confirm your password");
+      setConfirmPasswordError(t('auth.errors.confirmPasswordRequired'));
       isValid = false;
     } else if (password !== confirmPassword) {
-      setConfirmPasswordError("Passwords do not match");
+      setConfirmPasswordError(t('auth.errors.passwordsNoMatch'));
       isValid = false;
     }
 
-    // Validate terms acceptance
-    if (!acceptTerms) {
-      setTermsError("You must accept the Terms and Conditions");
-      isValid = false;
-    }
-
-    // Validate privacy acceptance
-    if (!acceptPrivacy) {
-      setPrivacyError("You must accept the Privacy Policy");
-      isValid = false;
-    }
+    // Remove terms and privacy validation - they'll be handled by modals
+    // if (!acceptTerms) {
+    //   setTermsError(t('auth.errors.termsRequired'));
+    //   isValid = false;
+    // }
+    // if (!acceptPrivacy) {
+    //   setPrivacyError(t('auth.errors.privacyRequired'));
+    //   isValid = false;
+    // }
 
     return isValid;
   };
@@ -90,14 +94,14 @@ export default function AuthLanding() {
     e.preventDefault();
 
     if (!email) {
-      setError("Please enter your email address");
+      setError(t('auth.errors.emailRequired'));
       return;
     }
 
     // Optional: extra validation for email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError("Please enter a valid email address");
+      setError(t('auth.errors.emailInvalid'));
       return;
     }
 
@@ -106,11 +110,12 @@ export default function AuthLanding() {
   };
 
   return (
-    <div className="flex h-screen">
-      {/* Left side - Background/Image section */}
-      <AuthBanner />
+    <I18nProvider>
+      <div className="flex h-screen w-full overflow-hidden">
+        {/* Left side - Background/Image section */}
+        <AuthBanner />
 
-      {/* Right side - Login form section */}
+        {/* Right side - Login form section */}
       <AuthForm
         email={email}
         error={error}
@@ -142,6 +147,7 @@ export default function AuthLanding() {
         privacyError={privacyError}
         validateCreateAccount={validateCreateAccount}
       />
-    </div>
+      </div>
+    </I18nProvider>
   );
 }
