@@ -4,7 +4,7 @@ import { FC, ReactNode, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 
-interface ModalProps {
+interface TrmsNConAndPPProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
@@ -13,7 +13,7 @@ interface ModalProps {
   acceptText: string;
 }
 
-const Modal: FC<ModalProps> = ({ 
+const TrmsNConAndPP: FC<TrmsNConAndPPProps> = ({ 
   isOpen, 
   onClose, 
   title, 
@@ -45,7 +45,7 @@ const Modal: FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-white/30 p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-auto max-h-[90vh] flex flex-col border border-gray-100">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
@@ -102,4 +102,4 @@ const Modal: FC<ModalProps> = ({
   );
 };
 
-export default Modal;
+export default TrmsNConAndPP;

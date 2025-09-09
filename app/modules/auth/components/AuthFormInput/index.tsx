@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "react-i18next";
 import Link from "next/link";
-import Modal from "@/components/ui/modal";
+import TrmsNConAndPP from "@/components/ui/trmsnconandpp";
 import { TermsContent, PrivacyContent } from "@/components/legal/LegalContent";
 
 const AuthFormInput: FC<AuthFormProps> = ({
@@ -211,7 +211,7 @@ const AuthFormInput: FC<AuthFormProps> = ({
         {/* Remove checkboxes - Terms and Privacy will be handled in Create Account flow */}
         
         {/* Modals */}
-        <Modal
+        <TrmsNConAndPP
           isOpen={showTermsModal}
           onClose={() => {
             setShowTermsModal(false);
@@ -227,9 +227,9 @@ const AuthFormInput: FC<AuthFormProps> = ({
           }}
         >
           <TermsContent />
-        </Modal>
+        </TrmsNConAndPP>
 
-        <Modal
+        <TrmsNConAndPP
           isOpen={showPrivacyModal}
           onClose={() => {
             setShowPrivacyModal(false);
@@ -245,7 +245,7 @@ const AuthFormInput: FC<AuthFormProps> = ({
           }}
         >
           <PrivacyContent />
-        </Modal>
+        </TrmsNConAndPP>
 
         {error && (
           <p className="text-red-600 text-sm flex items-center bg-red-50 p-3 rounded-lg">

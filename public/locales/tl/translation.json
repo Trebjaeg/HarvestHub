@@ -1,10 +1,7 @@
 {
   "auth": {
-    "title": "Ilagay ang inyong email upang magpatuloy",
-    "subtitle": "Mag-log in sa Harvest Hub gamit ang inyong email. Kung wala pa kayong account, magagawa ninyo ito.",
     "email": "Email",
-    "name": "Pangalan",
-    "firstName": "Unang pangalan",
+    "firstName": "Unang Pangalan",
     "lastName": "Apelyido",
     "password": "Password",
     "confirmPassword": "Kumpirmahin ang password",
@@ -12,12 +9,12 @@
     "createAccount": "Gumawa ng account",
     "alreadyHaveAccount": "May account na ba kayo?",
     "loginHere": "Mag-login dito",
-    "acceptTerms": "Tanggapin ko ang Terms and Conditions",
-    "acceptPrivacy": "Tanggapin ko ang Privacy Policy",
-    "termsLink": "Mga Tuntunin at Kondisyon",
-    "privacyLink": "Patakaran sa Privacy",
-    "errors": {
-      "emailRequired": "Pakisulatat ang inyong email address",
+    "forgotPassword": "Nakalimutan ang Password?",
+    "resetPassword": "I-reset ang Password",
+    "resetPasswordInstructions": "Ilagay ang inyong email address at magpapadala kami ng link para i-reset ang password.",
+    "sendResetLink": "Magpadala ng Reset Link",
+    "validation": {
+      "emailRequired": "Kailangan ang email address",
       "emailInvalid": "Pakisulatat ang tamang email address",
       "emailCorrect": "Dapat tamang email",
       "firstNameRequired": "Kailangan ang unang pangalan",

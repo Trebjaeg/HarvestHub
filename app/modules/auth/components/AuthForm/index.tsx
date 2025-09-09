@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import AuthFormInput from "../AuthFormInput";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ForgotPasswordModal from "../ForgotPasswordModal";
 
 export interface AuthFormProps {
   email?: string;
@@ -85,6 +86,7 @@ const AuthForm: FC<AuthFormProps> = ({
 }) => {
   const { t } = useTranslation();
   const [showLegalModals, setShowLegalModals] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   
   const resetLegalModals = () => {
     setShowLegalModals(false);
@@ -207,15 +209,33 @@ const AuthForm: FC<AuthFormProps> = ({
         </form>
 
         <p className="text-center mt-6 text-sm text-gray-600">
-          {t('auth.alreadyHaveAccount')}{" "}
-          <Link
-            href="/login"
-            className="text-green-700 font-semibold hover:underline"
-          >
-            {t('auth.loginHere')}
-          </Link>
+          {nextStep ? (
+            <>
+              {t('auth.alreadyHaveAccount')}{" "}
+              <button
+                type="button"
+                onClick={() => setNextStep?.(false)}
+                className="text-green-700 font-semibold hover:underline cursor-pointer bg-transparent border-none p-0"
+              >
+                {t('auth.loginHere')}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowForgotPasswordModal(true)}
+              className="text-green-700 font-semibold hover:underline cursor-pointer bg-transparent border-none p-0"
+            >
+              {t('auth.forgotPassword')}
+            </button>
+          )}
         </p>
       </div>
+
+      <ForgotPasswordModal
+        isOpen={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+      />
     </div>
   );
 };
