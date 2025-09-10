@@ -207,9 +207,6 @@ const AuthFormInput: FC<AuthFormProps> = ({
             </p>
           )}
         </div>
-
-        {/* Remove checkboxes - Terms and Privacy will be handled in Create Account flow */}
-        
         {/* Modals */}
         <TrmsNConAndPP
           isOpen={showTermsModal}
