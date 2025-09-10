@@ -1,25 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import localFont from "next/font/local"
 
-const myFont = localFont({
-  src: [
-    {path: "../public/fonts/OpenSauceSans-Regular.ttf", weight: "400", style: "normal"},
-    {path: "../public/fonts/OpenSauceSans-Bold.ttf", weight: "700", style: "normal"},
-  ],
-  variable: "--font-myFont",
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
   display: "swap",
-});
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -34,7 +20,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${myFont.variable}, ${geistMono.variable}, ${geistSans.variable}`}>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      </head>
+      <body className={`${inter.variable} antialiased`}>
         {children}
       </body>
     </html>

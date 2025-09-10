@@ -1,0 +1,54 @@
+{
+  "auth": {
+    "title": "Enter your email to continue",
+    "subtitle": "Log in to Harvest Hub using your email. If you don't have an account yet, you'll be prompted to create one.",
+    "email": "Email",
+    "name": "Name",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "proceed": "Proceed",
+    "createAccount": "Create account",
+    "alreadyHaveAccount": "Already have an account?",
+    "loginHere": "Login here",
+    "forgotPassword": "Forgot Password?",
+    "resetPassword": "Reset Password",
+    "resetPasswordInstructions": "Enter your email address and we'll send you a link to reset your password.",
+    "sendResetLink": "Send Reset Link",
+    "acceptTerms": "I accept the Terms and Conditions",
+    "acceptPrivacy": "I accept the Privacy Policy",
+    "termsLink": "Terms and Conditions",
+    "privacyLink": "Privacy Policy",
+    "errors": {
+      "emailRequired": "Please enter your email address",
+      "emailInvalid": "Please enter a valid email address",
+      "emailCorrect": "Email must be correct",
+      "firstNameRequired": "First name is required",
+      "lastNameRequired": "Last name is required",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 8 characters",
+      "confirmPasswordRequired": "Please confirm your password",
+      "passwordsNoMatch": "Passwords do not match",
+      "termsRequired": "You must accept the Terms and Conditions",
+      "privacyRequired": "You must accept the Privacy Policy"
+    },
+    "success": {
+      "emailPassed": "Email passed!",
+      "accountCreated": "Account created successfully!"
+    }
+  },
+  "banner": {
+    "title": "Direct from the Farm. Straight to You."
+  },
+  "modal": {
+    "termsTitle": "Harvest Hub - Terms and Conditions",
+    "privacyTitle": "Harvest Hub - Privacy Policy",
+    "acceptTerms": "I Accept Terms and Conditions",
+    "acceptPrivacy": "I Accept Privacy Policy",
+    "cancel": "Cancel",
+    "scrollMessage": "Please scroll down to read the entire document before accepting",
+    "registrationTitle": "Registration Form",
+    "registrationSubtitle": "Fill out the form carefully for registration"
+  }
+}

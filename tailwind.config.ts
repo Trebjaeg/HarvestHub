@@ -11,7 +11,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        myFont: ["var(--font-myFont)", ...defaultTheme.fontFamily.sans],
+        inter: ["var(--font-inter)", ...defaultTheme.fontFamily.sans],
+        sans: ["var(--font-inter)", ...defaultTheme.fontFamily.sans],
       },
     },
   },

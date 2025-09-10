@@ -1,0 +1,25 @@
+{
+  "version": 1.1,
+  "atDirectives": [
+    {
+      "name": "@custom-variant",
+      "description": "Tailwind CSS v4 custom variant directive for defining custom pseudo-classes and modifiers"
+    },
+    {
+      "name": "@theme",
+      "description": "Tailwind CSS v4 theme directive for defining design tokens and CSS custom properties"
+    },
+    {
+      "name": "@apply",
+      "description": "Tailwind CSS directive for applying utility classes within CSS rules"
+    },
+    {
+      "name": "@layer",
+      "description": "Tailwind CSS directive for organizing styles into layers (base, components, utilities)"
+    },
+    {
+      "name": "@import",
+      "description": "CSS import directive, enhanced by Tailwind CSS for importing framework styles"
+    }
+  ]
+}
