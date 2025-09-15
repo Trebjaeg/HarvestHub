@@ -54,6 +54,8 @@
   "notFound": {
     "title": "Hindi Nahanap ang Pahina",
     "message": "Pasensya na, ang pahina na inyong hinahanap ay hindi umiiral o nalipat na. Balik natin kayo sa tamang daan!",
+    "kaliMessage": "Mukhang nakagat ni Kali ang cord.",
+    "backToHomepage": "Balik sa homepage",
     "goHome": "Bumalik sa Homepage",
     "goBack": "Bumalik",
     "helpText": "Kung naniniwala kayo na ito ay isang error, makipag-ugnayan sa aming support team."

@@ -61,6 +61,8 @@
   "notFound": {
     "title": "Page Not Found",
     "message": "Sorry, the page you are looking for doesn't exist or has been moved. Let's get you back on track!",
+    "kaliMessage": "Looks like Kali bit the cord.",
+    "backToHomepage": "Back to homepage",
     "goHome": "Go to Homepage",
     "goBack": "Go Back",
     "helpText": "If you believe this is an error, please contact our support team."
