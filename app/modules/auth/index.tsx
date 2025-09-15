@@ -3,6 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { validateEmail } from "@/lib/validate-email";
+import { validatePasswordStrength } from "@/lib/password-strength";
 import { useEffect, useMemo, useState } from "react";
 import AuthBanner from "./components/AuthBanner";
 import AuthForm from "./components/AuthForm";
@@ -25,14 +26,35 @@ export default function AuthLanding() {
   const [acceptTerms, setAcceptTerms] = useState<boolean>(false);
   const [acceptPrivacy, setAcceptPrivacy] = useState<boolean>(false);
   const [acceptMarketing, setAcceptMarketing] = useState<boolean>(false);
-
-  // Error states for validation
   const [firstNameError, setFirstNameError] = useState<string>("");
   const [lastNameError, setLastNameError] = useState<string>("");
   const [passwordError, setPasswordError] = useState<string>("");
   const [confirmPasswordError, setConfirmPasswordError] = useState<string>("");
   const [termsError, setTermsError] = useState<string>("");
   const [privacyError, setPrivacyError] = useState<string>("");
+
+  // Cleanup effect to clear form data on component unmount
+  useEffect(() => {
+    return () => {
+      // Clear all form states when component unmounts
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+      setFirstName("");
+      setLastName("");
+      setError("");
+      setFirstNameError("");
+      setLastNameError("");
+      setPasswordError("");
+      setConfirmPasswordError("");
+      setTermsError("");
+      setPrivacyError("");
+      setAcceptTerms(false);
+      setAcceptPrivacy(false);
+      setAcceptMarketing(false);
+      setNextStep(false);
+    };
+  }, []);
 
   // Validation function for create account
   const validateCreateAccount = () => {
@@ -43,49 +65,42 @@ export default function AuthLanding() {
     setLastNameError("");
     setPasswordError("");
     setConfirmPasswordError("");
-    // Remove terms and privacy validation since they're handled in modals
-    // setTermsError("");
-    // setPrivacyError("");
+
 
     // Validate first name
     if (!firstName.trim()) {
-      setFirstNameError(t('auth.errors.firstNameRequired'));
+      setFirstNameError(t('auth.validation.firstNameRequired'));
       isValid = false;
     }
 
     // Validate last name
     if (!lastName.trim()) {
-      setLastNameError(t('auth.errors.lastNameRequired'));
+      setLastNameError(t('auth.validation.lastNameRequired'));
       isValid = false;
     }
 
     // Validate password
     if (!password.trim()) {
-      setPasswordError(t('auth.errors.passwordRequired'));
+      setPasswordError(t('auth.validation.passwordRequired'));
       isValid = false;
-    } else if (password.length < 8) {
-      setPasswordError(t('auth.errors.passwordMinLength'));
-      isValid = false;
+    } else {
+      const passwordStrength = validatePasswordStrength(password);
+      if (!passwordStrength.isValid) {
+        // Use the first feedback message as the error
+        const errorKey = passwordStrength.feedback[0];
+        setPasswordError(t(`auth.validation.${errorKey}`));
+        isValid = false;
+      }
     }
 
     // Validate confirm password
     if (!confirmPassword.trim()) {
-      setConfirmPasswordError(t('auth.errors.confirmPasswordRequired'));
+      setConfirmPasswordError(t('auth.validation.confirmPasswordRequired'));
       isValid = false;
     } else if (password !== confirmPassword) {
-      setConfirmPasswordError(t('auth.errors.passwordsNoMatch'));
+      setConfirmPasswordError(t('auth.validation.passwordsNoMatch'));
       isValid = false;
     }
-
-    // Remove terms and privacy validation - they'll be handled by modals
-    // if (!acceptTerms) {
-    //   setTermsError(t('auth.errors.termsRequired'));
-    //   isValid = false;
-    // }
-    // if (!acceptPrivacy) {
-    //   setPrivacyError(t('auth.errors.privacyRequired'));
-    //   isValid = false;
-    // }
 
     return isValid;
   };
@@ -94,19 +109,39 @@ export default function AuthLanding() {
     e.preventDefault();
 
     if (!email) {
-      setError(t('auth.errors.emailRequired'));
+      setError(t('auth.validation.emailRequired'));
       return;
     }
 
     // Optional: extra validation for email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError(t('auth.errors.emailInvalid'));
+      setError(t('auth.validation.emailInvalid'));
       return;
     }
 
     setError("");
     // Continue submit logic here...
+  };
+
+  // Manual form reset function
+  const resetForm = () => {
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    setFirstName("");
+    setLastName("");
+    setError("");
+    setFirstNameError("");
+    setLastNameError("");
+    setPasswordError("");
+    setConfirmPasswordError("");
+    setTermsError("");
+    setPrivacyError("");
+    setAcceptTerms(false);
+    setAcceptPrivacy(false);
+    setAcceptMarketing(false);
+    setNextStep(false);
   };
 
   return (
@@ -117,6 +152,7 @@ export default function AuthLanding() {
 
         {/* Right side - Login form section */}
       <AuthForm
+        key={`auth-form-${nextStep ? 'register' : 'login'}`}
         email={email}
         error={error}
         setError={setError}

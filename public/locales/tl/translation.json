@@ -15,12 +15,19 @@
     "sendResetLink": "Magpadala ng Reset Link",
     "validation": {
       "emailRequired": "Kailangan ang email address",
-      "emailInvalid": "Pakisulatat ang tamang email address",
+      "emailInvalid": "Pakisulat ang tamang email address",
       "emailCorrect": "Dapat tamang email",
       "firstNameRequired": "Kailangan ang unang pangalan",
       "lastNameRequired": "Kailangan ang apelyido",
       "passwordRequired": "Kailangan ang password",
       "passwordMinLength": "Dapat may 8 character o higit pa ang password",
+      "passwordNeedsSymbol": "Dapat may simbolo ang password (!@#$%^&*)",
+      "passwordTooWeak": "Madaling hulaan ang password. Magdagdag ng numero, simbolo, o mix ng malaki at maliit na letra",
+      "passwordWeak": "Mahinang password",
+      "passwordMedium": "Katamtamang lakas ng password", 
+      "passwordStrong": "Malakas na password",
+      "passwordRequirement8Chars": "Hindi kulang sa 8 karakter",
+      "passwordRequirementSymbols": "May mga simbolo (!@#$%^&*)",
       "confirmPasswordRequired": "Pakikumpirma ang password",
       "passwordsNoMatch": "Hindi magkatugma ang mga password",
       "termsRequired": "Dapat tanggapin ang Terms and Conditions",
@@ -43,5 +50,12 @@
     "scrollMessage": "Pakibalasa ang buong dokumento bago tanggapin",
     "registrationTitle": "Form ng Pagpaparehistro",
     "registrationSubtitle": "Punan ang form nang maingat para sa pagpaparehistro"
+  },
+  "notFound": {
+    "title": "Hindi Nahanap ang Pahina",
+    "message": "Pasensya na, ang pahina na inyong hinahanap ay hindi umiiral o nalipat na. Balik natin kayo sa tamang daan!",
+    "goHome": "Bumalik sa Homepage",
+    "goBack": "Bumalik",
+    "helpText": "Kung naniniwala kayo na ito ay isang error, makipag-ugnayan sa aming support team."
   }
 }

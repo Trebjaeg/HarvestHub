@@ -20,7 +20,7 @@
     "acceptPrivacy": "I accept the Privacy Policy",
     "termsLink": "Terms and Conditions",
     "privacyLink": "Privacy Policy",
-    "errors": {
+    "validation": {
       "emailRequired": "Please enter your email address",
       "emailInvalid": "Please enter a valid email address",
       "emailCorrect": "Email must be correct",
@@ -28,6 +28,13 @@
       "lastNameRequired": "Last name is required",
       "passwordRequired": "Password is required",
       "passwordMinLength": "Password must be at least 8 characters",
+      "passwordNeedsSymbol": "Password must contain at least one symbol (!@#$%^&*)",
+      "passwordTooWeak": "Password is too easy to guess. Try adding numbers, symbols, or mix of cases",
+      "passwordWeak": "Weak password",
+      "passwordMedium": "Medium strength password",
+      "passwordStrong": "Strong password",
+      "passwordRequirement8Chars": "At least 8 characters",
+      "passwordRequirementSymbols": "Contains symbols (!@#$%^&*)",
       "confirmPasswordRequired": "Please confirm your password",
       "passwordsNoMatch": "Passwords do not match",
       "termsRequired": "You must accept the Terms and Conditions",
@@ -50,5 +57,12 @@
     "scrollMessage": "Please scroll down to read the entire document before accepting",
     "registrationTitle": "Registration Form",
     "registrationSubtitle": "Fill out the form carefully for registration"
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "message": "Sorry, the page you are looking for doesn't exist or has been moved. Let's get you back on track!",
+    "goHome": "Go to Homepage",
+    "goBack": "Go Back",
+    "helpText": "If you believe this is an error, please contact our support team."
   }
 }

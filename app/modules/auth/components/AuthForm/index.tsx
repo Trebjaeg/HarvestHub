@@ -98,7 +98,7 @@ const AuthForm: FC<AuthFormProps> = ({
   }, [email]);
 
   useEffect(() => {
-    if (emailValid && email !== "") setError?.(t('auth.errors.emailCorrect'));
+    if (emailValid && email !== "") setError?.(t('auth.validation.emailCorrect'));
     if (!emailValid) setError?.("");
   }, [emailValid, email, t]);
 
