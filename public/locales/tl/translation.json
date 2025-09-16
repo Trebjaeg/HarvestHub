@@ -1,5 +1,7 @@
 {
   "auth": {
+    "title": "Ilagay ang inyong email para magpatuloy",
+    "subtitle": "Mag-log in sa Harvest Hub gamit ang inyong email. Kung wala pa kayong account, gagabayan namin kayo sa paggawa ng isa.",
     "email": "Email",
     "firstName": "Unang Pangalan",
     "lastName": "Apelyido",
@@ -53,11 +55,7 @@
   },
   "notFound": {
     "title": "Hindi Nahanap ang Pahina",
-    "message": "Pasensya na, ang pahina na inyong hinahanap ay hindi umiiral o nalipat na. Balik natin kayo sa tamang daan!",
-    "kaliMessage": "Mukhang nakagat ni Kali ang cord.",
-    "backToHomepage": "Balik sa homepage",
-    "goHome": "Bumalik sa Homepage",
-    "goBack": "Bumalik",
-    "helpText": "Kung naniniwala kayo na ito ay isang error, makipag-ugnayan sa aming support team."
+    "message": "Uy! Mukhang naligaw tayo sa bukid. Balik tayo sa tamang daan.",
+    "backButton": "Balik sa homepage"
   }
 }

@@ -16,7 +16,7 @@ export default function TermsAndConditions() {
               <ul className="list-disc list-inside space-y-2 mb-4">
                 <li>Provide accurate, current, and complete information.</li>
                 <li>Maintain the confidentiality of your login credentials.</li>
-                <li>Be fully responsible for all activities under your account to avoid getting banned.</li>
+                <li>Be fully responsible for all activities under your account.</li>
               </ul>
               <p>
                 Harvest Hub facilitates the purchase and delivery of fresh produce and products 

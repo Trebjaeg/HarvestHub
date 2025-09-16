@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import I18nProvider from "@/components/I18nProvider";
 
-export default function AuthLanding() {
+function AuthLandingContent() {
   const { t } = useTranslation();
   
   const [email, setEmail] = useState("");
@@ -145,7 +145,6 @@ export default function AuthLanding() {
   };
 
   return (
-    <I18nProvider>
       <div className="flex h-screen w-full overflow-hidden">
         {/* Left side - Background/Image section */}
         <AuthBanner />
@@ -175,6 +174,8 @@ export default function AuthLanding() {
         setAcceptTerms={setAcceptTerms}
         acceptPrivacy={acceptPrivacy}
         setAcceptPrivacy={setAcceptPrivacy}
+        acceptMarketing={acceptMarketing}
+        setAcceptMarketing={setAcceptMarketing}
         firstNameError={firstNameError}
         lastNameError={lastNameError}
         passwordError={passwordError}
@@ -184,6 +185,13 @@ export default function AuthLanding() {
         validateCreateAccount={validateCreateAccount}
       />
       </div>
+  );
+}
+
+export default function AuthLanding() {
+  return (
+    <I18nProvider>
+      <AuthLandingContent />
     </I18nProvider>
   );
 }
