@@ -22,4 +22,6 @@ const LanguageSwitcher: FC = () => {
   );
 };
 
+LanguageSwitcher.displayName = "LanguageSwitcher";
+
 export default LanguageSwitcher;
