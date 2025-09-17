@@ -85,9 +85,12 @@ const AuthFormInput: FC<AuthFormProps> = ({
                 }`}
               />
               {firstNameError && (
-                <p className="text-red-600 text-sm mt-1 flex items-center">
-                  <span className="mr-1">*</span> {firstNameError}
-                </p>
+                <div className="mt-2 flex items-center space-x-1">
+                  <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <p className="text-sm text-red-500">{firstNameError}</p>
+                </div>
               )}
             </div>
             <div>
@@ -104,9 +107,12 @@ const AuthFormInput: FC<AuthFormProps> = ({
                 }`}
               />
               {lastNameError && (
-                <p className="text-red-600 text-sm mt-1 flex items-center">
-                  <span className="mr-1">*</span> {lastNameError}
-                </p>
+                <div className="mt-2 flex items-center space-x-1">
+                  <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <p className="text-sm text-red-500">{lastNameError}</p>
+                </div>
               )}
             </div>
           </div>
@@ -163,9 +169,12 @@ const AuthFormInput: FC<AuthFormProps> = ({
             </button>
           </div>
           {passwordError && (
-            <p className="text-red-600 text-sm mt-1 flex items-center">
-              <span className="mr-1">*</span> {passwordError}
-            </p>
+            <div className="mt-2 flex items-center space-x-1">
+              <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm text-red-500">{passwordError}</p>
+            </div>
           )}
           
           {/* Password Strength Indicator */}
@@ -268,9 +277,12 @@ const AuthFormInput: FC<AuthFormProps> = ({
             </button>
           </div>
           {confirmPasswordError && (
-            <p className="text-red-600 text-sm mt-1 flex items-center">
-              <span className="mr-1">*</span> {confirmPasswordError}
-            </p>
+            <div className="mt-2 flex items-center space-x-1">
+              <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm text-red-500">{confirmPasswordError}</p>
+            </div>
           )}
         </div>
         {/* Modals */}
@@ -311,9 +323,14 @@ const AuthFormInput: FC<AuthFormProps> = ({
         </TrmsNConAndPP>
 
         {error && (
-          <p className="text-red-600 text-sm flex items-center bg-red-50 p-3 rounded-lg">
-            <span className="mr-2">⚠️</span> {error}
-          </p>
+          <div className="bg-red-50 p-3 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm text-red-500">{error}</p>
+            </div>
+          </div>
         )}
       </div>
     );
@@ -341,9 +358,14 @@ const AuthFormInput: FC<AuthFormProps> = ({
         }`}
       />
       {error && (
-        <p className="text-red-600 text-sm mt-2 flex items-center bg-red-50 p-3 rounded-lg">
-          <span className="mr-2">*</span> {error}
-        </p>
+        <div className="mt-2 bg-red-50 p-3 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <p className="text-sm text-red-500">{error}</p>
+          </div>
+        </div>
       )}
     </div>
   );

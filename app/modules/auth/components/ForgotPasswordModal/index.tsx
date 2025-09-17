@@ -57,71 +57,82 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   };
 
   const content = isSubmitted ? (
-    <div className="text-center px-6 pb-6">
-      <div className="mb-4">
-        <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-          <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+    <div className="p-6">
+      {/* Success State */}
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3">
+        <div className="flex-shrink-0">
+          <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
           </svg>
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Email Sent!
-        </h3>
-        <p className="text-gray-600">
-          We've sent a password reset link to {email}. Please check your inbox and follow the instructions.
+        <p className="text-sm text-green-700 font-medium">
+          Password reset link sent to your email!
         </p>
       </div>
-      <Button
-        onClick={handleClose}
-        className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
-      >
-        Done
-      </Button>
     </div>
   ) : (
-    <form onSubmit={handleSubmit} className="px-6 pb-6">
+    <div className="p-6">
+      {/* Header with separator */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">
           {t('auth.resetPassword')}
         </h2>
-        <p className="text-gray-600 text-sm">
-          {t('auth.resetPasswordInstructions')}
-        </p>
+        {/* Separator line */}
+        <hr className="border-gray-200" />
       </div>
 
-      <div className="mb-6">
-        <Label htmlFor="reset-email" className="block text-sm font-medium text-gray-700 mb-1">
-          {t('auth.email')}
-        </Label>
-        <Input
-          id="reset-email"
-          type="email"
-          value={email}
-          onChange={handleEmailChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-          placeholder="Enter your email address"
-        />
-        {emailError && (
-          <p className="mt-1 text-sm text-red-600">{emailError}</p>
-        )}
-      </div>
+      {/* Description */}
+      <p className="text-sm text-gray-600 mb-6">
+        {t('auth.resetPasswordInstructions')}
+      </p>
 
-      <div className="flex space-x-3">
-        <Button
-          type="button"
-          onClick={handleClose}
-          className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-4 rounded-lg transition-colors"
-        >
-          {t('modal.cancel')}
-        </Button>
-        <Button
-          type="submit"
-          className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
-        >
-          {t('auth.sendResetLink')}
-        </Button>
-      </div>
-    </form>
+      <form onSubmit={handleSubmit} noValidate>
+        {/* Email Input */}
+        <div className="mb-6">
+          <Label htmlFor="reset-email" className="block text-sm font-medium text-gray-700 mb-2">
+            {t('auth.email')}
+          </Label>
+          <Input
+            id="reset-email"
+            type="text"
+            value={email}
+            onChange={handleEmailChange}
+            className={`w-full px-3 py-3 rounded-md focus:ring-2 focus:ring-green-500 transition-colors ${
+              emailError 
+                ? 'border-red-500 border-2 focus:border-red-500' 
+                : 'border border-gray-300 focus:border-green-500'
+            }`}
+            placeholder={t('auth.email')}
+            autoComplete="email"
+          />
+          {emailError && (
+            <div className="mt-2 flex items-center space-x-1">
+              <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm text-red-500">{emailError}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Buttons */}
+        <div className="flex items-center justify-between">
+          <Button
+            type="submit"
+            className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-8 rounded-md transition-colors"
+          >
+            {t('auth.sendResetLink')}
+          </Button>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            {t('modal.cancel')}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 
   return (
