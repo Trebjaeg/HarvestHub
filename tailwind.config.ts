@@ -12,6 +12,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         inter: ["var(--font-inter)", ...defaultTheme.fontFamily.sans],
+        poppins: ["Poppins", ...defaultTheme.fontFamily.sans],
         sans: ["var(--font-inter)", ...defaultTheme.fontFamily.sans],
       },
     },

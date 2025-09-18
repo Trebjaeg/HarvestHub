@@ -9,6 +9,10 @@
     "confirmPassword": "Kumpirmahin ang password",
     "proceed": "Magpatuloy",
     "createAccount": "Gumawa ng account",
+    "register": "Gumawa ng account",
+    "registering": "Ginagawa ang account...",
+    "back": "Bumalik",
+    "name": "Pangalan",
     "alreadyHaveAccount": "May account na ba kayo?",
     "loginHere": "Mag-login dito",
     "forgotPassword": "Nakalimutan ang Password?",
@@ -31,6 +35,7 @@
       "passwordRequirement8Chars": "Hindi kulang sa 8 karakter",
       "passwordRequirementSymbols": "May mga simbolo (!@#$%^&*)",
       "confirmPasswordRequired": "Pakikumpirma ang password",
+      "passwordMismatch": "Hindi magkatugma ang mga password",
       "passwordsNoMatch": "Hindi magkatugma ang mga password",
       "termsRequired": "Dapat tanggapin ang Terms and Conditions",
       "privacyRequired": "Dapat tanggapin ang Privacy Policy"
