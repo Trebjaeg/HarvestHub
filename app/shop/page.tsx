@@ -135,7 +135,7 @@ const ShopPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+    <div className="min-h-screen bg-[#ECFDF5]" style={{ fontFamily: 'Poppins, sans-serif' }}>
       {/* Header */}
       <header className="bg-[#103C2E] text-white py-3 md:py-4">
         <div className="container mx-auto px-4">
@@ -469,17 +469,17 @@ const ShopPage = () => {
       </section>
 
       {/* Categories Section */}
-      <section className="py-8 md:py-16" style={{ backgroundColor: '#D9D9D9' }}>
+      <section className="py-12" style={{ backgroundColor: '#ECFDF5' }}>
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-normal text-center mb-8 md:mb-12" style={{ color: '#614124', fontWeight: '500' }}>Explore Categories</h2>
-          <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-8">
+          <h2 className="text-3xl font-normal text-center mb-12" style={{ color: '#614124', fontWeight: '500' }}>Explore Categories</h2>
+          <div className="grid grid-cols-6 gap-12 mx-auto">
             {categories.map((category) => (
               <Link 
                 key={category.id} 
                 href={`/shop/category/${category.id}`} 
                 className="text-center group"
               >
-                <div className="w-16 h-16 md:w-24 md:h-24 mx-auto mb-2 md:mb-4 rounded-full overflow-hidden border-2 md:border-4 border-gray-200 group-hover:border-[#103C2E] transition-all duration-300 group-hover:scale-105">
+                <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-gray-200 group-hover:border-[#103C2E] transition-all duration-300 group-hover:scale-105">
                   <Image
                     src={category.image}
                     alt={category.name}
@@ -488,12 +488,443 @@ const ShopPage = () => {
                     className="object-cover w-full h-full"
                   />
                 </div>
-                <h3 className="mb-1 group-hover:text-[#103C2E] transition-colors font-semibold text-xs md:text-sm" style={{ color: '#614124' }}>
+                <h3 className="mb-2 group-hover:text-[#103C2E] transition-colors font-semibold text-sm" style={{ color: '#614124' }}>
                   {category.name}
                 </h3>
-                <p className="text-xs hidden md:block" style={{ color: '#614124' }}>{category.description}</p>
+                <p className="text-xs leading-relaxed" style={{ color: '#614124' }}>{category.description}</p>
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Special Menu Section */}
+      <section className="py-12" style={{ backgroundColor: '#ECFDF5' }}>
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Left Side - Special Menu Card & Top Products */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Special Menu Card */}
+              <div 
+                className="relative rounded-2xl overflow-hidden text-center bg-[#C8956D] h-[500px] flex items-center justify-center"
+              >
+                {/* Background image */}
+                <Image
+                  src="/images/hero/hero4.jpeg"
+                  alt="Fresh fruits background"
+                  fill
+                  className="object-cover w-full h-full absolute top-0 left-0 z-0"
+                />
+                {/* Content */}
+                <div className="absolute top-0 left-0 right-0 z-10 w-full px-6 pt-12">
+                  <div className="mb-4 text-[#103C2E] font-medium text-sm" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: '500' }}>
+                    Hot This Week
+                  </div>
+                  <h3 
+                    className="text-white text-3xl mb-2"
+                    style={{ fontFamily: 'Pacifico, cursive' }}
+                  >
+                    Special Menu
+                  </h3>
+                  <p className="text-white/90 text-sm mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    On all weekend sale
+                  </p>
+                  <button 
+                    className="text-white px-5 py-2 rounded-full font-medium text-base transition-colors mx-auto mb-4 shadow-lg"
+                    style={{ 
+                      fontFamily: 'Poppins, sans-serif',
+                      background: 'linear-gradient(90deg, #FFB347 5%, #FF7D29 57%)',
+                      boxShadow: '0 2px 12px 0 rgba(255, 179, 71, 0.15)'
+                    }}
+                  >
+                    Shop now
+                  </button>
+                </div>
+              </div>
+
+              {/* Top Products Section */}
+              <div className="bg-white rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 
+                    className="text-lg font-semibold"
+                    style={{ color: '#614124', fontFamily: 'Poppins, sans-serif' }}
+                  >
+                    Top Products
+                  </h3>
+                  <div className="flex gap-1">
+                    <button className="w-6 h-6 bg-green-600 text-white rounded flex items-center justify-center">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    <button className="w-6 h-6 bg-gray-300 text-gray-600 rounded flex items-center justify-center">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Bitter Gourd */}
+                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+                    <div className="w-12 h-12 relative">
+                      <Image
+                        src="/images/products/bittergourd.png"
+                        alt="Bitter Gourd"
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>Fresh Vegetables</p>
+                      <h4 className="font-medium text-sm" style={{ color: '#614124', fontFamily: 'Poppins, sans-serif' }}>Bitter Gourd</h4>
+                      <p className="font-bold text-green-600 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>₱40.00/kg <span className="text-xs text-gray-400 line-through">₱55/kg</span></p>
+                    </div>
+                  </div>
+
+                  {/* Lemon */}
+                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+                    <div className="w-12 h-12 relative">
+                      <Image
+                        src="/images/products/lemon.png"
+                        alt="Lemon"
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>Fruits & Harvest</p>
+                      <h4 className="font-medium text-sm" style={{ color: '#614124', fontFamily: 'Poppins, sans-serif' }}>Lemon</h4>
+                      <p className="font-bold text-green-600 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>₱105/kg <span className="text-xs text-gray-400 line-through">₱130/kg</span></p>
+                    </div>
+                  </div>
+
+                  {/* Tomato */}
+                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+                    <div className="w-12 h-12 relative">
+                      <Image
+                        src="/images/products/tomato.png"
+                        alt="Tomato"
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>Fresh Vegetables</p>
+                      <h4 className="font-medium text-sm" style={{ color: '#614124', fontFamily: 'Poppins, sans-serif' }}>Tomato</h4>
+                      <p className="font-bold text-green-600 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>₱50/kg <span className="text-xs text-gray-400 line-through">₱60/kg</span></p>
+                    </div>
+                  </div>
+
+                  {/* Carrots */}
+                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+                    <div className="w-12 h-12 relative">
+                      <Image
+                        src="/images/products/carrot.png"
+                        alt="Carrots"
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>Fresh Vegetables</p>
+                      <h4 className="font-medium text-sm" style={{ color: '#614124', fontFamily: 'Poppins, sans-serif' }}>Carrots</h4>
+                      <p className="font-bold text-green-600 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>₱55/kg <span className="text-xs text-gray-400 line-through">₱65/kg</span></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side - Featured Products Grid */}
+            <div className="lg:col-span-3">
+              <div className="mb-6">
+                <h2 
+                  className="text-2xl font-semibold inline-block border-b-2 border-green-600 pb-1"
+                  style={{ color: '#614124', fontFamily: 'Poppins, sans-serif' }}
+                >
+                  Featured Products
+                </h2>
+              </div>
+
+              <div className="flex gap-2 mb-6 overflow-x-auto">
+                <button 
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium whitespace-nowrap"
+                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                >
+                  All Products
+                </button>
+                <button 
+                  className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg text-sm font-medium whitespace-nowrap"
+                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                >
+                  Fresh Vegetables
+                </button>
+                <button 
+                  className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg text-sm font-medium whitespace-nowrap"
+                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                >
+                  Fruits
+                </button>
+                <button 
+                  className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg text-sm font-medium whitespace-nowrap"
+                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                >
+                  Roots & Spice
+                </button>
+                <button 
+                  className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg text-sm font-medium whitespace-nowrap"
+                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                >
+                  Grains & Rice
+                </button>
+              </div>
+
+              {/* Products Grid */}
+              <div className="grid grid-cols-4 gap-6">
+                {/* Bitter Gourd */}
+                <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
+                  {/* Image Area */}
+                  <div className="h-48 flex items-center justify-center p-0 bg-white">
+                    <Image
+                      src="/images/products/bittergourd.png"
+                      alt="Bitter Gourd"
+                      width={300}
+                      height={300}
+                      className="object-contain max-w-full max-h-full"
+                    />
+                  </div>
+                  
+                  {/* Bottom Section */}
+                  <div className="flex-1 bg-orange-50 p-4 flex flex-col">
+                    <p className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Fresh Vegetables</p>
+                    <h4 className="text-lg font-semibold text-amber-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>Bitter Gourd</h4>
+                    
+                    <div className="flex justify-between items-end mt-auto">
+                      <div className="flex items-baseline">
+                        <span className="text-lg font-bold text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>₱40/kg</span>
+                        <span className="text-sm text-gray-400 line-through ml-1" style={{ fontFamily: 'Poppins, sans-serif' }}>₱55/kg</span>
+                      </div>
+                      <button className="w-8 h-8 bg-green-600 text-white border-none rounded-lg flex items-center justify-center cursor-pointer text-lg font-bold hover:bg-green-700">
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lemon */}
+                <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
+                  {/* Image Area */}
+                  <div className="h-[60rem] w-full bg-white overflow-hidden">
+                    <Image
+                      src="/images/products/lemon.png"
+                      alt="Lemon"
+                      width={1000}
+                      height={1000}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                  
+                  {/* Bottom Section */}
+                  <div className="flex-1 bg-orange-50 p-4 flex flex-col">
+                    <p className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Fruits & Harvest</p>
+                    <h4 className="text-lg font-semibold text-amber-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>Lemon</h4>
+                    
+                    <div className="flex justify-between items-end mt-auto">
+                      <div className="flex items-baseline">
+                        <span className="text-lg font-bold text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>₱105/kg</span>
+                        <span className="text-sm text-gray-400 line-through ml-1" style={{ fontFamily: 'Poppins, sans-serif' }}>₱120/kg</span>
+                      </div>
+                      <button className="w-8 h-8 bg-green-600 text-white border-none rounded-lg flex items-center justify-center cursor-pointer text-lg font-bold hover:bg-green-700">
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tomato */}
+                <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
+                  {/* Image Area */}
+                  <div className="h-48 flex items-center justify-center p-4 bg-white">
+                    <Image
+                      src="/images/products/tomato.png"
+                      alt="Tomato"
+                      width={150}
+                      height={150}
+                      className="object-contain max-w-full max-h-full"
+                    />
+                  </div>
+                  
+                  {/* Bottom Section */}
+                  <div className="flex-1 bg-orange-50 p-4 flex flex-col">
+                    <p className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Fresh Vegetables</p>
+                    <h4 className="text-lg font-semibold text-amber-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>Tomato</h4>
+                    
+                    <div className="flex justify-between items-end mt-auto">
+                      <div className="flex items-baseline">
+                        <span className="text-lg font-bold text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>₱50/kg</span>
+                        <span className="text-sm text-gray-400 line-through ml-1" style={{ fontFamily: 'Poppins, sans-serif' }}>₱66/kg</span>
+                      </div>
+                      <button className="w-8 h-8 bg-green-600 text-white border-none rounded-lg flex items-center justify-center cursor-pointer text-lg font-bold hover:bg-green-700">
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ginger */}
+                <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
+                  {/* Image Area */}
+                  <div className="h-48 flex items-center justify-center p-4 bg-white">
+                    <Image
+                      src="/images/products/ginger.png"
+                      alt="Ginger"
+                      width={150}
+                      height={150}
+                      className="object-contain max-w-full max-h-full"
+                    />
+                  </div>
+                  
+                  {/* Bottom Section */}
+                  <div className="flex-1 bg-orange-50 p-4 flex flex-col">
+                    <p className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Roots & Spice</p>
+                    <h4 className="text-lg font-semibold text-amber-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>Ginger</h4>
+                    
+                    <div className="flex justify-between items-end mt-auto">
+                      <div className="flex items-baseline">
+                        <span className="text-lg font-bold text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>₱120/kg</span>
+                        <span className="text-sm text-gray-400 line-through ml-1" style={{ fontFamily: 'Poppins, sans-serif' }}>₱130/kg</span>
+                      </div>
+                      <button className="w-8 h-8 bg-green-600 text-white border-none rounded-lg flex items-center justify-center cursor-pointer text-lg font-bold hover:bg-green-700">
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Second Row */}
+                {/* Banana */}
+                <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
+                  {/* Image Area */}
+                  <div className="h-48 flex items-center justify-center p-4 bg-white">
+                    <Image
+                      src="/images/products/banana.png"
+                      alt="Banana"
+                      width={150}
+                      height={150}
+                      className="object-contain max-w-full max-h-full"
+                    />
+                  </div>
+                  
+                  {/* Bottom Section */}
+                  <div className="flex-1 bg-orange-50 p-4 flex flex-col">
+                    <p className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Fruits & Harvest</p>
+                    <h4 className="text-lg font-semibold text-amber-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>Banana</h4>
+                    
+                    <div className="flex justify-between items-end mt-auto">
+                      <div className="flex items-baseline">
+                        <span className="text-lg font-bold text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>₱60/kg</span>
+                        <span className="text-sm text-gray-400 line-through ml-1" style={{ fontFamily: 'Poppins, sans-serif' }}>₱75/kg</span>
+                      </div>
+                      <button className="w-8 h-8 bg-green-600 text-white border-none rounded-lg flex items-center justify-center cursor-pointer text-lg font-bold hover:bg-green-700">
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Spring Onion */}
+                <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
+                  {/* Image Area */}
+                  <div className="h-48 flex items-center justify-center p-4 bg-white">
+                    <Image
+                      src="/images/products/springonion.png"
+                      alt="Spring Onion"
+                      width={150}
+                      height={150}
+                      className="object-contain max-w-full max-h-full"
+                    />
+                  </div>
+                  
+                  {/* Bottom Section */}
+                  <div className="flex-1 bg-orange-50 p-4 flex flex-col">
+                    <p className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Herbs & Spices</p>
+                    <h4 className="text-lg font-semibold text-amber-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>Spring Onion</h4>
+                    
+                    <div className="flex justify-between items-end mt-auto">
+                      <div className="flex items-baseline">
+                        <span className="text-lg font-bold text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>₱30/bunch</span>
+                        <span className="text-sm text-gray-400 line-through ml-1" style={{ fontFamily: 'Poppins, sans-serif' }}>₱45/bunch</span>
+                      </div>
+                      <button className="w-8 h-8 bg-green-600 text-white border-none rounded-lg flex items-center justify-center cursor-pointer text-lg font-bold hover:bg-green-700">
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Carrot */}
+                <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
+                  {/* Image Area */}
+                  <div className="h-48 flex items-center justify-center p-4 bg-white">
+                    <Image
+                      src="/images/products/carrot.png"
+                      alt="Carrot"
+                      width={150}
+                      height={150}
+                      className="object-contain max-w-full max-h-full"
+                    />
+                  </div>
+                  
+                  {/* Bottom Section */}
+                  <div className="flex-1 bg-orange-50 p-4 flex flex-col">
+                    <p className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Fresh Vegetables</p>
+                    <h4 className="text-lg font-semibold text-amber-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>Carrot</h4>
+                    
+                    <div className="flex justify-between items-end mt-auto">
+                      <div className="flex items-baseline">
+                        <span className="text-lg font-bold text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>₱55/kg</span>
+                        <span className="text-sm text-gray-400 line-through ml-1" style={{ fontFamily: 'Poppins, sans-serif' }}>₱65/kg</span>
+                      </div>
+                      <button className="w-8 h-8 bg-green-600 text-white border-none rounded-lg flex items-center justify-center cursor-pointer text-lg font-bold hover:bg-green-700">
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pineapple */}
+                <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
+                  {/* Image Area */}
+                  <div className="h-48 flex items-center justify-center p-4 bg-white">
+                    <Image
+                      src="/images/products/pineapple.png"
+                      alt="Pineapple"
+                      width={150}
+                      height={150}
+                      className="object-contain max-w-full max-h-full"
+                    />
+                  </div>
+                  
+                  {/* Bottom Section */}
+                  <div className="flex-1 bg-orange-50 p-4 flex flex-col">
+                    <p className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Fruits & Harvest</p>
+                    <h4 className="text-lg font-semibold text-amber-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>Pineapple</h4>
+                    
+                    <div className="flex justify-between items-end mt-auto">
+                      <div className="flex items-baseline">
+                        <span className="text-lg font-bold text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>₱70/kg</span>
+                        <span className="text-sm text-gray-400 line-through ml-1" style={{ fontFamily: 'Poppins, sans-serif' }}>₱85/kg</span>
+                      </div>
+                      <button className="w-8 h-8 bg-green-600 text-white border-none rounded-lg flex items-center justify-center cursor-pointer text-lg font-bold hover:bg-green-700">
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
