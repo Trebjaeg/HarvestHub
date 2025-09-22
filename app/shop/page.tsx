@@ -472,7 +472,7 @@ const ShopPage = () => {
       <section className="py-12" style={{ backgroundColor: '#ECFDF5' }}>
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-normal text-center mb-12" style={{ color: '#614124', fontWeight: '500' }}>Explore Categories</h2>
-          <div className="grid grid-cols-6 gap-12 mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-12 mx-auto">
             {categories.map((category) => (
               <Link 
                 key={category.id} 
@@ -682,11 +682,11 @@ const ShopPage = () => {
               </div>
 
               {/* Products Grid */}
-              <div className="grid grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {/* Bitter Gourd */}
                 <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
                   {/* Image Area */}
-                  <div className="h-48 flex items-center justify-center p-0 bg-white">
+                  <div className="h-40 md:h-40 lg:h-48 flex items-center justify-center p-1 md:p-0 bg-white">
                     <Image
                       src="/images/products/bittergourd.png"
                       alt="Bitter Gourd"
@@ -716,7 +716,7 @@ const ShopPage = () => {
                 {/* Lemon */}
                 <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
                   {/* Image Area */}
-                  <div className="h-[60rem] w-full bg-white overflow-hidden">
+                  <div className="h-40 md:h-40 lg:h-[40rem] w-full bg-white overflow-hidden">
                     <Image
                       src="/images/products/lemon.png"
                       alt="Lemon"
@@ -746,7 +746,7 @@ const ShopPage = () => {
                 {/* Tomato */}
                 <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
                   {/* Image Area */}
-                  <div className="h-48 flex items-center justify-center p-4 bg-white">
+                  <div className="h-40 md:h-40 lg:h-48 flex items-center justify-center p-1 md:p-4 bg-white">
                     <Image
                       src="/images/products/tomato.png"
                       alt="Tomato"
@@ -776,7 +776,7 @@ const ShopPage = () => {
                 {/* Ginger */}
                 <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
                   {/* Image Area */}
-                  <div className="h-48 flex items-center justify-center p-4 bg-white">
+                  <div className="h-40 md:h-40 lg:h-48 flex items-center justify-center p-1 md:p-4 bg-white">
                     <Image
                       src="/images/products/ginger.png"
                       alt="Ginger"
@@ -807,7 +807,7 @@ const ShopPage = () => {
                 {/* Banana */}
                 <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
                   {/* Image Area */}
-                  <div className="h-48 flex items-center justify-center p-4 bg-white">
+                  <div className="h-40 md:h-40 lg:h-48 flex items-center justify-center p-1 md:p-4 bg-white">
                     <Image
                       src="/images/products/banana.png"
                       alt="Banana"
@@ -837,7 +837,7 @@ const ShopPage = () => {
                 {/* Spring Onion */}
                 <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
                   {/* Image Area */}
-                  <div className="h-48 flex items-center justify-center p-4 bg-white">
+                  <div className="h-40 md:h-40 lg:h-48 flex items-center justify-center p-1 md:p-4 bg-white">
                     <Image
                       src="/images/products/springonion.png"
                       alt="Spring Onion"
@@ -867,7 +867,7 @@ const ShopPage = () => {
                 {/* Carrot */}
                 <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
                   {/* Image Area */}
-                  <div className="h-48 flex items-center justify-center p-4 bg-white">
+                  <div className="h-40 md:h-40 lg:h-48 flex items-center justify-center p-1 md:p-4 bg-white">
                     <Image
                       src="/images/products/carrot.png"
                       alt="Carrot"
@@ -897,7 +897,7 @@ const ShopPage = () => {
                 {/* Pineapple */}
                 <div className="border-2 border-green-700 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col h-80">
                   {/* Image Area */}
-                  <div className="h-48 flex items-center justify-center p-4 bg-white">
+                  <div className="h-40 md:h-40 lg:h-48 flex items-center justify-center p-1 md:p-4 bg-white">
                     <Image
                       src="/images/products/pineapple.png"
                       alt="Pineapple"
@@ -908,7 +908,7 @@ const ShopPage = () => {
                   </div>
                   
                   {/* Bottom Section */}
-                  <div className="flex-1 bg-orange-50 p-4 flex flex-col">
+                  <div className="flex-1 bg-orange-50 p-2 md:p-4 flex flex-col">
                     <p className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Fruits & Harvest</p>
                     <h4 className="text-lg font-semibold text-amber-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>Pineapple</h4>
                     
