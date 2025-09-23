@@ -19,6 +19,9 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [serverMessage, setServerMessage] = useState<string | null>(null);
+  const [resetUrl, setResetUrl] = useState<string | null>(null);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -31,7 +34,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!email) {
@@ -44,9 +47,26 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       return;
     }
 
-    // Here you would typically send the reset email
-    // For now, we'll just show a success state
-    setIsSubmitted(true);
+    setEmailError('');
+    setLoading(true);
+    setServerMessage(null);
+    setResetUrl(null);
+    try {
+      const res = await fetch('/api/auth/request-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to request reset');
+      setServerMessage(data.message || 'If that account exists, a reset link was sent.');
+      setIsSubmitted(true);
+    } catch (err: any) {
+      setServerMessage(err.message || 'Failed to request reset');
+      setIsSubmitted(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
@@ -65,9 +85,9 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
           </svg>
         </div>
-        <p className="text-sm text-green-700 font-medium">
-          Password reset link sent to your email!
-        </p>
+        <div className="text-sm text-green-700 font-medium">
+          <p>{serverMessage || 'Password reset link sent to your email!'}</p>
+        </div>
       </div>
     </div>
   ) : (
@@ -120,8 +140,9 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           <Button
             type="submit"
             className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-8 rounded-md transition-colors"
+            disabled={loading}
           >
-            {t('auth.sendResetLink')}
+            {loading ? t('auth.loading') : t('auth.sendResetLink')}
           </Button>
           <button
             type="button"

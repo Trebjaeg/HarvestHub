@@ -35,14 +35,7 @@ const AuthForm: FC<AuthFormProps> = ({
     return validateEmail(state.email);
   }, [state.email]);
 
-  useEffect(() => {
-    if (isEmailInvalid && state.email !== "") {
-      setError(t('auth.validation.emailInvalid'));
-    }
-    if (isEmailValid) {
-      setError("");
-    }
-  }, [isEmailInvalid, isEmailValid, state.email, t, setError]);
+  // Remove infinite update useEffect. Only set error on blur or submit, not on every render.
 
   // Handle account creation when both legal documents are accepted
   useEffect(() => {
@@ -136,20 +129,6 @@ const AuthForm: FC<AuthFormProps> = ({
           className="space-y-6"
         >
           <AuthFormInput />
-          
-          {/* Only show this button on email step, not on registration step */}
-          {!state.nextStep && (
-            <Button
-              disabled={isButtonDisabled}
-              variant={"default"}
-              type="button"
-              onClick={handleCreateAccountClick}
-              className="w-full text-white font-semibold py-3 text-base rounded-lg transition cursor-pointer"
-              aria-label={t('auth.proceed')}
-            >
-              {t('auth.proceed')}
-            </Button>
-          )}
         </form>
 
         <p className="text-center mt-6 text-sm text-gray-600">

@@ -1,6 +1,7 @@
 "use client";
 
 import { FC, useState, useEffect } from "react";
+import SuccessModal from "@/components/ui/SuccessModal";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,65 @@ const AuthFormInput: FC = () => {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const passwordStrength = state.password ? validatePasswordStrength(state.password) : null;
+  // Login pane state: first ask email, then show password (single button switches label)
+  const [step, setStep] = useState<'email' | 'password'>('email');
+  // Field-scoped errors for proper highlighting and placement
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [loginPasswordError, setLoginPasswordError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Animated loading indicator SVG (bigger, white bouncing dots)
+  const LoadingDots = () => (
+    <svg
+      width="300"
+      height="100"
+      viewBox="0 0 120 30"
+      className="size-12"
+      role="img"
+      aria-label="loading"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle cx="30" cy="15" r="10" fill="#ffffff">
+        <animate
+          attributeName="cy"
+          from="15"
+          to="15"
+          dur="0.6s"
+          begin="0s"
+          repeatCount="indefinite"
+          values="15;5;15"
+          keyTimes="0;0.5;1"
+        />
+      </circle>
+      <circle cx="60" cy="15" r="10" fill="#ffffff">
+        <animate
+          attributeName="cy"
+          from="15"
+          to="15"
+          dur="0.6s"
+          begin="0.2s"
+          repeatCount="indefinite"
+          values="15;5;15"
+          keyTimes="0;0.5;1"
+        />
+      </circle>
+      <circle cx="90" cy="15" r="10" fill="#ffffff">
+        <animate
+          attributeName="cy"
+          from="15"
+          to="15"
+          dur="0.6s"
+          begin="0.4s"
+          repeatCount="indefinite"
+          values="15;5;15"
+          keyTimes="0;0.5;1"
+        />
+      </circle>
+    </svg>
+  );
 
   // Function to validate name input (only letters, spaces, and common name characters) - SECURITY IMPROVEMENT
   const handleNameInput = (value: string, fieldType: 'firstName' | 'lastName') => {
@@ -43,9 +102,10 @@ const AuthFormInput: FC = () => {
     }
   };
 
-  // Handle user registration - TRIGGER MODALS WHEN CLICKING CREATE ACCOUNT
+
+  // Unified registration handler
   const handleRegisterUser = async () => {
-    // Basic validation first
+    // Validate fields
     if (!state.firstName.trim()) {
       dispatch({ type: 'SET_FIRST_NAME_ERROR', payload: t('auth.validation.firstNameRequired') });
       return;
@@ -62,37 +122,71 @@ const AuthFormInput: FC = () => {
       dispatch({ type: 'SET_CONFIRM_PASSWORD_ERROR', payload: t('auth.validation.passwordMismatch') });
       return;
     }
-
-    // Clear any errors
     dispatch({ type: 'CLEAR_ALL_ERRORS' });
 
-    // If terms and privacy already accepted, complete registration
-    if (state.acceptTerms && state.acceptPrivacy) {
-      // Here you would make the API call
-    } else {
-      // Trigger terms/privacy modal flow
-      dispatch({ type: 'SET_SHOW_LEGAL_MODALS', payload: true });
+    // If terms/privacy not accepted, open modals and wait
+    if (!state.acceptTerms) {
+      setShowTermsModal(true);
+      return;
+    }
+    if (!state.acceptPrivacy) {
+      setShowPrivacyModal(true);
+      return;
+    }
+
+    // If all accepted, call API
+    dispatch({ type: 'SET_LOADING', payload: true });
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${state.firstName.trim()} ${state.lastName.trim()}`.trim(),
+          email: state.email,
+          password: state.password,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+      dispatch({ type: 'RESET_FORM' });
+      setShowSuccessModal(true);
+      // After showing success, reset to login pane (show email+password, button = Login)
+      setTimeout(() => {
+        setShowSuccessModal(false);
+        dispatch({ type: 'RESET_TO_EMAIL_STEP' });
+        // After creating account, go back to login with password field visible
+        setStep('password');
+      }, 1500);
+    } catch (err: any) {
+      setError(err.message || t('auth.error.generic'));
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
-  // Trigger modals when parent requests it
-  useEffect(() => {
-    if (state.showLegalModals) {
-      setShowTermsModal(true);
-    }
-  }, [state.showLegalModals]);
 
-  // Complete registration when both terms and privacy are accepted
-  useEffect(() => {
-    if (state.acceptTerms && state.acceptPrivacy && state.showLegalModals) {
-      // Both accepted, complete registration
-      
-      // Reset modal state
-      dispatch({ type: 'SET_SHOW_LEGAL_MODALS', payload: false });
-      
-      // Here you would make the API call and show success message
+  // When user accepts terms modal, set state and continue registration
+  const handleAcceptTerms = () => {
+    setAcceptTerms(true);
+    setShowTermsModal(false);
+    // If privacy not accepted, open privacy modal next
+    if (!state.acceptPrivacy) {
+      setShowPrivacyModal(true);
+    } else {
+      // Both accepted, continue registration
+      handleRegisterUser();
     }
-  }, [state.acceptTerms, state.acceptPrivacy, state.showLegalModals, state.email, state.password, state.firstName, state.lastName, dispatch]);
+  };
+
+  // When user accepts privacy modal, set state and continue registration
+  const handleAcceptPrivacy = () => {
+    setAcceptPrivacy(true);
+    setShowPrivacyModal(false);
+    // Both accepted, continue registration
+    handleRegisterUser();
+  };
 
   const resetLegalModals = () => {
     dispatch({ type: 'SET_SHOW_LEGAL_MODALS', payload: false });
@@ -101,7 +195,26 @@ const AuthFormInput: FC = () => {
   // Step 2: Registration form - RESTORED ORIGINAL STRUCTURE
   if (state.nextStep) {
     return (
-      <div className="space-y-6">
+      <>
+        <SuccessModal open={showSuccessModal} onClose={() => setShowSuccessModal(false)} />
+        <div className="space-y-6">
+        {/* Top Back Control */}
+        <button
+          type="button"
+          className="inline-flex items-center text-green-700 hover:text-green-800 focus:outline-none"
+          onClick={() => {
+            dispatch({ type: 'RESET_TO_EMAIL_STEP' });
+            dispatch({ type: 'CLEAR_ALL_ERRORS' });
+          }}
+          aria-label={t('auth.back') || 'Back'}
+        >
+          <span className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-green-700 shadow flex items-center justify-center">
+            <svg className="w-4 h-4 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M5 12l4-4m-4 4 4 4"/>
+            </svg>
+          </span>
+          <span className="ml-2 font-medium">{t('auth.back') || 'Back'}</span>
+        </button>
         {/* Name Section */}
         <div>
           <Label className="block text-sm font-semibold text-gray-800 mb-3">
@@ -194,13 +307,15 @@ const AuthFormInput: FC = () => {
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
             >
               {showPassword ? (
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
-                </svg>
-              ) : (
+                // Visible -> show open eye icon (tap to hide)
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+              ) : (
+                // Hidden -> show slashed eye icon (tap to show)
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
                 </svg>
               )}
             </button>
@@ -297,13 +412,15 @@ const AuthFormInput: FC = () => {
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
             >
               {showConfirmPassword ? (
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
-                </svg>
-              ) : (
+                // Visible -> show open eye icon
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+              ) : (
+                // Hidden -> show slashed eye icon
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
                 </svg>
               )}
             </button>
@@ -321,21 +438,22 @@ const AuthFormInput: FC = () => {
         {/* Action Buttons - NO CHECKBOXES, JUST BUTTONS */}
         <div className="space-y-4">
           <Button
-            onClick={handleRegisterUser}
+            type="button"
+            onClick={() => {
+              // Always call handleRegisterUser directly
+              handleRegisterUser();
+            }}
             disabled={state.loading}
             variant="default"
             className="w-full h-12 text-white font-semibold text-base rounded-lg disabled:opacity-50"
           >
-            {state.loading ? t('auth.registering') : t('auth.createAccount')}
-          </Button>
-          
-          {/* BACK BUTTON */}
-          <Button
-            onClick={() => dispatch({ type: 'RESET_TO_EMAIL_STEP' })}
-            variant="outline"
-            className="w-full h-12 border-[#614124] text-[#614124] hover:bg-[#614124]/10 font-semibold text-base rounded-lg"
-          >
-            {t('auth.back')}
+            {state.loading ? (
+              <span className="flex items-center justify-center w-full">
+                <LoadingDots />
+              </span>
+            ) : (
+              t('auth.createAccount')
+            )}
           </Button>
         </div>
 
@@ -348,11 +466,7 @@ const AuthFormInput: FC = () => {
           }}
           title={t('modal.termsTitle')}
           acceptText={t('modal.acceptTerms')}
-          onAccept={() => {
-            setAcceptTerms(true);
-            setShowTermsModal(false);
-            setShowPrivacyModal(true);
-          }}
+          onAccept={handleAcceptTerms}
         >
           <TermsContent />
         </TrmsNConAndPP>
@@ -365,11 +479,7 @@ const AuthFormInput: FC = () => {
           }}
           title={t('modal.privacyTitle')}
           acceptText={t('modal.acceptPrivacy')}
-          onAccept={() => {
-            setAcceptPrivacy(true);
-            setShowPrivacyModal(false);
-            resetLegalModals();
-          }}
+          onAccept={handleAcceptPrivacy}
         >
           <PrivacyContent />
         </TrmsNConAndPP>
@@ -385,12 +495,105 @@ const AuthFormInput: FC = () => {
           </div>
         )}
       </div>
+      </>
     );
   }
 
-  // Step 1: Email input
+  const handleButtonClick = async () => {
+    // Clear field errors on new attempt
+    setEmailError(null);
+    setLoginPasswordError(null);
+    if (step === 'email') {
+      if (!state.email) {
+        setEmailError(t('auth.validation.emailRequired'));
+        return;
+      }
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(state.email)) {
+        setEmailError(t('auth.validation.invalidEmail'));
+        return;
+      }
+      setLoading(true);
+      try {
+        const res = await fetch('/api/auth/check-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: state.email })
+        });
+        const data = await res.json();
+        if (res.status === 200 && data.exists) {
+          // Known user → show password field and change button to Login
+          setStep('password');
+          setEmailError(null);
+        } else if (res.status === 200 && !data.exists) {
+          // Unknown email → go to registration form
+          dispatch({ type: 'SET_IS_NEW_USER', payload: true });
+          dispatch({ type: 'SET_NEXT_STEP', payload: true });
+        } else {
+          setEmailError(data.message || 'Error checking email');
+        }
+      } catch (err) {
+        setEmailError('Error checking email');
+      } finally {
+        setLoading(false);
+      }
+    } else if (step === 'password') {
+      // Perform login and redirect to shop
+      if (!state.password) {
+        setLoginPasswordError(t('auth.validation.passwordRequired'));
+        return;
+      }
+      setLoading(true);
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: state.email, password: state.password })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          if (res.status === 401) {
+            // Show exact message without i18n prefix as requested
+            throw new Error('Wrong password');
+          }
+          throw new Error(data.message || 'Login failed');
+        }
+        // Optionally store token
+        if (data.token) {
+          try { localStorage.setItem('hh_token', data.token); } catch {}
+        }
+        window.location.href = '/shop';
+      } catch (err: any) {
+        setLoginPasswordError(err.message || 'Login failed');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   return (
     <div>
+      {step === 'password' && (
+        <button
+          type="button"
+          className="mb-4 inline-flex items-center text-green-700 hover:text-green-800 focus:outline-none"
+          onClick={() => {
+            // Allow user to edit email again
+            setStep('email');
+            setPassword('');
+            setEmailError(null);
+            setLoginPasswordError(null);
+            dispatch({ type: 'CLEAR_ALL_ERRORS' });
+          }}
+          aria-label={t('auth.back') || 'Back'}
+        >
+          <span className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-green-700 shadow flex items-center justify-center">
+            <svg className="w-4 h-4 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M5 12l4-4m-4 4 4 4"/>
+            </svg>
+          </span>
+          <span className="ml-2 font-medium">{t('auth.back') || 'Back'}</span>
+        </button>
+      )}
       <Label
         htmlFor="initialEmail"
         className="block text-sm font-semibold text-gray-800 mb-3"
@@ -404,21 +607,86 @@ const AuthFormInput: FC = () => {
         value={state.email}
         onChange={(e) => setEmail(e.target.value)}
         className={`w-full h-12 rounded-lg border px-4 py-3 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
-          state.error
+          step === 'email' && emailError
             ? "border-red-500 focus:ring-red-500"
             : "border-gray-300 focus:ring-green-600"
         }`}
+        disabled={step === 'password'}
       />
-      {state.error && (
+      {step === 'email' && emailError && (
         <div className="mt-2 bg-red-50 p-3 rounded-lg">
           <div className="flex items-center space-x-2">
             <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
-            <p className="text-sm text-red-500">{state.error}</p>
+            <p className="text-sm text-red-500">{emailError}</p>
           </div>
         </div>
       )}
+      {step === 'password' && (
+        <div className="mt-4">
+          <Label htmlFor="loginPassword" className="block text-sm font-semibold text-gray-800 mb-3">
+            {t('auth.password')}
+          </Label>
+          <div className="relative">
+            <Input
+              id="loginPassword"
+              type={showLoginPassword ? "text" : "password"}
+              placeholder={t('auth.password')}
+              value={state.password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={`w-full h-12 rounded-lg border px-4 py-3 pr-12 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
+                loginPasswordError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-600'
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowLoginPassword(!showLoginPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+            >
+              {showLoginPassword ? (
+                // Visible -> open eye icon
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+              ) : (
+                // Hidden -> slashed eye icon
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                </svg>
+              )}
+            </button>
+          </div>
+          {loginPasswordError && (
+            <div className="mt-2 bg-red-50 p-3 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <p className="text-sm text-red-500">{loginPasswordError}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      <Button
+        className="mt-4 w-full h-12 font-semibold text-base rounded-lg"
+        type="button"
+        onClick={handleButtonClick}
+        disabled={loading}
+      >
+        {loading ? (
+          <span className="flex items-center justify-center w-full">
+            <LoadingDots />
+          </span>
+        ) : step === 'email' ? (
+          t('auth.proceed') || 'Proceed'
+        ) : (
+          t('auth.loginHere') || 'Login'
+        )}
+      </Button>
+      {/* Bottom generic error removed for login; field-specific errors shown inline above */}
     </div>
   );
 };
