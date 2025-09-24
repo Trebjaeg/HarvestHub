@@ -11,6 +11,7 @@ import TrmsNConAndPP from "@/components/ui/trmsnconandpp";
 import { TermsContent, PrivacyContent } from "@/components/legal/LegalContent";
 import { useAuth } from "../../context/AuthContext";
 import { AuthValidator } from "@/lib/auth-validation";
+import { useTranslatableErrors } from "@/hooks/useTranslatableErrors";
 
 const AuthFormInput: FC = () => {
   const { t } = useTranslation();
@@ -28,6 +29,15 @@ const AuthFormInput: FC = () => {
     dispatch
   } = useAuth();
 
+  // Use translatable errors for smooth translation
+  const {
+    setError: setFieldError,
+    getError: getFieldError,
+    clearError: clearFieldError,
+    clearAllErrors: clearAllFieldErrors,
+    hasError: hasFieldError
+  } = useTranslatableErrors();
+
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -37,9 +47,6 @@ const AuthFormInput: FC = () => {
   const passwordStrength = state.password ? validatePasswordStrength(state.password) : null;
   // Login pane state: first ask email, then show password (single button switches label)
   const [step, setStep] = useState<'email' | 'password'>('email');
-  // Field-scoped errors for proper highlighting and placement
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [loginPasswordError, setLoginPasswordError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Animated loading indicator SVG (bigger, white bouncing dots)
@@ -105,24 +112,35 @@ const AuthFormInput: FC = () => {
 
   // Unified registration handler
   const handleRegisterUser = async () => {
-    // Validate fields
+    // Clear all registration errors first
+    clearFieldError('firstName');
+    clearFieldError('lastName');
+    clearFieldError('password');
+    clearFieldError('confirmPassword');
+    
+    // Validate fields using the new translatable error system
+    let hasErrors = false;
+    
     if (!state.firstName.trim()) {
-      dispatch({ type: 'SET_FIRST_NAME_ERROR', payload: t('auth.validation.firstNameRequired') });
-      return;
+      setFieldError('firstName', 'auth.validation.firstNameRequired');
+      hasErrors = true;
     }
     if (!state.lastName.trim()) {
-      dispatch({ type: 'SET_LAST_NAME_ERROR', payload: t('auth.validation.lastNameRequired') });
-      return;
+      setFieldError('lastName', 'auth.validation.lastNameRequired');
+      hasErrors = true;
     }
     if (!state.password) {
-      dispatch({ type: 'SET_PASSWORD_ERROR', payload: t('auth.validation.passwordRequired') });
-      return;
+      setFieldError('password', 'auth.validation.passwordRequired');
+      hasErrors = true;
     }
     if (state.password !== state.confirmPassword) {
-      dispatch({ type: 'SET_CONFIRM_PASSWORD_ERROR', payload: t('auth.validation.passwordMismatch') });
+      setFieldError('confirmPassword', 'auth.validation.passwordMismatch');
+      hasErrors = true;
+    }
+    
+    if (hasErrors) {
       return;
     }
-    dispatch({ type: 'CLEAR_ALL_ERRORS' });
 
     // If terms/privacy not accepted, open modals and wait
     if (!state.acceptTerms) {
@@ -156,6 +174,7 @@ const AuthFormInput: FC = () => {
       setTimeout(() => {
         setShowSuccessModal(false);
         dispatch({ type: 'RESET_TO_EMAIL_STEP' });
+        clearAllFieldErrors(); // Clear translatable errors on success
         // After creating account, go back to login with password field visible
         setStep('password');
       }, 1500);
@@ -205,6 +224,7 @@ const AuthFormInput: FC = () => {
           onClick={() => {
             dispatch({ type: 'RESET_TO_EMAIL_STEP' });
             dispatch({ type: 'CLEAR_ALL_ERRORS' });
+            clearAllFieldErrors(); // Clear translatable errors too
           }}
           aria-label={t('auth.back') || 'Back'}
         >
@@ -229,17 +249,17 @@ const AuthFormInput: FC = () => {
                 value={state.firstName}
                 onChange={(e) => handleNameInput(e.target.value, 'firstName')}
                 className={`w-full h-12 rounded-lg border px-4 py-3 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
-                  state.firstNameError
+                  hasFieldError('firstName')
                     ? "border-red-500 focus:ring-red-500"
                     : "border-gray-300 focus:ring-green-600"
                 }`}
               />
-              {state.firstNameError && (
+              {getFieldError('firstName') && (
                 <div className="mt-2 flex items-center space-x-1">
                   <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
-                  <p className="text-sm text-red-500">{state.firstNameError}</p>
+                  <p className="text-sm text-red-500">{getFieldError('firstName')}</p>
                 </div>
               )}
             </div>
@@ -251,17 +271,17 @@ const AuthFormInput: FC = () => {
                 value={state.lastName}
                 onChange={(e) => handleNameInput(e.target.value, 'lastName')}
                 className={`w-full h-12 rounded-lg border px-4 py-3 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
-                  state.lastNameError
+                  hasFieldError('lastName')
                     ? "border-red-500 focus:ring-red-500"
                     : "border-gray-300 focus:ring-green-600"
                 }`}
               />
-              {state.lastNameError && (
+              {getFieldError('lastName') && (
                 <div className="mt-2 flex items-center space-x-1">
                   <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
-                  <p className="text-sm text-red-500">{state.lastNameError}</p>
+                  <p className="text-sm text-red-500">{getFieldError('lastName')}</p>
                 </div>
               )}
             </div>
@@ -296,7 +316,7 @@ const AuthFormInput: FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
               className={`w-full h-12 rounded-lg border px-4 py-3 pr-12 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
-                state.passwordError
+                hasFieldError('password')
                   ? "border-red-500 focus:ring-red-500"
                   : "border-gray-300 focus:ring-green-600"
               }`}
@@ -320,12 +340,12 @@ const AuthFormInput: FC = () => {
               )}
             </button>
           </div>
-          {state.passwordError && (
+          {getFieldError('password') && (
             <div className="mt-2 flex items-center space-x-1">
               <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
-              <p className="text-sm text-red-500">{state.passwordError}</p>
+              <p className="text-sm text-red-500">{getFieldError('password')}</p>
             </div>
           )}
           
@@ -401,7 +421,7 @@ const AuthFormInput: FC = () => {
               onChange={(e) => setConfirmPassword(e.target.value)}
               autoComplete="new-password"
               className={`w-full h-12 rounded-lg border px-4 py-3 pr-12 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
-                state.confirmPasswordError
+                hasFieldError('confirmPassword')
                   ? "border-red-500 focus:ring-red-500"
                   : "border-gray-300 focus:ring-green-600"
               }`}
@@ -425,12 +445,12 @@ const AuthFormInput: FC = () => {
               )}
             </button>
           </div>
-          {state.confirmPasswordError && (
+          {getFieldError('confirmPassword') && (
             <div className="mt-2 flex items-center space-x-1">
               <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
-              <p className="text-sm text-red-500">{state.confirmPasswordError}</p>
+              <p className="text-sm text-red-500">{getFieldError('confirmPassword')}</p>
             </div>
           )}
         </div>
@@ -501,15 +521,15 @@ const AuthFormInput: FC = () => {
 
   const handleButtonClick = async () => {
     // Clear field errors on new attempt
-    setEmailError(null);
-    setLoginPasswordError(null);
+    clearFieldError('email');
+    clearFieldError('loginPassword');
     if (step === 'email') {
       if (!state.email) {
-        setEmailError(t('auth.validation.emailRequired'));
+        setFieldError('email', 'auth.validation.emailRequired');
         return;
       }
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(state.email)) {
-        setEmailError(t('auth.validation.invalidEmail'));
+        setFieldError('email', 'auth.validation.emailInvalid');
         return;
       }
       setLoading(true);
@@ -523,23 +543,24 @@ const AuthFormInput: FC = () => {
         if (res.status === 200 && data.exists) {
           // Known user → show password field and change button to Login
           setStep('password');
-          setEmailError(null);
+          clearFieldError('email');
         } else if (res.status === 200 && !data.exists) {
           // Unknown email → go to registration form
           dispatch({ type: 'SET_IS_NEW_USER', payload: true });
           dispatch({ type: 'SET_NEXT_STEP', payload: true });
         } else {
-          setEmailError(data.message || 'Error checking email');
+          // For API error messages, we might not have translation keys, so store as is
+          setFieldError('email', data.message || 'auth.validation.emailCheckError');
         }
       } catch (err) {
-        setEmailError('Error checking email');
+        setFieldError('email', 'auth.validation.emailCheckError');
       } finally {
         setLoading(false);
       }
     } else if (step === 'password') {
       // Perform login and redirect to shop
       if (!state.password) {
-        setLoginPasswordError(t('auth.validation.passwordRequired'));
+        setFieldError('loginPassword', 'auth.validation.passwordRequired');
         return;
       }
       setLoading(true);
@@ -552,10 +573,12 @@ const AuthFormInput: FC = () => {
         const data = await res.json();
         if (!res.ok) {
           if (res.status === 401) {
-            // Show exact message without i18n prefix as requested
-            throw new Error('Wrong password');
+            // Use translated message for wrong password
+            setFieldError('loginPassword', 'auth.validation.wrongPassword');
+            return;
           }
-          throw new Error(data.message || 'Login failed');
+          setFieldError('loginPassword', 'auth.validation.loginFailed');
+          return;
         }
         // Optionally store token
         if (data.token) {
@@ -563,7 +586,7 @@ const AuthFormInput: FC = () => {
         }
         window.location.href = '/shop';
       } catch (err: any) {
-        setLoginPasswordError(err.message || 'Login failed');
+        setFieldError('loginPassword', 'auth.validation.loginFailed');
       } finally {
         setLoading(false);
       }
@@ -580,8 +603,8 @@ const AuthFormInput: FC = () => {
             // Allow user to edit email again
             setStep('email');
             setPassword('');
-            setEmailError(null);
-            setLoginPasswordError(null);
+            clearFieldError('email');
+            clearFieldError('loginPassword');
             dispatch({ type: 'CLEAR_ALL_ERRORS' });
           }}
           aria-label={t('auth.back') || 'Back'}
@@ -607,19 +630,19 @@ const AuthFormInput: FC = () => {
         value={state.email}
         onChange={(e) => setEmail(e.target.value)}
         className={`w-full h-12 rounded-lg border px-4 py-3 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
-          step === 'email' && emailError
+          step === 'email' && hasFieldError('email')
             ? "border-red-500 focus:ring-red-500"
             : "border-gray-300 focus:ring-green-600"
         }`}
         disabled={step === 'password'}
       />
-      {step === 'email' && emailError && (
+      {step === 'email' && getFieldError('email') && (
         <div className="mt-2 bg-red-50 p-3 rounded-lg">
           <div className="flex items-center space-x-2">
             <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
-            <p className="text-sm text-red-500">{emailError}</p>
+            <p className="text-sm text-red-500">{getFieldError('email')}</p>
           </div>
         </div>
       )}
@@ -636,7 +659,7 @@ const AuthFormInput: FC = () => {
               value={state.password}
               onChange={(e) => setPassword(e.target.value)}
               className={`w-full h-12 rounded-lg border px-4 py-3 pr-12 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
-                loginPasswordError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-600'
+                hasFieldError('loginPassword') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-600'
               }`}
             />
             <button
@@ -658,13 +681,13 @@ const AuthFormInput: FC = () => {
               )}
             </button>
           </div>
-          {loginPasswordError && (
+          {getFieldError('loginPassword') && (
             <div className="mt-2 bg-red-50 p-3 rounded-lg">
               <div className="flex items-center space-x-2">
                 <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
-                <p className="text-sm text-red-500">{loginPasswordError}</p>
+                <p className="text-sm text-red-500">{getFieldError('loginPassword')}</p>
               </div>
             </div>
           )}
