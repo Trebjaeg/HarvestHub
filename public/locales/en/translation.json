@@ -14,11 +14,37 @@
     "registering": "Creating account...",
     "back": "Back",
     "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account yet?",
     "loginHere": "Login here",
     "forgotPassword": "Forgot Password?",
     "resetPassword": "Reset Password",
     "resetPasswordInstructions": "Enter your email address and we'll send you a link to reset your password.",
     "sendResetLink": "Send Reset Link",
+    "resetPasswordSuccess": "If that account exists, a reset link was sent.",
+    "resetPasswordError": "Failed to request reset",
+    "emailSentTitle": "Email Sent!",
+    "sending": "Sending...",
+    "verificationTitle": "Enter verification code",
+    "verificationSubtitle": "We've sent a code to",
+    "verificationCodeLabel": "Verification Code",
+    "didntGetCode": "Didn't get a code?",
+    "clickToResend": "Click to resend.",
+    "verify": "Verify",
+    "cancel": "Cancel",
+    "resending": "Resending...",
+    "passwordResetComplete": "Your Password has been reset",
+    "successfully": "Successfully",
+    "continue": "Continue",
+    "createNewPassword": "Create New Password",
+    "createNewPasswordSubtitle": "Your identity has been verified. Please create a new secure password.",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "enterNewPassword": "Enter your new password",
+    "updatePassword": "Update Password",
+    "updatingPassword": "Updating...",
+    "passwordRequirements": "Password requirements",
+    "passwordMinLength": "At least 8 characters",
+    "passwordComplexity": "Must contain uppercase, lowercase, and numbers",
     "acceptTerms": "I accept the Terms and Conditions",
     "acceptPrivacy": "I accept the Privacy Policy",
     "termsLink": "Terms and Conditions",
@@ -52,7 +78,14 @@
       "privacyRequired": "You must accept the Privacy Policy",
       "wrongPassword": "Wrong password",
       "loginFailed": "Login failed",
-      "emailCheckError": "Error checking email"
+      "emailCheckError": "Error checking email",
+      "verificationCodeRequired": "Please enter the 4-digit verification code",
+      "verificationCodeInvalid": "Invalid verification code. Please try again.",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "passwordsDoNotMatch": "Passwords do not match"
+    },
+    "errors": {
+      "passwordResetFailed": "Failed to reset password. Please try again."
     },
     "success": {
       "emailPassed": "Email passed!",
@@ -68,6 +101,8 @@
     "acceptTerms": "I Accept Terms and Conditions",
     "acceptPrivacy": "I Accept Privacy Policy",
     "cancel": "Cancel",
+    "gotIt": "Got it",
+    "confirm": "Confirm",
     "scrollMessage": "Please scroll down to read the entire document before accepting",
     "registrationTitle": "Registration Form",
     "registrationSubtitle": "Fill out the form carefully for registration"
@@ -76,5 +111,52 @@
     "title": "Page Not Found",
     "message": "Oops! Looks like we got lost in the fields. Let's head back to the right path.",
     "backButton": "Back to homepage"
+  },
+  "home": {
+    "searchPlaceholder": "Search fresh produce...",
+    "categories": "Explore Categories",
+    "bestOffers": "Top Products",
+    "categoryNames": {
+      "leafyGreens": "Leafy Greens",
+      "rootCrops": "Root Crops", 
+      "fruits": "Fruits",
+      "spicesAndAromatics": "Spices & Aromatics",
+      "eggplantAndGourds": "Eggplant & Gourds",
+      "grainsAndRice": "Grains & Rice"
+    },
+    "categoryDesc": {
+      "leafyGreens": "Fresh and crisp harvest daily",
+      "rootCrops": "Farm-grown staples for every dish",
+      "fruits": "Juicy, sweets, and packed with flavor",
+      "spicesAndAromatics": "Add aroma and spice to your meals",
+      "eggplantAndGourds": "Filipino kitchen essentials",
+      "grainsAndRice": "Locally milled, farm-fresh quality"
+    },
+    "benefits": {
+      "title": "Why Choose HarvestHub?",
+      "directFarmerConnection": "Direct Farmer Connection",
+      "directFarmerConnectionDesc": "Connects you directly to local farmers for fresh produce daily",
+      "liveHarvestUpdates": "Live Harvest Updates",
+      "liveHarvestUpdatesDesc": "Real-time updates on fresh harvest from partnered farms",
+      "easyDeliveryCoordination": "Easy Delivery Coordination",
+      "easyDeliveryCoordinationDesc": "Hassle-free delivery coordination between farmers and customers",
+      "upliftingLocalAgriculture": "Uplifting Local Agriculture",
+      "upliftingLocalAgricultureDesc": "Every order helps support local farmers and promotes sustainable growth",
+      "freshFromFarm": "Fresh from Farm",
+      "freshFromFarmDesc": "Get the freshest produce directly from local farmers",
+      "fastDelivery": "Fast Delivery",
+      "fastDeliveryDesc": "Quick and reliable delivery to your doorstep",
+      "qualityAssured": "Quality Assured",
+      "qualityAssuredDesc": "Premium quality products guaranteed",
+      "supportFarmers": "Support Farmers",
+      "supportFarmersDesc": "Help local farmers by buying directly from them"
+    },
+    "hero": {
+      "title": "Fresh Farm Produce",
+      "subtitle": "Delivered to Your Door",
+      "description": "Discover the freshest fruits and vegetables directly from local farms. Support your community while enjoying premium quality produce.",
+      "shopNow": "Shop Now",
+      "learnMore": "Learn More"
+    }
   }
 }

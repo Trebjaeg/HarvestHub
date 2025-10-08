@@ -6,28 +6,20 @@ interface ForgotPwModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: ReactNode;
+  className?: string;
 }
 
 const ForgotPwModal: FC<ForgotPwModalProps> = ({ 
   isOpen, 
   onClose, 
-  children 
+  children,
+  className = ""
 }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-white/30 p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-auto border border-gray-100">
-        {/* Close button */}
-        <div className="flex justify-end p-4 pb-0">
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl font-light w-8 h-8 flex items-center justify-center"
-          >
-            ×
-          </button>
-        </div>
-        
+    <div className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-white/30 p-4 transition-all duration-500 ease-in-out ${className}`}>
+      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-auto border border-gray-100 transition-all duration-500 ease-in-out">
         {/* Content */}
         {children}
       </div>

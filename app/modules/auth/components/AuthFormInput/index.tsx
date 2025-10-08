@@ -295,7 +295,7 @@ const AuthFormInput: FC = () => {
           </Label>
           <Input
             id="email"
-            type="email"
+            type="text"
             value={state.email}
             readOnly
             className="w-full h-12 rounded-lg border border-gray-300 bg-gray-50 text-gray-600 px-4 py-3 text-base"
@@ -558,7 +558,7 @@ const AuthFormInput: FC = () => {
         setLoading(false);
       }
     } else if (step === 'password') {
-      // Perform login and redirect to shop
+      // Perform login and redirect to home
       if (!state.password) {
         setFieldError('loginPassword', 'auth.validation.passwordRequired');
         return;
@@ -580,11 +580,14 @@ const AuthFormInput: FC = () => {
           setFieldError('loginPassword', 'auth.validation.loginFailed');
           return;
         }
-        // Optionally store token
+        // Store token for fallback authentication (especially for mobile/IP access)
         if (data.token) {
-          try { localStorage.setItem('hh_token', data.token); } catch {}
+          try { 
+            localStorage.setItem('hh_token', data.token);
+            localStorage.setItem('auth-token', data.token); // Also store with cookie name for consistency
+          } catch {}
         }
-        window.location.href = '/shop';
+        window.location.href = '/home';
       } catch (err: any) {
         setFieldError('loginPassword', 'auth.validation.loginFailed');
       } finally {
@@ -625,7 +628,7 @@ const AuthFormInput: FC = () => {
       </Label>
       <Input
         id="initialEmail"
-        type="email"
+        type="text"
         placeholder="ex: myname@example.com"
         value={state.email}
         onChange={(e) => setEmail(e.target.value)}

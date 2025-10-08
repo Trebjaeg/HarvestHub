@@ -1,5 +1,32 @@
 {
   "auth": {
+    "resetPasswordInstructions": "Ilagay ang inyong email address at magpapadala kami ng link para ma-reset ang inyong password.",
+    "sendResetLink": "Magpadala ng Reset Link",
+    "resetPasswordSuccess": "Kung may account na iyan, napadala na ang reset link.",
+    "resetPasswordError": "Hindi na-send ang reset request",
+    "emailSentTitle": "Email Naipadala!",
+    "sending": "Nagpapadala...",
+    "verificationTitle": "Ilagay ang verification code",
+    "verificationSubtitle": "Nagpadala kami ng code sa",
+    "verificationCodeLabel": "Verification Code",
+    "didntGetCode": "Hindi nakatanggap ng code?",
+    "clickToResend": "I-click para muling ipadala.",
+    "verify": "I-verify",
+    "cancel": "Kanselahin",
+    "resending": "Muling pinapadala...",
+    "passwordResetComplete": "Na-reset na ang inyong Password",
+    "successfully": "Matagumpay",
+    "continue": "Magpatuloy",
+    "createNewPassword": "Lumikha ng Bagong Password",
+    "createNewPasswordSubtitle": "Na-verify na ang inyong pagkakakilanlan. Pakikilha ng bagong secure na password.",
+    "newPassword": "Bagong Password",
+    "confirmNewPassword": "Kumpirmahin ang Bagong Password",
+    "enterNewPassword": "Isulat ang bagong password",
+    "updatePassword": "I-update ang Password",
+    "updatingPassword": "Nag-uupdate...",
+    "passwordRequirements": "Mga requirement ng password",
+    "passwordMinLength": "Hindi bababa sa 8 karakter",
+    "passwordComplexity": "Dapat may malaki, maliit na letra, at mga numero",
     "title": "Ilagay ang inyong email para magpatuloy",
     "subtitle": "Mag-log in sa Harvest Hub gamit ang inyong email. Kung wala pa kayong account, gagabayan namin kayo sa paggawa ng isa.",
     "email": "Email",
@@ -14,11 +41,10 @@
     "back": "Bumalik",
     "name": "Pangalan",
     "alreadyHaveAccount": "May account na ba kayo?",
+    "dontHaveAccount": "Wala pa kayong account?",
     "loginHere": "Mag-login dito",
     "forgotPassword": "Nakalimutan ang Password?",
     "resetPassword": "I-reset ang Password",
-    "resetPasswordInstructions": "Ilagay ang inyong email address at magpapadala kami ng link para i-reset ang password.",
-    "sendResetLink": "Magpadala ng Reset Link",
     "validation": {
       "emailRequired": "Kailangan ang email address",
       "emailInvalid": "Pakisulat ang tamang email address",
@@ -48,7 +74,14 @@
       "privacyRequired": "Dapat tanggapin ang Privacy Policy",
       "wrongPassword": "Maling password",
       "loginFailed": "Hindi matagumpay ang pag-login",
-      "emailCheckError": "May error sa pag-check ng email"
+      "emailCheckError": "May error sa pag-check ng email",
+      "verificationCodeRequired": "Pakiisulat ang 4-digit na verification code",
+      "verificationCodeInvalid": "Maling verification code. Subukan ulit.",
+      "passwordTooShort": "Dapat hindi bababa sa 8 karakter ang password",
+      "passwordsDoNotMatch": "Hindi magkatugma ang mga password"
+    },
+    "errors": {
+      "passwordResetFailed": "Hindi matagumpay na na-reset ang password. Subukan ulit."
     },
     "success": {
       "emailPassed": "Tama ang email!",
@@ -64,6 +97,8 @@
     "acceptTerms": "Tatanggapin ko ang Mga Tuntunin at Kondisyon",
     "acceptPrivacy": "Tatanggapin ko ang Patakaran sa Privacy",
     "cancel": "Kanselahin",
+    "gotIt": "Nakuha ko",
+    "confirm": "Kumpirmahin",
     "scrollMessage": "Pakibalasa ang buong dokumento bago tanggapin",
     "registrationTitle": "Form ng Pagpaparehistro",
     "registrationSubtitle": "Punan ang form nang maingat para sa pagpaparehistro"
@@ -72,5 +107,52 @@
     "title": "Hindi Nahanap ang Pahina",
     "message": "Uy! Mukhang naligaw tayo sa bukid. Balik tayo sa tamang daan.",
     "backButton": "Balik sa homepage"
+  },
+  "home": {
+    "searchPlaceholder": "Maghanap ng sariwang produkto...",
+    "categories": "Tingnan ang mga Kategorya",
+    "bestOffers": "Nangungunang Produkto",
+    "categoryNames": {
+      "leafyGreens": "Dahong Gulay",
+      "rootCrops": "Ugat na Pananim",
+      "fruits": "Prutas",
+      "spicesAndAromatics": "Pampalasa at Aromatics",
+      "eggplantAndGourds": "Talong at Upo",
+      "grainsAndRice": "Butil at Bigas"
+    },
+    "categoryDesc": {
+      "leafyGreens": "Sariwang ani araw-araw",
+      "rootCrops": "Mga sangkap mula sa bukid para sa bawat lutuin",
+      "fruits": "Malasa, matamis, at puno ng lasa",
+      "spicesAndAromatics": "Magbigay ng aroma at lasa sa inyong pagkain",
+      "eggplantAndGourds": "Mga kailangan sa Pilipinong kusina",
+      "grainsAndRice": "Lokal na giling, sariwang kalidad mula sa bukid"
+    },
+    "benefits": {
+      "title": "Bakit Piliin ang HarvestHub?",
+      "directFarmerConnection": "Direktang Koneksyon sa Magsasaka",
+      "directFarmerConnectionDesc": "Direktang kumukonekta sa mga lokal na magsasaka para sa sariwang produkto araw-araw",
+      "liveHarvestUpdates": "Live na Update ng Ani",
+      "liveHarvestUpdatesDesc": "Real-time na update sa sariwang ani mula sa mga partner na bukid",
+      "easyDeliveryCoordination": "Madaling Koordinasyon ng Delivery",
+      "easyDeliveryCoordinationDesc": "Walang problemang koordinasyon ng delivery sa pagitan ng mga magsasaka at customers",
+      "upliftingLocalAgriculture": "Pagpapataas ng Lokal na Agrikultura",
+      "upliftingLocalAgricultureDesc": "Bawat order ay tumutulong sa mga lokal na magsasaka at nagpo-promote ng sustainable na paglago",
+      "freshFromFarm": "Sariwa mula sa Bukid",
+      "freshFromFarmDesc": "Kumuha ng pinakasariwang produkto direkta mula sa mga lokal na magsasaka",
+      "fastDelivery": "Mabilis na Delivery",
+      "fastDeliveryDesc": "Mabilis at maaasahang delivery sa inyong tahanan",
+      "qualityAssured": "Siguradong Kalidad",
+      "qualityAssuredDesc": "Garantisadong premium na kalidad ng mga produkto",
+      "supportFarmers": "Suportahan ang mga Magsasaka",
+      "supportFarmersDesc": "Tulungan ang mga lokal na magsasaka sa pamamagitan ng direktang pagbili"
+    },
+    "hero": {
+      "title": "Sariwang Produkto ng Bukid",
+      "subtitle": "Dinadalá sa Inyong Tahanan",
+      "description": "Tuklasin ang pinakasariwang prutas at gulay direkta mula sa mga lokal na bukid. Suportahan ang inyong komunidad habang nagsasaya sa premium na kalidad ng produkto.",
+      "shopNow": "Mamili Ngayon",
+      "learnMore": "Matuto Pa"
+    }
   }
 }

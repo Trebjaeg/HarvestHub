@@ -2,59 +2,93 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import crypto from 'crypto';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
-import nodemailer from 'nodemailer';
+import { withSecurity, withLogging } from '@/lib/middleware';
+import { sanitizeInput, generateSecureToken, hashToken } from '@/lib/security';
+import emailService from '@/lib/email-service';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
-  const { email } = req.body || {};
-  if (!email) return res.status(400).json({ message: 'Email is required' });
+async function passwordResetHandler(req: NextApiRequest, res: NextApiResponse) {
+  console.log('=== PASSWORD RESET REQUEST START ===');
+  console.log('Method:', req.method);
+  console.log('Request body:', req.body);
+  console.log('Headers:', req.headers);
+  
+  let { email } = req.body || {};
+  
+  if (!email) {
+    console.log('ERROR: No email provided');
+    return res.status(400).json({ message: 'Email is required' });
+  }
+
+  // Sanitize and validate email
+  email = sanitizeInput(email).toLowerCase();
+  console.log('Processing email:', email);
+  
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    console.log('ERROR: Invalid email format:', email);
+    return res.status(400).json({ message: 'Invalid email format' });
+  }
 
   try {
     await dbConnect();
-    const user = await User.findOne({ email });
-    // Respond with 200 even if user not found to avoid user enumeration
+    
+    const user = await User.findOne({ email }).exec();
+
+    // Always respond with success to prevent user enumeration
     if (!user) {
-      return res.status(200).json({ message: 'If that account exists, a reset link was sent.' });
+      return res.status(200).json({ 
+        success: true,
+        message: 'If that account exists, a reset link was sent.' 
+      });
     }
 
-    // Create a one-time token
-    const token = crypto.randomBytes(32).toString('hex');
-    // Store a hashed token for verification
-    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const expires = new Date(Date.now() + 1000 * 60 * 15); // 15 minutes
+    // Generate secure 4-digit verification code
+    const verificationCode = Math.floor(1000 + Math.random() * 9000).toString();
+    console.log('Generated verification code:', verificationCode);
+    console.log('Code type:', typeof verificationCode, 'Code length:', verificationCode.length);
+    
+    const codeHash = hashToken(verificationCode);
+    console.log('Generated code hash:', codeHash);
+    
+    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    console.log('Code expires at:', expires);
 
-    user.resetPasswordToken = tokenHash;
+    // Update user with verification code
+    user.resetPasswordToken = codeHash;
     user.resetPasswordExpires = expires;
     await user.save();
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || req.headers.origin || '';
-    const resetUrl = `${baseUrl}/auth/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+    // Send password reset email with verification code
+    console.log('Attempting to send password reset email to:', email);
+    const emailSent = await emailService.sendPasswordResetCode(email, verificationCode, user.name);
+    console.log('Email send result:', emailSent);
+    
+    if (!emailSent) {
+      console.error('Failed to send password reset email to:', email);
+      // Still return success to prevent user enumeration, but log the error
+    } else {
+      console.log('Password reset email sent successfully to:', email);
+    }
 
-    // Send email via Nodemailer
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
+    return res.status(200).json({ 
+      success: true,
+      message: 'If that account exists, a reset link was sent.' 
     });
-
-    const from = process.env.MAIL_FROM || process.env.SMTP_USER || 'no-reply@localhost';
-    await transporter.sendMail({
-      from,
-      to: email,
-      subject: 'Reset your HarvestHub password',
-      html: `
-        <p>You requested a password reset. Click the link below to set a new password (valid for 15 minutes):</p>
-        <p><a href="${resetUrl}">Reset your password</a></p>
-        <p>If you did not request this, you can safely ignore this email.</p>
-      `,
-    });
-
-    return res.status(200).json({ message: 'If that account exists, a reset link was sent.' });
+    
   } catch (err: any) {
-    return res.status(500).json({ message: err.message || 'Server error' });
+    console.error('Password reset error:', err);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Unable to process request. Please try again later.' 
+    });
   }
 }
+
+// Apply security middleware with rate limiting specific to password reset
+export default withSecurity(
+  withLogging(passwordResetHandler),
+  {
+    rateLimit: 'passwordReset',
+    allowedMethods: ['POST'],
+    cors: true
+  }
+);

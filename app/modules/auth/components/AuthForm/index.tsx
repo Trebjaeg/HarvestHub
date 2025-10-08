@@ -102,7 +102,7 @@ const AuthForm: FC<AuthFormProps> = ({
       <LanguageSwitcher />
       <div className="w-full max-w-md shadow-xl rounded-2xl bg-white p-8 mx-auto border border-gray-100">
         {/* Header Section */}
-        <div className="text-center mb-8">
+        <div className="mb-8">
           <div className="flex justify-center items-center mb-4">
             <Image
               src="/images/harvesthub.png"
@@ -110,14 +110,14 @@ const AuthForm: FC<AuthFormProps> = ({
               width={32}
               height={32}
             />
-            <h1 className="text-lg font-semibold text-green-700 ml-3">
+            <h1 className="text-lg font-medium text-green-700 ml-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
               Harvest Hub
             </h1>
           </div>
-          <h2 className="text-2xl font-bold mb-2 text-gray-900">
+          <h2 className="text-2xl font-medium mb-2 text-gray-900 text-left" style={{ fontFamily: 'Poppins, sans-serif' }}>
             {state.nextStep ? t('modal.registrationTitle') : t('auth.title')}
           </h2>
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-600 text-sm text-left" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: '400' }}>
             {state.nextStep ? t('modal.registrationSubtitle') : t('auth.subtitle')}
           </p>
         </div>
@@ -131,14 +131,15 @@ const AuthForm: FC<AuthFormProps> = ({
           <AuthFormInput />
         </form>
 
-        <p className="text-center mt-6 text-sm text-gray-600">
+        <p className="text-center mt-6 text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: '400' }}>
           {state.nextStep ? (
             <>
               {t('auth.alreadyHaveAccount')}{" "}
               <button
                 type="button"
                 onClick={() => dispatch({ type: 'SET_NEXT_STEP', payload: false })}
-                className="text-green-700 font-semibold hover:underline cursor-pointer bg-transparent border-none p-0"
+                className="text-green-700 font-medium hover:underline cursor-pointer bg-transparent border-none p-0"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
                 aria-label={t('auth.loginHere')}
               >
                 {t('auth.loginHere')}
@@ -148,7 +149,8 @@ const AuthForm: FC<AuthFormProps> = ({
             <button
               type="button"
               onClick={() => setShowForgotPasswordModal(true)}
-              className="text-green-700 font-semibold hover:underline cursor-pointer bg-transparent border-none p-0"
+              className="text-green-700 font-medium hover:underline cursor-pointer bg-transparent border-none p-0"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
               aria-label={t('auth.forgotPassword')}
             >
               {t('auth.forgotPassword')}

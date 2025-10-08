@@ -14,17 +14,23 @@ export const useReactiveTranslation = () => {
       setCurrentLanguage(lng);
     };
 
-    i18n.on('languageChanged', handleLanguageChange);
+    // Check if i18n has event methods before using them
+    if (i18n && typeof i18n.on === 'function') {
+      i18n.on('languageChanged', handleLanguageChange);
+    }
     
     return () => {
-      i18n.off('languageChanged', handleLanguageChange);
+      if (i18n && typeof i18n.off === 'function') {
+        i18n.off('languageChanged', handleLanguageChange);
+      }
     };
   }, [i18n]);
 
   // Function that always returns fresh translation
-  const rt = (key: string, options?: any) => {
+  const rt = (key: string, options?: any): string => {
     // Force re-evaluation by including current language in dependency
-    return t(key, options);
+    const result = t(key, options);
+    return typeof result === 'string' ? result : key;
   };
 
   return { t: rt, i18n, currentLanguage };
