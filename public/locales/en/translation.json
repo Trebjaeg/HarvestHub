@@ -10,6 +10,9 @@
     "confirmPassword": "Confirm password",
     "proceed": "Proceed",
     "createAccount": "Create account",
+    "register": "Create account",
+    "registering": "Creating account...",
+    "back": "Back",
     "alreadyHaveAccount": "Already have an account?",
     "loginHere": "Login here",
     "forgotPassword": "Forgot Password?",
@@ -20,15 +23,30 @@
     "acceptPrivacy": "I accept the Privacy Policy",
     "termsLink": "Terms and Conditions",
     "privacyLink": "Privacy Policy",
-    "errors": {
+    "validation": {
       "emailRequired": "Please enter your email address",
       "emailInvalid": "Please enter a valid email address",
       "emailCorrect": "Email must be correct",
       "firstNameRequired": "First name is required",
+      "firstNameTooShort": "First name must be at least 2 characters",
+      "firstNameTooLong": "First name must be less than 50 characters",
       "lastNameRequired": "Last name is required",
+      "lastNameTooShort": "Last name must be at least 2 characters",
+      "lastNameTooLong": "Last name must be less than 50 characters",
       "passwordRequired": "Password is required",
       "passwordMinLength": "Password must be at least 8 characters",
+      "passwordNeedsSymbol": "Password must contain at least one symbol (!@#$%^&*)",
+      "passwordTooWeak": "Password is too easy to guess. Try adding numbers, symbols, or mix of cases",
+      "passwordWeak": "Weak password",
+      "passwordMedium": "Medium strength password",
+      "passwordStrong": "Strong password",
+      "passwordRequirement8Chars": "At least 8 characters",
+      "passwordRequirementSymbols": "Contains symbols (!@#$%^&*)",
+      "passwordNoSpaces": "Password cannot contain spaces",
+      "passwordNoPersonalInfo": "Password should not contain common words",
+      "passwordCouldBeStronger": "Consider making your password stronger",
       "confirmPasswordRequired": "Please confirm your password",
+      "passwordMismatch": "Passwords do not match",
       "passwordsNoMatch": "Passwords do not match",
       "termsRequired": "You must accept the Terms and Conditions",
       "privacyRequired": "You must accept the Privacy Policy"
@@ -50,5 +68,10 @@
     "scrollMessage": "Please scroll down to read the entire document before accepting",
     "registrationTitle": "Registration Form",
     "registrationSubtitle": "Fill out the form carefully for registration"
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "message": "Oops! Looks like we got lost in the fields. Let's head back to the right path.",
+    "backButton": "Back to homepage"
   }
 }

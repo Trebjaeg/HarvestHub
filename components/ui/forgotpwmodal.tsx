@@ -35,4 +35,6 @@ const ForgotPwModal: FC<ForgotPwModalProps> = ({
   );
 };
 
+ForgotPwModal.displayName = "ForgotPwModal";
+
 export default ForgotPwModal;

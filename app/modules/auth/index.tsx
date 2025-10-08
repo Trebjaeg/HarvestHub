@@ -1,107 +1,99 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { validateEmail } from "@/lib/validate-email";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 import AuthBanner from "./components/AuthBanner";
 import AuthForm from "./components/AuthForm";
 import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import I18nProvider from "@/components/I18nProvider";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthErrorBoundary } from "./components/AuthErrorBoundary";
+import { AuthValidator } from "@/lib/auth-validation";
+import { validatePasswordStrength } from "@/lib/password-strength";
 
-export default function AuthLanding() {
+function AuthLandingContent() {
   const { t } = useTranslation();
-  
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
-  const [nextStep, setNextStep] = useState<boolean>(false);
-  const [password, setPassword] = useState<string>("");
-  const [isNewUser, setIsNewUser] = useState<boolean>(false);
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
-  const [fullName, setFullName] = useState<string>("");
-  const [firstName, setFirstName] = useState<string>("");
-  const [lastName, setLastName] = useState<string>("");
-  const [acceptTerms, setAcceptTerms] = useState<boolean>(false);
-  const [acceptPrivacy, setAcceptPrivacy] = useState<boolean>(false);
-  const [acceptMarketing, setAcceptMarketing] = useState<boolean>(false);
+  const { state, setError, dispatch } = useAuth();
 
-  // Error states for validation
-  const [firstNameError, setFirstNameError] = useState<string>("");
-  const [lastNameError, setLastNameError] = useState<string>("");
-  const [passwordError, setPasswordError] = useState<string>("");
-  const [confirmPasswordError, setConfirmPasswordError] = useState<string>("");
-  const [termsError, setTermsError] = useState<string>("");
-  const [privacyError, setPrivacyError] = useState<string>("");
+  // Cleanup effect to clear form data on component unmount
+  useEffect(() => {
+    return () => {
+      dispatch({ type: 'RESET_FORM' });
+    };
+  }, [dispatch]);
 
-  // Validation function for create account
-  const validateCreateAccount = () => {
-    let isValid = true;
-
+  // Enhanced validation function for create account
+  const validateCreateAccount = (): boolean => {
     // Clear previous errors
-    setFirstNameError("");
-    setLastNameError("");
-    setPasswordError("");
-    setConfirmPasswordError("");
-    // Remove terms and privacy validation since they're handled in modals
-    // setTermsError("");
-    // setPrivacyError("");
+    dispatch({ type: 'CLEAR_ALL_ERRORS' });
 
-    // Validate first name
-    if (!firstName.trim()) {
-      setFirstNameError(t('auth.errors.firstNameRequired'));
-      isValid = false;
+    const validationResult = AuthValidator.validateAuthForm({
+      email: state.email,
+      firstName: state.firstName,
+      lastName: state.lastName,
+      password: state.password,
+      confirmPassword: state.confirmPassword,
+      acceptTerms: state.acceptTerms,
+      acceptPrivacy: state.acceptPrivacy,
+    }, true);
+
+    // Set individual field errors
+    if (!validationResult.firstName.isValid) {
+      dispatch({ 
+        type: 'SET_FIRST_NAME_ERROR', 
+        payload: t(validationResult.firstName.errors[0]) 
+      });
     }
 
-    // Validate last name
-    if (!lastName.trim()) {
-      setLastNameError(t('auth.errors.lastNameRequired'));
-      isValid = false;
+    if (!validationResult.lastName.isValid) {
+      dispatch({ 
+        type: 'SET_LAST_NAME_ERROR', 
+        payload: t(validationResult.lastName.errors[0]) 
+      });
     }
 
-    // Validate password
-    if (!password.trim()) {
-      setPasswordError(t('auth.errors.passwordRequired'));
-      isValid = false;
-    } else if (password.length < 8) {
-      setPasswordError(t('auth.errors.passwordMinLength'));
-      isValid = false;
+    if (!validationResult.password.isValid) {
+      dispatch({ 
+        type: 'SET_PASSWORD_ERROR', 
+        payload: t(validationResult.password.errors[0]) 
+      });
     }
 
-    // Validate confirm password
-    if (!confirmPassword.trim()) {
-      setConfirmPasswordError(t('auth.errors.confirmPasswordRequired'));
-      isValid = false;
-    } else if (password !== confirmPassword) {
-      setConfirmPasswordError(t('auth.errors.passwordsNoMatch'));
-      isValid = false;
+    if (!validationResult.confirmPassword.isValid) {
+      dispatch({ 
+        type: 'SET_CONFIRM_PASSWORD_ERROR', 
+        payload: t(validationResult.confirmPassword.errors[0]) 
+      });
     }
 
-    // Remove terms and privacy validation - they'll be handled by modals
-    // if (!acceptTerms) {
-    //   setTermsError(t('auth.errors.termsRequired'));
-    //   isValid = false;
-    // }
-    // if (!acceptPrivacy) {
-    //   setPrivacyError(t('auth.errors.privacyRequired'));
-    //   isValid = false;
-    // }
+    if (!validationResult.terms.isValid) {
+      dispatch({ 
+        type: 'SET_TERMS_ERROR', 
+        payload: t(validationResult.terms.errors[0]) 
+      });
+    }
 
-    return isValid;
+    if (!validationResult.privacy.isValid) {
+      dispatch({ 
+        type: 'SET_PRIVACY_ERROR', 
+        payload: t(validationResult.privacy.errors[0]) 
+      });
+    }
+
+    return AuthValidator.isFormValid(validationResult);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email) {
-      setError(t('auth.errors.emailRequired'));
+    if (!state.email) {
+      setError(t('auth.validation.emailRequired'));
       return;
     }
 
-    // Optional: extra validation for email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError(t('auth.errors.emailInvalid'));
+    // Validate email format
+    const emailValidation = AuthValidator.validateEmail(state.email);
+    if (!emailValidation.isValid) {
+      setError(t(emailValidation.errors[0]));
       return;
     }
 
@@ -110,44 +102,28 @@ export default function AuthLanding() {
   };
 
   return (
-    <I18nProvider>
+    <AuthErrorBoundary>
       <div className="flex h-screen w-full overflow-hidden">
         {/* Left side - Background/Image section */}
         <AuthBanner />
 
         {/* Right side - Login form section */}
-      <AuthForm
-        email={email}
-        error={error}
-        setError={setError}
-        nextStep={nextStep}
-        password={password}
-        setEmail={setEmail}
-        setPassword={setPassword}
-        handleSubmit={handleSubmit}
-        setNextStep={(nextStep) => setNextStep(nextStep)}
-        isNewUser={isNewUser}
-        confirmPassword={confirmPassword}
-        setConfirmPassword={setConfirmPassword}
-        fullName={fullName}
-        setFullName={setFullName}
-        firstName={firstName}
-        setFirstName={setFirstName}
-        lastName={lastName}
-        setLastName={setLastName}
-        acceptTerms={acceptTerms}
-        setAcceptTerms={setAcceptTerms}
-        acceptPrivacy={acceptPrivacy}
-        setAcceptPrivacy={setAcceptPrivacy}
-        firstNameError={firstNameError}
-        lastNameError={lastNameError}
-        passwordError={passwordError}
-        confirmPasswordError={confirmPasswordError}
-        termsError={termsError}
-        privacyError={privacyError}
-        validateCreateAccount={validateCreateAccount}
-      />
+        <AuthForm
+          key={`auth-form-${state.nextStep ? 'register' : 'login'}`}
+          handleSubmit={handleSubmit}
+          validateCreateAccount={validateCreateAccount}
+        />
       </div>
+    </AuthErrorBoundary>
+  );
+}
+
+export default function AuthLanding() {
+  return (
+    <I18nProvider>
+      <AuthProvider>
+        <AuthLandingContent />
+      </AuthProvider>
     </I18nProvider>
   );
 }

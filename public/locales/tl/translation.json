@@ -1,5 +1,7 @@
 {
   "auth": {
+    "title": "Ilagay ang inyong email para magpatuloy",
+    "subtitle": "Mag-log in sa Harvest Hub gamit ang inyong email. Kung wala pa kayong account, gagabayan namin kayo sa paggawa ng isa.",
     "email": "Email",
     "firstName": "Unang Pangalan",
     "lastName": "Apelyido",
@@ -7,6 +9,10 @@
     "confirmPassword": "Kumpirmahin ang password",
     "proceed": "Magpatuloy",
     "createAccount": "Gumawa ng account",
+    "register": "Gumawa ng account",
+    "registering": "Ginagawa ang account...",
+    "back": "Bumalik",
+    "name": "Pangalan",
     "alreadyHaveAccount": "May account na ba kayo?",
     "loginHere": "Mag-login dito",
     "forgotPassword": "Nakalimutan ang Password?",
@@ -15,13 +21,21 @@
     "sendResetLink": "Magpadala ng Reset Link",
     "validation": {
       "emailRequired": "Kailangan ang email address",
-      "emailInvalid": "Pakisulatat ang tamang email address",
+      "emailInvalid": "Pakisulat ang tamang email address",
       "emailCorrect": "Dapat tamang email",
       "firstNameRequired": "Kailangan ang unang pangalan",
       "lastNameRequired": "Kailangan ang apelyido",
       "passwordRequired": "Kailangan ang password",
       "passwordMinLength": "Dapat may 8 character o higit pa ang password",
+      "passwordNeedsSymbol": "Dapat may simbolo ang password (!@#$%^&*)",
+      "passwordTooWeak": "Madaling hulaan ang password. Magdagdag ng numero, simbolo, o mix ng malaki at maliit na letra",
+      "passwordWeak": "Mahinang password",
+      "passwordMedium": "Katamtamang lakas ng password", 
+      "passwordStrong": "Malakas na password",
+      "passwordRequirement8Chars": "Hindi kulang sa 8 karakter",
+      "passwordRequirementSymbols": "May mga simbolo (!@#$%^&*)",
       "confirmPasswordRequired": "Pakikumpirma ang password",
+      "passwordMismatch": "Hindi magkatugma ang mga password",
       "passwordsNoMatch": "Hindi magkatugma ang mga password",
       "termsRequired": "Dapat tanggapin ang Terms and Conditions",
       "privacyRequired": "Dapat tanggapin ang Privacy Policy"
@@ -43,5 +57,10 @@
     "scrollMessage": "Pakibalasa ang buong dokumento bago tanggapin",
     "registrationTitle": "Form ng Pagpaparehistro",
     "registrationSubtitle": "Punan ang form nang maingat para sa pagpaparehistro"
+  },
+  "notFound": {
+    "title": "Hindi Nahanap ang Pahina",
+    "message": "Uy! Mukhang naligaw tayo sa bukid. Balik tayo sa tamang daan.",
+    "backButton": "Balik sa homepage"
   }
 }

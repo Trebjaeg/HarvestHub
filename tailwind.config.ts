@@ -12,6 +12,8 @@ const config: Config = {
     extend: {
       fontFamily: {
         inter: ["var(--font-inter)", ...defaultTheme.fontFamily.sans],
+        poppins: ["Poppins", ...defaultTheme.fontFamily.sans],
+        pacifico: ["var(--font-pacifico)", "cursive"],
         sans: ["var(--font-inter)", ...defaultTheme.fontFamily.sans],
       },
     },
