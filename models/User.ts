@@ -61,6 +61,16 @@ const UserSchema = new Schema({
     rejectionReason: { type: String, maxlength: 500 },
     notes: { type: String, maxlength: 1000 } // Admin notes
   },
+  
+  // Profile image
+  profileImage: { type: String, default: null },
+  
+  // Farm information
+  farmName: { type: String, maxlength: 200, default: null },
+  farmDescription: { type: String, maxlength: 1000, default: null },
+  phone: { type: String, maxlength: 20, default: null },
+  address: { type: String, maxlength: 500, default: null },
+  
   // For password reset flow
   resetPasswordToken: { type: String, default: null },
   resetPasswordExpires: { type: Date, default: null },

@@ -1,14 +1,48 @@
 'use client';
-import { Input } from "@/components/ui/input";
-import { Search, ChevronDown } from "lucide-react";
-import Image from "next/image";
-import React, { useState } from "react";
 
-const Products = () => {
-  const [selectedCategory, setSelectedCategory] = useState("By category");
-  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState("By status");
-  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Plus, Package, Edit, Trash2, Filter } from "lucide-react";
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import AddEditProductModal from "@/components/ui/AddEditProductModal";
+
+interface Product {
+  _id?: string;
+  name: string;
+  category: string;
+  unit: string;
+  status: string;
+  description: string;
+  price: number;
+  stock: number;
+  lowStockAlert: number;
+  images: string[];
+  farmerId?: string;
+  farmerName?: string;
+  location?: string;
+  image?: string;
+  isActive?: boolean;
+  isOrganic?: boolean;
+  featured?: boolean;
+  rating?: number;
+  reviews?: number;
+  harvestDate?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export default function Products() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const categories = [
     "Leafy Greens",
@@ -19,155 +53,328 @@ const Products = () => {
     "Grains & Rice"
   ];
 
-  const status = [
-    "Available",
-    "Unavailable"
-  ];
+  const statusOptions = ["Available", "Unavailable"];
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
+      const response = await fetch('/api/seller/products', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Convert harvestDate from Date to string for the modal
+        const formattedProducts = (data.products || []).map((product: any) => ({
+          ...product,
+          harvestDate: product.harvestDate ? new Date(product.harvestDate).toISOString().split('T')[0] : undefined
+        }));
+        setProducts(formattedProducts);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddProduct = async (product: Product) => {
+    try {
+      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
+      const response = await fetch('/api/seller/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(product)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Refresh the products list
+        fetchProducts();
+        setShowAddModal(false);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to create product');
+      }
+    } catch (error) {
+      console.error('Error creating product:', error);
+      alert('Failed to create product');
+    }
+  };
+
+  const handleEditProduct = async (product: Product) => {
+    try {
+      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
+      const response = await fetch(`/api/seller/products/${product._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(product)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Refresh the products list
+        fetchProducts();
+        setEditingProduct(null);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to update product');
+      }
+    } catch (error) {
+      console.error('Error updating product:', error);
+      alert('Failed to update product');
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string | undefined) => {
+    if (!productId) return;
+    
+    if (confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+      try {
+        const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
+        const response = await fetch(`/api/seller/products/${productId}`, {
+          method: 'DELETE',
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
+
+        if (response.ok) {
+          // Refresh the products list
+          fetchProducts();
+        } else {
+          const error = await response.json();
+          alert(error.error || 'Failed to delete product');
+        }
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        alert('Failed to delete product');
+      }
+    }
+  };
+
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
+    const matchesStatus = selectedStatus === "all" || product.status === selectedStatus;
+    
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  const getStatusColor = (status: string) => {
+    return status === 'Available' 
+      ? 'bg-green-100 text-green-800' 
+      : 'bg-red-100 text-red-800';
+  };
+
+  const getStockStatus = (stock: number, lowStockAlert: number) => {
+    if (stock === 0) return { label: 'Out of Stock', color: 'bg-red-100 text-red-800' };
+    if (stock <= lowStockAlert) return { label: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
+    return { label: 'In Stock', color: 'bg-green-100 text-green-800' };
+  };
 
   return (
-    <div className="bg-[#ECFDF5] mt-4 mb-4 m-3 p-4 rounded-lg shadow-gray-400 shadow-sm h-screen">
-      <div className="flex items-center gap-2 mt-6 ml-2 mb-6">
-        <Image
-          src="/images/seller/packageIcon.png"
-          alt="Product Image"
-          width={38}
-          height={38}
-        />
-        <h1 className="text-[#103C2E] font-bold text-3xl">Products</h1>
-      </div>
-      
-      <div className="bg-[#FFFFFF] rounded-xl shadow-gray-400 shadow-sm p-6">
-        {/* Top Controls - Search and Filters */}
-        <div className="flex items-center justify-between gap-4 mb-6">
-          {/* Search Bar */}
-          <div className="flex items-center rounded-2xl px-4 py-1 flex-1 border border-[#D0D0D0]">
-            <Search size={25} className="mr-3" />
-            <Input type="text" placeholder="Find Something here..." className="border-none focus:ring-0" />
-          </div>
-
-          {/* Filter Dropdowns */}
+    <div className="bg-gray-50 min-h-screen p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            {/* Category Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                className="flex items-center justify-between bg-white border border-[#D0D0D0] rounded-2xl px-4 py-2 min-w-[180px] hover:bg-gray-50 transition-colors"
-              >
-                <span className="text-gray-700 font-medium">{selectedCategory}</span>
-                <ChevronDown 
-                  size={18} 
-                  className={`text-gray-400 ml-2 transition-transform ${
-                    isCategoryDropdownOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {/* Category Dropdown Menu */}
-              {isCategoryDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                  {categories.map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => {
-                        setSelectedCategory(category);
-                        setIsCategoryDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-3 hover:bg-gray-100 first:rounded-t-lg last:rounded-b-lg transition-colors ${
-                        selectedCategory === category
-                          ? "bg-green-50 text-green-700 font-medium"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      {category}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Status Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                className="flex items-center justify-between bg-white border border-[#D0D0D0] rounded-2xl px-4 py-2 min-w-[140px] hover:bg-gray-50 transition-colors"
-              >
-                <span className="text-gray-700 font-medium">{selectedStatus}</span>
-                <ChevronDown 
-                  size={18} 
-                  className={`text-gray-400 ml-2 transition-transform ${
-                    isStatusDropdownOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {/* Status Dropdown Menu */}
-              {isStatusDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                  {status.map((status) => (
-                    <button
-                      key={status}
-                      onClick={() => {
-                        setSelectedStatus(status);
-                        setIsStatusDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-3 hover:bg-gray-100 first:rounded-t-lg last:rounded-b-lg transition-colors ${
-                        selectedStatus === status
-                          ? "bg-green-50 text-green-700 font-medium"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      {status}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Package className="w-8 h-8 text-green-600" />
+            <h1 className="text-2xl font-bold text-gray-900 font-poppins">
+              Products
+            </h1>
           </div>
+          <Button 
+            onClick={() => setShowAddModal(true)}
+            className="bg-green-600 hover:bg-green-700 text-white font-poppins" 
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Product
+          </Button>
         </div>
 
-        {/* Active Filters Display */}
-        <div className="mb-4 flex flex-wrap gap-2">
-          {selectedCategory !== "By category" && selectedCategory !== "By Categories" && (
-            <div className="inline-flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-              <span>Category: {selectedCategory}</span>
-              <button 
-                onClick={() => setSelectedCategory("By Categories")}
-                className="ml-2 text-green-600 hover:text-green-800"
-              >
-                ✕
-              </button>
+        {/* Filters and Search */}
+        <Card className="p-6 mb-6 bg-white border border-gray-200">
+          <div className="flex items-center gap-4">
+            {/* Search Bar */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search products by name or description..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 font-poppins"
+              />
             </div>
-          )}
-          
-          {selectedStatus !== "By status" && (
-            <div className="inline-flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-              <span>Status: {selectedStatus}</span>
-              <button 
-                onClick={() => setSelectedStatus("By status")}
-                className="ml-2 text-blue-600 hover:text-blue-800"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-        </div>
 
-        {/* Products Content Area */}
-        <div className="mt-6">
+            {/* Category Filter */}
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-48 font-poppins">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent className="font-poppins">
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Status Filter */}
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="w-48 font-poppins">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent className="font-poppins">
+                <SelectItem value="all">All Status</SelectItem>
+                {statusOptions.map(status => (
+                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </Card>
+
+        {/* Products Grid */}
+        {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {/* Placeholder for products */}
-            <div className="bg-gray-100 p-6 rounded-lg text-center text-gray-500 h-48 flex items-center justify-center">
-              <div>
-                <p className="font-medium">Products</p>
-                <p className="text-sm">Category: {selectedCategory}</p>
-                <p className="text-sm">Status: {selectedStatus}</p>
-              </div>
-            </div>
+            {Array(8).fill(0).map((_, i) => (
+              <Card key={i} className="p-4 bg-white border border-gray-200">
+                <div className="w-full h-48 bg-gray-200 rounded-lg animate-pulse mb-4"></div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                  <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                </div>
+              </Card>
+            ))}
           </div>
-        </div>
+        ) : filteredProducts.length === 0 ? (
+          <Card className="p-12 text-center bg-white border border-gray-200">
+            <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2 font-poppins">
+              No Products Found
+            </h3>
+            <p className="text-gray-600 mb-4 font-poppins">
+              {searchTerm || selectedCategory !== "all" || selectedStatus !== "all" 
+                ? "No products match your current filters." 
+                : "You haven't added any products yet."}
+            </p>
+            <Button 
+              onClick={() => setShowAddModal(true)}
+              className="bg-green-600 hover:bg-green-700 text-white font-poppins"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Your First Product
+            </Button>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProducts.map((product) => {
+              const stockStatus = getStockStatus(product.stock, product.lowStockAlert);
+              
+              return (
+                <Card key={product._id} className="bg-white border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                  {/* Product Image */}
+                  <div className="relative w-full h-48 bg-gray-100">
+                    {product.images.length > 0 ? (
+                      <Image
+                        src={product.images[0]}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="w-12 h-12 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Product Info */}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 font-poppins">
+                        {product.name}
+                      </h3>
+                      <div className="flex gap-1 ml-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditingProduct(product)}
+                          className="w-8 h-8 p-0"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteProduct(product._id)}
+                          className="w-8 h-8 p-0 text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <p className="text-xs text-gray-600 mb-2 font-poppins">
+                      SKU: {product.category?.slice(0, 3).toUpperCase()}-{product._id?.slice(-4)} • {product.category}
+                    </p>
+                    
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <span className="text-lg font-bold text-green-600 font-poppins">
+                          ₱{product.price}
+                        </span>
+                        <span className="text-xs text-gray-500 font-poppins">/{product.unit}</span>
+                      </div>
+                      <Badge className={`${getStatusColor(product.status)} font-poppins`}>
+                        {product.status}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600 font-poppins">
+                        Stock: {product.stock} {product.unit}
+                      </span>
+                      <Badge className={`${stockStatus.color} font-poppins`} variant="secondary">
+                        {stockStatus.label}
+                      </Badge>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Add/Edit Product Modal */}
+        <AddEditProductModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          product={null}
+          onSave={handleAddProduct}
+        />
+
+        <AddEditProductModal
+          isOpen={!!editingProduct}
+          onClose={() => setEditingProduct(null)}
+          product={editingProduct}
+          onSave={handleEditProduct}
+        />
       </div>
     </div>
   );
-};
-
-export default Products;
+}

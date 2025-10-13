@@ -1,10 +1,16 @@
 import mongoose, { Mongoose } from 'mongoose';
 
 // Get MongoDB URI from environment variable
+// For DigitalOcean Droplet: mongodb://username:password@your-droplet-ip:27017/harvesthub
+// For MongoDB Atlas: mongodb+srv://username:password@cluster.mongodb.net/harvesthub
 const MONGODB_URI: string | undefined = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+  throw new Error(
+    'Please define the MONGODB_URI environment variable inside .env.local\n' +
+    'For DigitalOcean Droplet: mongodb://username:password@your-droplet-ip:27017/harvesthub\n' +
+    'For MongoDB Atlas: mongodb+srv://username:password@cluster.mongodb.net/harvesthub'
+  );
 }
 
 // Use a global variable to cache the connection across hot reloads in development
