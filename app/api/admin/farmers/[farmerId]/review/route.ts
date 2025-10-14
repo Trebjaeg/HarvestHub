@@ -9,9 +9,10 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 // Review farmer application (approve/reject)
 export async function POST(
   req: NextRequest,
-  { params }: { params: { farmerId: string } }
+  context: { params: { farmerId: string } }
 ) {
   try {
+    const { farmerId } = context.params;
     // Verify admin authentication
     const token = req.cookies.get('auth-token')?.value;
     if (!token) {
@@ -33,7 +34,6 @@ export async function POST(
     }
 
     const { action, rejectionReason, notes } = await req.json();
-    const { farmerId } = params;
 
     if (!action || !['approve', 'reject'].includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
