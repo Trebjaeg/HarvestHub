@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import User from '../../../../../../models/User';
-import AuditLog from '../../../../../../models/AuditLog';
+import User from '@/models/User';
+import AuditLog from '@/models/AuditLog';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -9,10 +9,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 // Review farmer application (approve/reject)
 export async function POST(
   req: NextRequest,
-  context: { params: { farmerId: string } }
+  context: { params: Promise<{ farmerId: string }> }
 ) {
   try {
-    const { farmerId } = context.params;
+    const { farmerId } = await context.params;
+    
     // Verify admin authentication
     const token = req.cookies.get('auth-token')?.value;
     if (!token) {
