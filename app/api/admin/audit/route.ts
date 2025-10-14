@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '../../../../lib/mongodb';
+import dbConnect from '@/lib/mongodb';
 import AuditLog from '../../../../models/AuditLog';
 import { verifyAdminAuth } from '../../../../lib/admin-auth-server';
 

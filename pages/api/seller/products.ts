@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import connectDB from '@/lib/mongodb';
+import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
 import User from '@/models/User';
 
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
+    await dbConnect();
 
     // Get token from header
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
+    await dbConnect();
 
     // Get token from header
     const token = request.headers.get('authorization')?.replace('Bearer ', '');

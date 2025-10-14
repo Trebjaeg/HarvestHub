@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { connectToDatabase } from '../lib/mongodb';
+import dbConnect from '@/lib/mongodb';
 import User from '../models/User';
 import AuditLog from '../models/AuditLog';
 
@@ -25,7 +25,7 @@ export async function withAuth(req: NextRequest, requiredRole?: string) {
     // Verify JWT token
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
     
-    await connectToDatabase();
+    await dbConnect();
     
     // Get current user from database
     const user = await User.findById(decoded.userId).select('+tokenVersion +status +role');
@@ -126,7 +126,7 @@ export async function logAdminAction(
   severity: 'low' | 'medium' | 'high' | 'critical' = 'medium'
 ) {
   try {
-    await connectToDatabase();
+    await dbConnect();
     
     await AuditLog.create({
       performedBy,

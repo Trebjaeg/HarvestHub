@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import dbConnect from '../../../../lib/mongodb';
+import dbConnect from '@/lib/mongodb';
 import User from '../../../../models/User';
 import Appeal from '../../../../models/Appeal';
 import AuditLog from '../../../../models/AuditLog';

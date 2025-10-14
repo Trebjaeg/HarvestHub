@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { connectToDatabase } from '../../../lib/mongodb';
+import dbConnect from '@/lib/mongodb';
 import User from '../../../models/User';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    await connectToDatabase();
+    await dbConnect();
 
     const user = await User.findById(decoded.userId).select('-password');
     if (!user) {

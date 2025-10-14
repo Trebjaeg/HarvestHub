@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '../../../../lib/mongodb';
+import dbConnect from '@/lib/mongodb';
 import User from '../../../../models/User';
 import jwt from 'jsonwebtoken';
 import { writeFile, mkdir } from 'fs/promises';

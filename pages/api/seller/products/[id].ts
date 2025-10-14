@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import connectDB from '@/lib/mongodb';
+import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
 import User from '@/models/User';
 import { deleteFromSpaces } from '../../../../lib/digitalocean-spaces';
@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectDB();
+    await dbConnect();
 
     // Get token from header
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -45,7 +45,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectDB();
+    await dbConnect();
 
     // Get token from header
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -114,7 +114,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectDB();
+    await dbConnect();
 
     // Get token from header
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
