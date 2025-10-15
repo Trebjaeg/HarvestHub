@@ -18,6 +18,11 @@ const UserSchema = new Schema({
   },
   password: { type: String, required: true, minlength: 8 },
   
+  // Email verification fields
+  isVerified: { type: Boolean, default: false },
+  verificationToken: { type: String, default: null },
+  verificationTokenExpires: { type: Date, default: null },
+  
   // User role and moderation fields
   role: {
     type: String,
@@ -90,6 +95,8 @@ UserSchema.index({ role: 1 });
 UserSchema.index({ status: 1 });
 UserSchema.index({ createdAt: -1 });
 UserSchema.index({ resetPasswordToken: 1, resetPasswordExpires: 1 });
+UserSchema.index({ verificationToken: 1, verificationTokenExpires: 1 });
+UserSchema.index({ isVerified: 1 });
 UserSchema.index({ accountLocked: 1, lockUntil: 1 });
 UserSchema.index({ suspendedBy: 1 });
 UserSchema.index({ tokenVersion: 1 });

@@ -80,6 +80,23 @@
       "passwordTooShort": "Dapat hindi bababa sa 8 karakter ang password",
       "passwordsDoNotMatch": "Hindi magkatugma ang mga password"
     },
+    "verification": {
+      "emailSent": "Matagumpay ang pagpaparehistro! Pakisuri ang inyong email upang ma-verify ang account bago mag-login.",
+      "emailNotVerified": "Pakisuri muna ang inyong email. Tingnan ang inbox para sa verification link.",
+      "resendVerification": "Ipadala ulit ang verification email",
+      "verificationExpired": "Nag-expire na ang verification link. Pakirequest ng bago.",
+      "verificationSuccess": "Matagumpay na na-verify ang email! Maari na kayong mag-login.",
+      "alreadyVerified": "Na-verify na ang inyong email.",
+      "codeRequired": "Pakisuri muna ang inyong email address",
+      "codeSent": "Napadala na ang verification code! Tingnan ang inyong email.",
+      "codeVerified": "Matagumpay na na-verify ang email!",
+      "codeInvalid": "Maling verification code",
+      "codeExpired": "Nag-expire na ang verification code",
+      "sendCode": "Magpadala ng verification code",
+      "enterCode": "Ilagay ang 6-digit na code",
+      "verifyEmail": "I-verify ang Email",
+      "emailMustBeVerified": "Pakisuri muna ang inyong email address bago tapusin ang pagpaparehistro"
+    },
     "errors": {
       "passwordResetFailed": "Hindi matagumpay na na-reset ang password. Subukan ulit."
     },

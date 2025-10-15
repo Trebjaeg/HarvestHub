@@ -79,6 +79,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+
+    // Check if email is verified
+    if (!user.isVerified) {
+      console.log('Login attempt with unverified email:', user.email);
+      return res.status(403).json({ 
+        message: 'Please verify your email first. Check your inbox for the verification link.',
+        requiresVerification: true,
+        email: user.email
+      });
+    }
     
     console.log('Login successful for user:', user.email);
 
@@ -144,6 +154,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         id: user._id, 
         name: user.name, 
         email: user.email,
+        isVerified: user.isVerified,
         sellerStatus: user.sellerStatus,
         lastLogin: user.lastLogin
       } 

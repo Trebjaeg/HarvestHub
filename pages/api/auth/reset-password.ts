@@ -10,23 +10,38 @@ import { sanitizeInput, hashToken } from '@/lib/security';
 import { validatePasswordStrength } from '@/lib/password-strength';
 
 async function resetPasswordHandler(req: NextApiRequest, res: NextApiResponse) {
-  let { resetToken, password } = req.body || {};
+  let { resetToken, token, email, password } = req.body || {};
   
-  if (!resetToken || !password) {
+  // Handle both new flow (resetToken from JWT) and old flow (token + email)
+  // Priority: resetToken > token
+  const tokenToUse = resetToken || token;
+  
+  if (!tokenToUse || !password) {
     return res.status(400).json({ message: 'Reset token and password are required' });
   }
 
   // Sanitize inputs
-  resetToken = sanitizeInput(resetToken);
+  const sanitizedToken = sanitizeInput(tokenToUse);
   
   try {
+    console.log('=== PASSWORD RESET REQUEST ===');
+    console.log('Token received:', tokenToUse ? 'Present' : 'Missing');
+    console.log('Password length:', password?.length || 0);
+    console.log('Email (if provided):', email || 'Not provided');
+    
     // Verify JWT reset token
-    const decoded = jwt.verify(resetToken, process.env.JWT_SECRET!) as {
+    const decoded = jwt.verify(sanitizedToken, process.env.JWT_SECRET!) as {
       userId: string;
       email: string;
       purpose: string;
       codeUsed: string;
     };
+    
+    console.log('JWT decoded successfully:', {
+      userId: decoded.userId,
+      email: decoded.email,
+      purpose: decoded.purpose
+    });
 
     // Validate token purpose
     if (decoded.purpose !== 'password_reset') {
@@ -50,11 +65,14 @@ async function resetPasswordHandler(req: NextApiRequest, res: NextApiResponse) {
     const user = await User.findById(decoded.userId).exec();
 
     if (!user) {
+      console.log('ERROR: User not found for ID:', decoded.userId);
       return res.status(400).json({ 
         success: false,
         message: 'User not found or token invalid.' 
       });
     }
+
+    console.log('User found:', user.email, 'Status:', user.status);
 
     console.log('About to hash password for user:', user.email);
     console.log('Plain password length:', password.length);

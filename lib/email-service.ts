@@ -88,6 +88,299 @@ class EmailService {
   }
 
   /**
+   * Send email verification link
+   */
+  async sendEmailVerification(email: string, verificationUrl: string, userName?: string): Promise<boolean> {
+    const subject = 'Verify Your HarvestHub Philippines Account';
+    
+    const html = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verify Your Email - HarvestHub Philippines</title>
+        <style>
+          body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+          }
+          .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: bold;
+          }
+          .content {
+            padding: 40px 30px;
+            color: #333;
+          }
+          .greeting {
+            font-size: 18px;
+            color: #4CAF50;
+            font-weight: 600;
+            margin-bottom: 20px;
+          }
+          .verify-btn {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 16px;
+            margin: 20px 0;
+            transition: background-color 0.3s;
+          }
+          .verify-btn:hover {
+            background: #45a049;
+          }
+          .security-notice {
+            background: #f8f9fa;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+          }
+          .security-notice strong {
+            color: #0c5460;
+          }
+          .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+            border-top: 1px solid #dee2e6;
+          }
+          .footer a {
+            color: #4CAF50;
+            text-decoration: none;
+          }
+          @media (max-width: 600px) {
+            .container {
+              margin: 0 10px;
+            }
+            .content {
+              padding: 20px 15px;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🌱 HarvestHub Philippines</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Email Verification</p>
+          </div>
+          
+          <div class="content">
+            <div class="greeting">
+              ${userName ? `Welcome ${userName}!` : 'Welcome!'}
+            </div>
+            
+            <p>Thank you for registering with HarvestHub Philippines! To complete your account setup and start connecting with local farmers and buyers, please verify your email address.</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${verificationUrl}" class="verify-btn">Verify My Email</a>
+            </div>
+            
+            <p>This verification link will expire in 24 hours for security reasons.</p>
+            
+            <div class="security-notice">
+              <strong>🔒 Security Note:</strong> If you didn't create an account with HarvestHub Philippines, please ignore this email. Your email address will not be added to our system.
+            </div>
+            
+            <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #4CAF50; font-family: monospace; background: #f8f9fa; padding: 10px; border-radius: 4px;">
+              ${verificationUrl}
+            </p>
+            
+            <p>After verification, you'll be able to:</p>
+            <ul style="color: #555;">
+              <li>🛒 Browse and purchase fresh produce from local farmers</li>
+              <li>🌾 Apply to become a verified seller (for farmers)</li>
+              <li>💬 Connect directly with farmers and buyers</li>
+              <li>📱 Access all HarvestHub Philippines features</li>
+            </ul>
+            
+            <p>Need help? Contact our support team at <a href="mailto:support@harvesthubph.app" style="color: #4CAF50;">support@harvesthubph.app</a></p>
+          </div>
+          
+          <div class="footer">
+            <p>This email was sent by HarvestHub Philippines</p>
+            <p>© ${new Date().getFullYear()} HarvestHub Philippines. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return await this.sendEmail({
+      to: email,
+      subject,
+      html,
+    });
+  }
+
+  /**
+   * Send email verification code (6-digit) for registration
+   */
+  async sendVerificationCode(email: string, code: string, userName?: string): Promise<boolean> {
+    const subject = 'Your HarvestHub Philippines Verification Code';
+    
+    const html = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Email Verification Code - HarvestHub Philippines</title>
+        <style>
+          body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+          }
+          .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: bold;
+          }
+          .content {
+            padding: 40px 30px;
+          }
+          .greeting {
+            font-size: 18px;
+            color: #4CAF50;
+            font-weight: 600;
+            margin-bottom: 20px;
+          }
+          .verification-code {
+            background: #f8f9fa;
+            border: 3px solid #4CAF50;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            margin: 30px 0;
+          }
+          .code-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #4CAF50;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+          }
+          .code-label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+          }
+          .security-notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+          }
+          .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Email Verification</h1>
+          </div>
+          
+          <div class="content">
+            ${userName ? `<div class="greeting">Hello ${userName}!</div>` : ''}
+            
+            <p>Thank you for registering with HarvestHub Philippines! To complete your registration, please enter the verification code below:</p>
+            
+            <div class="verification-code">
+              <div class="code-label">Your Verification Code</div>
+              <div class="code-number">${code}</div>
+              <div style="color: #666; font-size: 14px; margin-top: 10px;">
+                This code expires in 10 minutes
+              </div>
+            </div>
+            
+            <div class="security-notice">
+              <strong>🔒 Security Note:</strong> If you didn't try to register an account with HarvestHub Philippines, please ignore this email. Do not share this code with anyone.
+            </div>
+            
+            <p>After verification, you'll be able to:</p>
+            <ul style="color: #555;">
+              <li>🛒 Browse and purchase fresh produce from local farmers</li>
+              <li>🌾 Apply to become a verified seller (for farmers)</li>
+              <li>💬 Connect directly with farmers and buyers</li>
+              <li>📱 Access all HarvestHub Philippines features</li>
+            </ul>
+            
+            <p style="margin-top: 30px; color: #6c757d;">
+              Need help? Contact us at support@harvesthubph.app
+            </p>
+          </div>
+          
+          <div class="footer">
+            <p>This email was sent by HarvestHub Philippines</p>
+            <p>© ${new Date().getFullYear()} HarvestHub Philippines. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return await this.sendEmail({
+      to: email,
+      subject,
+      html,
+    });
+  }
+
+  /**
    * Send password reset email with verification code
    */
   async sendPasswordResetCode(email: string, resetCode: string, userName?: string): Promise<boolean> {

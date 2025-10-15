@@ -15,6 +15,12 @@ export interface AuthState {
   nextStep: boolean;
   isNewUser: boolean;
   
+  // Email verification state
+  emailVerified: boolean;
+  verificationCode: string;
+  verificationSent: boolean;
+  verificationCodeExpires: number;
+  
   // Legal acceptance
   acceptTerms: boolean;
   acceptPrivacy: boolean;
@@ -42,6 +48,10 @@ export type AuthAction =
   | { type: 'SET_LAST_NAME'; payload: string }
   | { type: 'SET_NEXT_STEP'; payload: boolean }
   | { type: 'SET_IS_NEW_USER'; payload: boolean }
+  | { type: 'SET_EMAIL_VERIFIED'; payload: boolean }
+  | { type: 'SET_VERIFICATION_CODE'; payload: string }
+  | { type: 'SET_VERIFICATION_SENT'; payload: boolean }
+  | { type: 'SET_VERIFICATION_CODE_EXPIRES'; payload: number }
   | { type: 'SET_ACCEPT_TERMS'; payload: boolean }
   | { type: 'SET_ACCEPT_PRIVACY'; payload: boolean }
   | { type: 'SET_ACCEPT_MARKETING'; payload: boolean }
@@ -66,6 +76,10 @@ const initialState: AuthState = {
   lastName: "",
   nextStep: false,
   isNewUser: false,
+  emailVerified: false,
+  verificationCode: "",
+  verificationSent: false,
+  verificationCodeExpires: 0,
   acceptTerms: false,
   acceptPrivacy: false,
   acceptMarketing: false,
@@ -96,6 +110,14 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
       return { ...state, nextStep: action.payload };
     case 'SET_IS_NEW_USER':
       return { ...state, isNewUser: action.payload };
+    case 'SET_EMAIL_VERIFIED':
+      return { ...state, emailVerified: action.payload };
+    case 'SET_VERIFICATION_CODE':
+      return { ...state, verificationCode: action.payload };
+    case 'SET_VERIFICATION_SENT':
+      return { ...state, verificationSent: action.payload };
+    case 'SET_VERIFICATION_CODE_EXPIRES':
+      return { ...state, verificationCodeExpires: action.payload };
     case 'SET_ACCEPT_TERMS':
       return { ...state, acceptTerms: action.payload };
     case 'SET_ACCEPT_PRIVACY':
@@ -167,6 +189,10 @@ interface AuthContextType {
   setAcceptTerms: (accept: boolean) => void;
   setAcceptPrivacy: (accept: boolean) => void;
   setAcceptMarketing: (accept: boolean) => void;
+  setEmailVerified: (verified: boolean) => void;
+  setVerificationCode: (code: string) => void;
+  setVerificationSent: (sent: boolean) => void;
+  setVerificationCodeExpires: (expires: number) => void;
   clearAllErrors: () => void;
   resetForm: () => void;
 }
@@ -190,6 +216,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAcceptTerms: (accept: boolean) => dispatch({ type: 'SET_ACCEPT_TERMS', payload: accept }),
     setAcceptPrivacy: (accept: boolean) => dispatch({ type: 'SET_ACCEPT_PRIVACY', payload: accept }),
     setAcceptMarketing: (accept: boolean) => dispatch({ type: 'SET_ACCEPT_MARKETING', payload: accept }),
+    setEmailVerified: (verified: boolean) => dispatch({ type: 'SET_EMAIL_VERIFIED', payload: verified }),
+    setVerificationCode: (code: string) => dispatch({ type: 'SET_VERIFICATION_CODE', payload: code }),
+    setVerificationSent: (sent: boolean) => dispatch({ type: 'SET_VERIFICATION_SENT', payload: sent }),
+    setVerificationCodeExpires: (expires: number) => dispatch({ type: 'SET_VERIFICATION_CODE_EXPIRES', payload: expires }),
     clearAllErrors: () => dispatch({ type: 'CLEAR_ALL_ERRORS' }),
     resetForm: () => dispatch({ type: 'RESET_FORM' }),
   };

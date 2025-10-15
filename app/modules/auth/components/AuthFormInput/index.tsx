@@ -26,6 +26,10 @@ const AuthFormInput: FC = () => {
     setAcceptPrivacy,
     setNextStep,
     setError,
+    setEmailVerified,
+    setVerificationCode,
+    setVerificationSent,
+    setVerificationCodeExpires,
     dispatch
   } = useAuth();
 
@@ -44,6 +48,11 @@ const AuthFormInput: FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<{
+    isVerified: boolean;
+    isPending: boolean;
+    email?: string;
+  }>({ isVerified: false, isPending: false });
   const passwordStrength = state.password ? validatePasswordStrength(state.password) : null;
   // Login pane state: first ask email, then show password (single button switches label)
   const [step, setStep] = useState<'email' | 'password'>('email');
@@ -118,6 +127,12 @@ const AuthFormInput: FC = () => {
     clearFieldError('password');
     clearFieldError('confirmPassword');
     
+    // Check email verification first
+    if (!state.emailVerified) {
+      setFieldError('general', 'Please verify your email address before completing registration');
+      return;
+    }
+    
     // Validate fields using the new translatable error system
     let hasErrors = false;
     
@@ -162,22 +177,37 @@ const AuthFormInput: FC = () => {
           name: `${state.firstName.trim()} ${state.lastName.trim()}`.trim(),
           email: state.email,
           password: state.password,
+          emailVerified: state.emailVerified,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || 'Registration failed');
       }
+      
       dispatch({ type: 'RESET_FORM' });
-      setShowSuccessModal(true);
-      // After showing success, reset to login pane (show email+password, button = Login)
-      setTimeout(() => {
-        setShowSuccessModal(false);
-        dispatch({ type: 'RESET_TO_EMAIL_STEP' });
-        clearAllFieldErrors(); // Clear translatable errors on success
-        // After creating account, go back to login with password field visible
-        setStep('password');
-      }, 1500);
+      
+      // Check if registration requires verification
+      if (data.requiresVerification) {
+        // Show verification success message
+        setFieldError('general', t('auth.verification.emailSent'));
+        
+        // Reset to login form after a delay
+        setTimeout(() => {
+          dispatch({ type: 'RESET_TO_EMAIL_STEP' });
+          clearAllFieldErrors();
+          setStep('email'); // Start fresh on login
+        }, 3000);
+      } else {
+        // Old flow - immediate success
+        setShowSuccessModal(true);
+        setTimeout(() => {
+          setShowSuccessModal(false);
+          dispatch({ type: 'RESET_TO_EMAIL_STEP' });
+          clearAllFieldErrors();
+          setStep('password');
+        }, 1500);
+      }
     } catch (err: any) {
       setError(err.message || t('auth.error.generic'));
     } finally {
@@ -237,7 +267,10 @@ const AuthFormInput: FC = () => {
         </button>
         {/* Name Section */}
         <div>
-          <Label className="block text-sm font-semibold text-gray-800 mb-3">
+          <Label 
+            className="block text-sm font-semibold text-gray-800 mb-3"
+            style={{ fontFamily: 'Poppins, sans-serif' }}
+          >
             {t('auth.name')}
           </Label>
           <div className="grid grid-cols-2 gap-4">
@@ -288,23 +321,92 @@ const AuthFormInput: FC = () => {
           </div>
         </div>
 
-        {/* Email Section - RESTORED: Read-only email display */}
+        {/* Email Verification Section */}
         <div>
-          <Label htmlFor="email" className="block text-sm font-semibold text-gray-800 mb-3">
+          <Label 
+            htmlFor="email" 
+            className="block text-sm font-semibold text-gray-800 mb-3"
+            style={{ fontFamily: 'Poppins, sans-serif' }}
+          >
             {t('auth.email')}
           </Label>
-          <Input
-            id="email"
-            type="text"
-            value={state.email}
-            readOnly
-            className="w-full h-12 rounded-lg border border-gray-300 bg-gray-50 text-gray-600 px-4 py-3 text-base"
-          />
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input
+                id="email"
+                type="email"
+                value={state.email}
+                readOnly
+                className="flex-1 h-12 rounded-lg border border-gray-300 bg-gray-50 text-gray-600 px-4 py-3 text-base"
+              />
+              {state.emailVerified ? (
+                <div className="flex items-center px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+                  <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="ml-1 text-sm font-medium text-green-600">Verified</span>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={handleSendVerificationCode}
+                  disabled={loading || !state.email}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50"
+                >
+                  {state.verificationSent ? 'Resend' : 'Verify'}
+                </Button>
+              )}
+            </div>
+            
+            {/* Verification Code Input - Show only if verification was sent but not verified */}
+            {state.verificationSent && !state.emailVerified && (
+              <div>
+                <div className="flex gap-2">
+                  <Input
+                    id="verificationCode"
+                    type="text"
+                    placeholder="Enter 6-digit code"
+                    value={state.verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    maxLength={6}
+                    className="flex-1 h-12 rounded-lg border border-gray-300 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleVerifyCode}
+                    disabled={loading || state.verificationCode.length !== 6}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
+                  >
+                    {loading ? 'Verifying...' : 'Verify'}
+                  </Button>
+                </div>
+                <p className="mt-1 text-sm text-gray-600">
+                  Check your email for the 6-digit verification code
+                </p>
+              </div>
+            )}
+            
+            {/* Success message for verification sent */}
+            {state.verificationSent && !state.emailVerified && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                  </svg>
+                  <span className="text-sm text-blue-700">Verification code sent to {state.email}</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Password Section - RESTORED ORIGINAL + SECURITY IMPROVEMENTS */}
         <div>
-          <Label htmlFor="password" className="block text-sm font-semibold text-gray-800 mb-3">
+          <Label 
+            htmlFor="password" 
+            className="block text-sm font-semibold text-gray-800 mb-3"
+            style={{ fontFamily: 'Poppins, sans-serif' }}
+          >
             {t('auth.password')}
           </Label>
           <div className="relative">
@@ -412,38 +514,47 @@ const AuthFormInput: FC = () => {
           )}
 
           {/* Confirm Password - RESTORED ORIGINAL */}
-          <div className="mt-4 relative">
-            <Input
-              id="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
-              placeholder="Confirm your password"
-              value={state.confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
-              className={`w-full h-12 rounded-lg border px-4 py-3 pr-12 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
-                hasFieldError('confirmPassword')
-                  ? "border-red-500 focus:ring-red-500"
-                  : "border-gray-300 focus:ring-green-600"
-              }`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+          <div className="mt-4">
+            <Label 
+              htmlFor="confirmPassword" 
+              className="block text-sm font-semibold text-gray-800 mb-3"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
             >
-              {showConfirmPassword ? (
-                // Visible -> show open eye icon
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                </svg>
-              ) : (
-                // Hidden -> show slashed eye icon
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
-                </svg>
-              )}
-            </button>
+              {t('auth.confirmPassword')}
+            </Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm your password"
+                value={state.confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+                className={`w-full h-12 rounded-lg border px-4 py-3 pr-12 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
+                  hasFieldError('confirmPassword')
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-green-600"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+              >
+                {showConfirmPassword ? (
+                  // Visible -> show open eye icon
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                ) : (
+                  // Hidden -> show slashed eye icon
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
           {getFieldError('confirmPassword') && (
             <div className="mt-2 flex items-center space-x-1">
@@ -519,6 +630,66 @@ const AuthFormInput: FC = () => {
     );
   }
 
+  // Email verification handlers
+  const handleSendVerificationCode = async () => {
+    if (!state.email) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/send-verification-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: state.email }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setVerificationSent(true);
+        setVerificationCodeExpires(Date.now() + (10 * 60 * 1000)); // 10 minutes
+        setFieldError('general', 'Verification code sent! Check your email.');
+      } else {
+        setFieldError('general', data.message || 'Failed to send verification code');
+      }
+    } catch (error) {
+      console.error('Error sending verification code:', error);
+      setFieldError('general', 'Failed to send verification code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!state.verificationCode || state.verificationCode.length !== 6) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: state.email, 
+          code: state.verificationCode 
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.verified) {
+        setEmailVerified(true);
+        setVerificationCode('');
+        setFieldError('general', 'Email verified successfully!');
+      } else {
+        setFieldError('general', data.message || 'Invalid verification code');
+      }
+    } catch (error) {
+      console.error('Error verifying code:', error);
+      setFieldError('general', 'Failed to verify code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleButtonClick = async () => {
     // Clear field errors on new attempt
     clearFieldError('email');
@@ -577,7 +748,17 @@ const AuthFormInput: FC = () => {
             setFieldError('loginPassword', 'auth.validation.wrongPassword');
             return;
           }
-          setFieldError('loginPassword', 'auth.validation.loginFailed');
+          if (res.status === 403 && data.requiresVerification) {
+            // Email not verified
+            setFieldError('loginPassword', data.message || 'Please verify your email first');
+            
+            // Show resend verification option
+            setTimeout(() => {
+              setFieldError('loginPassword', `${data.message || 'Please verify your email first'} Click here to resend verification email.`);
+            }, 2000);
+            return;
+          }
+          setFieldError('loginPassword', data.message || 'auth.validation.loginFailed');
           return;
         }
         // Store token for fallback authentication (especially for mobile/IP access)
@@ -623,6 +804,7 @@ const AuthFormInput: FC = () => {
       <Label
         htmlFor="initialEmail"
         className="block text-sm font-semibold text-gray-800 mb-3"
+        style={{ fontFamily: 'Poppins, sans-serif' }}
       >
         {t('auth.email')}
       </Label>

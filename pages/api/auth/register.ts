@@ -1,11 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { rateLimiter, RATE_LIMITS, getClientIP, applySecurityHeaders, sanitizeInput } from '@/lib/security';
 import { DatabaseUtils, QueryProfiler } from '@/lib/database-utils';
 import { validatePasswordStrength } from '@/lib/password-strength';
 import { validateEmail } from '@/lib/validate-email';
+import emailService from '@/lib/email-service';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   console.log('[REGISTER] API called', req.method, req.body);
@@ -27,12 +29,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
-  let { name, email, password } = req.body;
+  let { name, email, password, emailVerified } = req.body;
   
   // Input validation and sanitization
   if (!name || !email || !password) {
     console.log('[REGISTER] Missing fields', { name, email, password });
     return res.status(400).json({ message: 'All fields are required' });
+  }
+
+  // Check if email was verified during registration process
+  if (!emailVerified) {
+    return res.status(400).json({ message: 'Email verification is required before registration' });
   }
 
   // Sanitize inputs
@@ -75,10 +82,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     
+    // Since email was verified during registration, create user as verified
     const userData = {
       name,
       email,
       password: hashedPassword,
+      isVerified: true, // Email already verified during registration
+      verificationToken: null, // No token needed since already verified
+      verificationTokenExpires: null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -89,14 +100,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('[REGISTER] User created successfully:', user._id);
 
+    // No need to send verification email since email was already verified during registration
+
     // Return success without sensitive data
     return res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: 'Registration successful! Welcome to HarvestHub Philippines.',
+      requiresVerification: false, // Email already verified
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
+        isVerified: user.isVerified,
         sellerStatus: user.sellerStatus,
         createdAt: user.createdAt
       }

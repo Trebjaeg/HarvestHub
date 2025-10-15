@@ -6,6 +6,7 @@ import crypto from 'crypto';
 export const RATE_LIMITS = {
   login: { attempts: 5, windowMs: 15 * 60 * 1000 }, // 5 attempts per 15 minutes
   register: { attempts: 3, windowMs: 60 * 60 * 1000 }, // 3 attempts per hour
+  verification: { attempts: 5, windowMs: 15 * 60 * 1000 }, // 5 verification attempts per 15 minutes
   passwordReset: { attempts: 10, windowMs: 15 * 60 * 1000 }, // 10 attempts per 15 minutes
   passwordResetSubmit: { attempts: 20, windowMs: 15 * 60 * 1000 }, // 20 attempts per 15 minutes for actual password updates
   general: { attempts: 100, windowMs: 15 * 60 * 1000 } // 100 requests per 15 minutes
