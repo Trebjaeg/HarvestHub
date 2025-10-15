@@ -65,7 +65,7 @@ const AuthFormInput: FC = () => {
     if (!showVerificationModal) {
       setVerificationCode('');
     }
-  }, [showVerificationModal, setVerificationCode]);
+  }, [showVerificationModal]);
 
   // Animated loading indicator SVG (bigger, white bouncing dots)
   const LoadingDots = () => (
@@ -81,36 +81,54 @@ const AuthFormInput: FC = () => {
       <circle cx="30" cy="15" r="10" fill="#ffffff">
         <animate
           attributeName="cy"
-          from="15"
-          to="15"
-          dur="0.6s"
+          dur="0.8s"
           begin="0s"
           repeatCount="indefinite"
           values="15;5;15"
+          keyTimes="0;0.5;1"
+        />
+        <animate
+          attributeName="opacity"
+          dur="0.8s"
+          begin="0s"
+          repeatCount="indefinite"
+          values="0.4;1;0.4"
           keyTimes="0;0.5;1"
         />
       </circle>
       <circle cx="60" cy="15" r="10" fill="#ffffff">
         <animate
           attributeName="cy"
-          from="15"
-          to="15"
-          dur="0.6s"
-          begin="0.2s"
+          dur="0.8s"
+          begin="0.15s"
           repeatCount="indefinite"
           values="15;5;15"
+          keyTimes="0;0.5;1"
+        />
+        <animate
+          attributeName="opacity"
+          dur="0.8s"
+          begin="0.15s"
+          repeatCount="indefinite"
+          values="0.4;1;0.4"
           keyTimes="0;0.5;1"
         />
       </circle>
       <circle cx="90" cy="15" r="10" fill="#ffffff">
         <animate
           attributeName="cy"
-          from="15"
-          to="15"
-          dur="0.6s"
-          begin="0.4s"
+          dur="0.8s"
+          begin="0.3s"
           repeatCount="indefinite"
           values="15;5;15"
+          keyTimes="0;0.5;1"
+        />
+        <animate
+          attributeName="opacity"
+          dur="0.8s"
+          begin="0.3s"
+          repeatCount="indefinite"
+          values="0.4;1;0.4"
           keyTimes="0;0.5;1"
         />
       </circle>

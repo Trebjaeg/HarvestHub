@@ -24,12 +24,12 @@ const LoadingDots: React.FC<LoadingDotsProps> = ({
   };
 
   const circleData = {
-    sm: { r: 6, positions: [20, 40, 60], cy: 10 },
-    md: { r: 8, positions: [30, 60, 90], cy: 15 },
-    lg: { r: 10, positions: [40, 80, 120], cy: 20 }
+    sm: { r: 6, positions: [20, 40, 60], cy: 10, bounce: 6 },
+    md: { r: 8, positions: [30, 60, 90], cy: 15, bounce: 8 },
+    lg: { r: 10, positions: [40, 80, 120], cy: 20, bounce: 10 }
   };
 
-  const { r, positions, cy } = circleData[size];
+  const { r, positions, cy, bounce } = circleData[size];
   const viewBox = viewBoxes[size];
 
   return (
@@ -44,12 +44,18 @@ const LoadingDots: React.FC<LoadingDotsProps> = ({
         <circle key={index} cx={cx} cy={cy} r={r} fill={color}>
           <animate
             attributeName="cy"
-            from={cy}
-            to={cy}
-            dur="0.6s"
-            begin={`${index * 0.2}s`}
+            dur="0.8s"
+            begin={`${index * 0.15}s`}
             repeatCount="indefinite"
-            values={`${cy};${cy - 5};${cy}`}
+            values={`${cy};${cy - bounce};${cy}`}
+            keyTimes="0;0.5;1"
+          />
+          <animate
+            attributeName="opacity"
+            dur="0.8s"
+            begin={`${index * 0.15}s`}
+            repeatCount="indefinite"
+            values="0.4;1;0.4"
             keyTimes="0;0.5;1"
           />
         </circle>

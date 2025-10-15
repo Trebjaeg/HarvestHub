@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, default: 'user' },
   status: { type: String, default: 'active' },
   tokenVersion: { type: Number, default: 0 },
+  isVerified: { type: Boolean, default: false },
   suspendedAt: Date,
   suspendedBy: String,
   suspendReason: String,
@@ -45,7 +46,7 @@ async function promoteToSuperAdmin() {
     
     console.log('✅ Connected to DigitalOcean MongoDB');
     
-    const email = "albertjecksantos06162004@gmail.com";
+    const email = "iamraymondbautista17@gmail.com";
     
     // First, check if user exists
     const existingUser = await User.findOne({ email: email });
@@ -65,6 +66,7 @@ async function promoteToSuperAdmin() {
         role: "superadmin",
         status: "active",
         tokenVersion: 1,
+        isVerified: true,
         createdAt: new Date(),
         updatedAt: new Date()
       });
@@ -82,6 +84,7 @@ async function promoteToSuperAdmin() {
             role: "superadmin",
             status: "active",
             tokenVersion: existingUser.tokenVersion + 1,
+            isVerified: true,
             // Clear any suspension fields if they exist
             suspendedAt: null,
             suspendedBy: null,
@@ -105,6 +108,7 @@ async function promoteToSuperAdmin() {
     console.log(`   Email: ${updatedUser?.email}`);
     console.log(`   Role: ${updatedUser?.role}`);
     console.log(`   Status: ${updatedUser?.status}`);
+    console.log(`   Email Verified: ${updatedUser?.isVerified}`);
     console.log(`   Token Version: ${updatedUser?.tokenVersion}`);
 
   } catch (error) {
