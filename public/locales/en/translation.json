@@ -61,9 +61,17 @@
       "codeInvalid": "Invalid verification code",
       "codeExpired": "Verification code has expired",
       "sendCode": "Send verification code",
+      "resendCode": "Resend code",
+      "verifyCode": "Verify",
       "enterCode": "Enter 6-digit code",
       "verifyEmail": "Verify Email",
-      "emailMustBeVerified": "Please verify your email address before completing registration"
+      "emailMustBeVerified": "Please verify your email address before completing registration",
+      "verifyEmailAddress": "Verify your email address",
+      "verifyEmailInstruction": "We need to verify that this email address belongs to you. Click the button below to receive a verification code.",
+      "enterVerificationCode": "Enter the 6-digit verification code sent to your email",
+      "verifying": "Verifying",
+      "verified": "Verified",
+      "codeExpiredResend": "Code expired. Please request a new one."
     },
     "privacyLink": "Privacy Policy",
     "validation": {
@@ -102,7 +110,11 @@
       "passwordsDoNotMatch": "Passwords do not match"
     },
     "errors": {
-      "passwordResetFailed": "Failed to reset password. Please try again."
+      "passwordResetFailed": "Failed to reset password. Please try again.",
+      "sendCodeFailed": "Failed to send verification code"
+    },
+    "error": {
+      "sendCodeFailed": "Failed to send verification code"
     },
     "success": {
       "emailPassed": "Email passed!",

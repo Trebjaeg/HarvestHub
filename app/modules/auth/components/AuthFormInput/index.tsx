@@ -48,6 +48,8 @@ const AuthFormInput: FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationSuccessMessage, setVerificationSuccessMessage] = useState('');
   const [verificationStatus, setVerificationStatus] = useState<{
     isVerified: boolean;
     isPending: boolean;
@@ -57,6 +59,13 @@ const AuthFormInput: FC = () => {
   // Login pane state: first ask email, then show password (single button switches label)
   const [step, setStep] = useState<'email' | 'password'>('email');
   const [loading, setLoading] = useState(false);
+
+  // Reset verification code when modal is closed
+  useEffect(() => {
+    if (!showVerificationModal) {
+      setVerificationCode('');
+    }
+  }, [showVerificationModal, setVerificationCode]);
 
   // Animated loading indicator SVG (bigger, white bouncing dots)
   const LoadingDots = () => (
@@ -118,6 +127,88 @@ const AuthFormInput: FC = () => {
     }
   };
 
+  // Email verification handlers
+  const handleSendVerificationCode = async () => {
+    console.log('handleSendVerificationCode called', { email: state.email });
+    if (!state.email) {
+      console.log('No email, returning early');
+      return;
+    }
+    
+    // Clear any previous errors
+    clearFieldError('general');
+    setVerificationSuccessMessage(''); // Clear any previous success messages
+    
+    setLoading(true);
+    console.log('Setting loading to true, about to make API call');
+    try {
+      const response = await fetch('/api/auth/send-verification-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: state.email }),
+      });
+      
+      console.log('API response received', { status: response.status, ok: response.ok });
+      const data = await response.json();
+      console.log('API response data', data);
+      
+      if (response.ok) {
+        console.log('Response OK, setting modal state');
+        setVerificationSent(true);
+        setVerificationCodeExpires(Date.now() + (10 * 60 * 1000)); // 10 minutes
+        setVerificationCode(''); // Clear any existing code
+        setShowVerificationModal(true);
+        setVerificationSuccessMessage(t('auth.verification.codeSent') || 'Verification code sent! Check your email.');
+        console.log('Modal should be visible now, showVerificationModal set to true');
+        // Don't set success message as error - let the modal handle its own messaging
+      } else {
+        console.log('Response not OK, setting error');
+        setFieldError('general', data.message || t('auth.error.sendCodeFailed') || 'Failed to send verification code');
+      }
+    } catch (error) {
+      console.error('Error sending verification code:', error);
+      setFieldError('general', t('auth.error.sendCodeFailed') || 'Failed to send verification code');
+    } finally {
+      setLoading(false);
+      console.log('Setting loading to false');
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!state.verificationCode || state.verificationCode.length !== 6) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: state.email, 
+          code: state.verificationCode 
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.verified) {
+        setEmailVerified(true);
+        setVerificationCode('');
+        setShowVerificationModal(false);
+        setVerificationSuccessMessage(''); // Clear any previous success messages
+        clearFieldError('general'); // Clear any previous errors
+        // No need to show success message here since the modal closes
+      } else {
+        setVerificationSuccessMessage(''); // Clear success message when there's error
+        setFieldError('general', data.message || t('auth.verification.codeInvalid') || 'Invalid verification code');
+      }
+    } catch (error) {
+      console.error('Error verifying code:', error);
+      setFieldError('general', t('auth.validation.verificationCodeInvalid') || 'Failed to verify code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   // Unified registration handler
   const handleRegisterUser = async () => {
@@ -129,7 +220,7 @@ const AuthFormInput: FC = () => {
     
     // Check email verification first
     if (!state.emailVerified) {
-      setFieldError('general', 'Please verify your email address before completing registration');
+      setFieldError('general', t('auth.verification.emailMustBeVerified') || 'Please verify your email address before completing registration');
       return;
     }
     
@@ -189,8 +280,8 @@ const AuthFormInput: FC = () => {
       
       // Check if registration requires verification
       if (data.requiresVerification) {
-        // Show verification success message
-        setFieldError('general', t('auth.verification.emailSent'));
+        // Show verification success message (do not set as error)
+        // Success message will be shown through the normal success flow
         
         // Reset to login form after a delay
         setTimeout(() => {
@@ -321,7 +412,7 @@ const AuthFormInput: FC = () => {
           </div>
         </div>
 
-        {/* Email Verification Section */}
+        {/* Email Section with Inline Verification */}
         <div>
           <Label 
             htmlFor="email" 
@@ -330,72 +421,45 @@ const AuthFormInput: FC = () => {
           >
             {t('auth.email')}
           </Label>
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <Input
-                id="email"
-                type="email"
-                value={state.email}
-                readOnly
-                className="flex-1 h-12 rounded-lg border border-gray-300 bg-gray-50 text-gray-600 px-4 py-3 text-base"
-              />
-              {state.emailVerified ? (
-                <div className="flex items-center px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-                  <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+          
+          {/* Email Input with Status */}
+          <div className="relative">
+            <Input
+              id="email"
+              type="email"
+              value={state.email}
+              readOnly
+              className="w-full h-12 rounded-lg border border-gray-300 bg-gray-50 text-gray-600 px-4 py-3 pr-28 text-base"
+            />
+            {state.emailVerified ? (
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-green-100 border border-green-300 rounded-md">
+                  <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <span className="ml-1 text-sm font-medium text-green-600">Verified</span>
-                </div>
-              ) : (
-                <Button
-                  type="button"
-                  onClick={handleSendVerificationCode}
-                  disabled={loading || !state.email}
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50"
-                >
-                  {state.verificationSent ? 'Resend' : 'Verify'}
-                </Button>
-              )}
-            </div>
-            
-            {/* Verification Code Input - Show only if verification was sent but not verified */}
-            {state.verificationSent && !state.emailVerified && (
-              <div>
-                <div className="flex gap-2">
-                  <Input
-                    id="verificationCode"
-                    type="text"
-                    placeholder="Enter 6-digit code"
-                    value={state.verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value)}
-                    maxLength={6}
-                    className="flex-1 h-12 rounded-lg border border-gray-300 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent"
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleVerifyCode}
-                    disabled={loading || state.verificationCode.length !== 6}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
-                  >
-                    {loading ? 'Verifying...' : 'Verify'}
-                  </Button>
-                </div>
-                <p className="mt-1 text-sm text-gray-600">
-                  Check your email for the 6-digit verification code
-                </p>
-              </div>
-            )}
-            
-            {/* Success message for verification sent */}
-            {state.verificationSent && !state.emailVerified && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center">
-                  <svg className="w-5 h-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                  </svg>
-                  <span className="text-sm text-blue-700">Verification code sent to {state.email}</span>
+                  <span className="text-xs font-semibold text-green-700">
+                    {t('auth.verification.verified') || 'Verified'}
+                  </span>
                 </div>
               </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSendVerificationCode}
+                disabled={loading || !state.email}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-2 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md min-w-[80px]"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.25"/>
+                      <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                    </svg>
+                  </div>
+                ) : (
+                  t('auth.verify') || 'Verify'
+                )}
+              </button>
             )}
           </div>
         </div>
@@ -615,6 +679,163 @@ const AuthFormInput: FC = () => {
           <PrivacyContent />
         </TrmsNConAndPP>
 
+        {/* Email Verification Modal */}
+        {console.log('Rendering verification modal check', { showVerificationModal })}
+        {showVerificationModal && (
+          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            {console.log('Modal is being rendered!')}
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-green-600 sm:w-5 sm:h-5">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M14.52 2c1.029 0 2.015 .409 2.742 1.136l3.602 3.602a3.877 3.877 0 0 1 0 5.483l-2.643 2.643a3.88 3.88 0 0 1 -4.941 .452l-.105 -.078l-5.882 5.883a3 3 0 0 1 -1.68 .843l-.22 .027l-.221 .009h-1.172c-1.014 0 -1.867 -.759 -1.991 -1.823l-.009 -.177v-1.172c0 -.704 .248 -1.386 .73 -1.96l.149 -.161l.414 -.414a1 1 0 0 1 .707 -.293h1v-1a1 1 0 0 1 .883 -.993l.117 -.007h1v-1a1 1 0 0 1 .206 -.608l.087 -.1l1.468 -1.469l-.076 -.103a3.9 3.9 0 0 1 -.678 -1.963l-.007 -.236c0 -1.029 .409 -2.015 1.136 -2.742l2.643 -2.643a3.88 3.88 0 0 1 2.741 -1.136m.495 5h-.02a2 2 0 1 0 0 4h.02a2 2 0 1 0 0 -4" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      {t('auth.verification.verifyEmail') || 'Verify Your Email'}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      {t('auth.verification.enterCode') || 'Enter the 6-digit code we sent'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowVerificationModal(false);
+                    setVerificationCode('');
+                    setVerificationSuccessMessage('');
+                    clearFieldError('general'); // Clear any errors when closing
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 ml-2"
+                >
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-4 sm:p-6">
+                <p className="text-xs sm:text-sm text-gray-700 mb-4 sm:mb-6 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  {t('auth.verificationSubtitle') || 'We sent a verification code to'} <br />
+                  <span className="font-semibold text-green-700 break-all">{state.email}</span>
+                </p>
+
+                {/* 6-Box Code Input */}
+                <div className="flex justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                  {[0, 1, 2, 3, 4, 5].map((index) => (
+                    <input
+                      key={index}
+                      type="text"
+                      maxLength={1}
+                      value={state.verificationCode[index] || ''}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        if (value.length <= 1) {
+                          const newCode = state.verificationCode.split('');
+                          newCode[index] = value;
+                          const updatedCode = newCode.join('').slice(0, 6);
+                          setVerificationCode(updatedCode);
+                          
+                          // Auto-focus next input
+                          if (value && index < 5) {
+                            const nextInput = e.target.parentNode?.children[index + 1] as HTMLInputElement;
+                            nextInput?.focus();
+                          }
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        // Handle backspace to go to previous input
+                        if (e.key === 'Backspace' && !state.verificationCode[index] && index > 0) {
+                          const prevInput = (e.target as HTMLInputElement).parentNode?.children[index - 1] as HTMLInputElement;
+                          prevInput?.focus();
+                        }
+                      }}
+                      onPaste={(e) => {
+                        e.preventDefault();
+                        const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+                        setVerificationCode(pastedData);
+                        
+                        // Focus the next empty input or last input
+                        const nextEmptyIndex = Math.min(pastedData.length, 5);
+                        const nextInput = (e.target as HTMLInputElement).parentNode?.children[nextEmptyIndex] as HTMLInputElement;
+                        nextInput?.focus();
+                      }}
+                      className="w-8 h-8 sm:w-12 sm:h-12 text-center text-sm sm:text-lg font-mono font-bold border-2 border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 focus:outline-none transition-all duration-200 bg-white"
+                    />
+                  ))}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={handleVerifyCode}
+                    disabled={loading || state.verificationCode.length !== 6}
+                    className="w-full px-4 py-2.5 sm:py-3 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.25"/>
+                          <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                        </svg>
+                        {t('auth.verification.verifying') || 'Verifying...'}
+                      </div>
+                    ) : (
+                      t('auth.verification.verifyEmail') || 'Verify Email'
+                    )}
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={handleSendVerificationCode}
+                    disabled={loading}
+                    className="w-full px-4 py-2.5 sm:py-3 text-sm font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-300 rounded-lg disabled:opacity-50 transition-colors duration-200"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                  >
+                    {t('auth.verification.resendCode') || 'Resend Code'}
+                  </button>
+                </div>
+
+                {/* Success Message Display */}
+                {verificationSuccessMessage && (
+                  <div className="mt-4 p-3 border rounded-lg bg-green-50 border-green-200">
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-4 h-4 flex-shrink-0 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-sm text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {verificationSuccessMessage}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error Display */}
+                {getFieldError('general') && (
+                  <div className="mt-4 p-3 border rounded-lg bg-red-50 border-red-200">
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-4 h-4 flex-shrink-0 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-sm text-red-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {getFieldError('general')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {state.error && (
           <div className="bg-red-50 p-3 rounded-lg">
             <div className="flex items-center space-x-2">
@@ -629,66 +850,6 @@ const AuthFormInput: FC = () => {
       </>
     );
   }
-
-  // Email verification handlers
-  const handleSendVerificationCode = async () => {
-    if (!state.email) return;
-    
-    setLoading(true);
-    try {
-      const response = await fetch('/api/auth/send-verification-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: state.email }),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setVerificationSent(true);
-        setVerificationCodeExpires(Date.now() + (10 * 60 * 1000)); // 10 minutes
-        setFieldError('general', 'Verification code sent! Check your email.');
-      } else {
-        setFieldError('general', data.message || 'Failed to send verification code');
-      }
-    } catch (error) {
-      console.error('Error sending verification code:', error);
-      setFieldError('general', 'Failed to send verification code');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyCode = async () => {
-    if (!state.verificationCode || state.verificationCode.length !== 6) return;
-    
-    setLoading(true);
-    try {
-      const response = await fetch('/api/auth/verify-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: state.email, 
-          code: state.verificationCode 
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok && data.verified) {
-        setEmailVerified(true);
-        setVerificationCode('');
-        setFieldError('general', 'Email verified successfully!');
-      } else {
-        setFieldError('general', data.message || 'Invalid verification code');
-      }
-    } catch (error) {
-      console.error('Error verifying code:', error);
-      setFieldError('general', 'Failed to verify code');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleButtonClick = async () => {
     // Clear field errors on new attempt

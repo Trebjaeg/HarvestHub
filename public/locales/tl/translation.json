@@ -93,12 +93,24 @@
       "codeInvalid": "Maling verification code",
       "codeExpired": "Nag-expire na ang verification code",
       "sendCode": "Magpadala ng verification code",
+      "resendCode": "Ipadala ulit ang code",
+      "verifyCode": "I-verify",
       "enterCode": "Ilagay ang 6-digit na code",
       "verifyEmail": "I-verify ang Email",
-      "emailMustBeVerified": "Pakisuri muna ang inyong email address bago tapusin ang pagpaparehistro"
+      "emailMustBeVerified": "Pakisuri muna ang inyong email address bago tapusin ang pagpaparehistro",
+      "verifyEmailAddress": "I-verify ang inyong email address",
+      "verifyEmailInstruction": "Kailangan naming i-verify na sa inyo ang email address na ito. I-click ang button sa baba para makatanggap ng verification code.",
+      "enterVerificationCode": "Ilagay ang 6-digit na verification code na naipadala sa inyong email",
+      "verifying": "Nive-verify...",
+      "verified": "Na-verify na",
+      "codeExpiredResend": "Nag-expire na ang code. Pakirequest ng bago."
     },
     "errors": {
-      "passwordResetFailed": "Hindi matagumpay na na-reset ang password. Subukan ulit."
+      "passwordResetFailed": "Hindi matagumpay na na-reset ang password. Subukan ulit.",
+      "sendCodeFailed": "Hindi mapadala ang verification code"
+    },
+    "error": {
+      "sendCodeFailed": "Hindi mapadala ang verification code"
     },
     "success": {
       "emailPassed": "Tama ang email!",
