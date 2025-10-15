@@ -425,7 +425,7 @@ export default function Profile() {
           ) : (
             <div className="text-center py-8">
               <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              {stats.totalProducts === 0 ? (
+              {stats?.totalProducts === 0 ? (
                 <>
                   <h3 className="text-lg font-medium text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                     No Products Listed Yet

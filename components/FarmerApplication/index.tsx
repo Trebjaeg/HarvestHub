@@ -143,7 +143,7 @@ const FarmerApplication: React.FC = () => {
       
       <CardContent className="space-y-6">
         {error && (
-          <Alert variant="destructive">
+          <Alert>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
