@@ -138,6 +138,8 @@ const VerificationCodeModal: React.FC<VerificationCodeModalProps> = ({
     isResending: isResending
   });
 
+  if (!isOpen) return null;
+
   return (
     <>
       <div className="fixed inset-0 backdrop-blur-md bg-white/30 flex items-center justify-center p-4 z-[60]">

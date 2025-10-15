@@ -166,6 +166,10 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         passwordError: "",
         confirmPasswordError: "",
         error: "",
+        // Reset email verification when going back - this forces re-verification
+        emailVerified: false,
+        verificationCode: "",
+        verificationSent: false,
       };
     case 'RESET_FORM':
       return initialState;

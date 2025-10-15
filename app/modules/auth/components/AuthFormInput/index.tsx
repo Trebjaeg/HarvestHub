@@ -60,6 +60,11 @@ const AuthFormInput: FC = () => {
   const [step, setStep] = useState<'email' | 'password'>('email');
   const [loading, setLoading] = useState(false);
 
+  // Debug: Monitor showVerificationModal state changes
+  useEffect(() => {
+    console.log('🔍 showVerificationModal changed:', showVerificationModal);
+  }, [showVerificationModal]);
+
   // Reset verification code when modal is closed
   useEffect(() => {
     if (!showVerificationModal) {
@@ -699,12 +704,15 @@ const AuthFormInput: FC = () => {
           <PrivacyContent />
         </TrmsNConAndPP>
 
-        {/* Email Verification Modal */}
-            {/* Removed problematic comment-only JSX expression */}
-            {showVerificationModal && (
-          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            {/* Only log if needed, do not render void in JSX */}
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto">
+        {/* Email Verification Modal - 6-digit code with z-[70] for mobile visibility */}
+        {(() => {
+          console.log('🎭 Modal render check - showVerificationModal:', showVerificationModal);
+          if (!showVerificationModal) return null;
+          console.log('✅ Modal DIV is being rendered!');
+          return (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+              <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
               {/* Modal Header */}
               <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
                 <div className="flex items-center gap-3">
@@ -729,7 +737,7 @@ const AuthFormInput: FC = () => {
                     setShowVerificationModal(false);
                     setVerificationCode('');
                     setVerificationSuccessMessage('');
-                    clearFieldError('general'); // Clear any errors when closing
+                    clearFieldError('general');
                   }}
                   className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 ml-2"
                 >
@@ -752,6 +760,7 @@ const AuthFormInput: FC = () => {
                     <input
                       key={index}
                       type="text"
+                      inputMode="numeric"
                       maxLength={1}
                       value={state.verificationCode[index] || ''}
                       onChange={(e) => {
@@ -854,7 +863,8 @@ const AuthFormInput: FC = () => {
               </div>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {state.error && (
           <div className="bg-red-50 p-3 rounded-lg">

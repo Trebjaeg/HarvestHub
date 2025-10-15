@@ -64,9 +64,12 @@ async function passwordResetHandler(req: NextApiRequest, res: NextApiResponse) {
     
     if (!emailSent) {
       console.error('Failed to send password reset email to:', email);
+      console.log('🔑 PASSWORD RESET CODE FOR TESTING:', verificationCode); // Show code in console
+      console.warn('Email service may not be configured. Check server logs for the code.');
       // Still return success to prevent user enumeration, but log the error
     } else {
       console.log('Password reset email sent successfully to:', email);
+      console.log('🔑 PASSWORD RESET CODE FOR TESTING:', verificationCode); // Show code in console for testing
     }
 
     return res.status(200).json({ 
