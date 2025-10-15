@@ -31,11 +31,15 @@ i18n
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
+      lookupLocalStorage: 'i18nextLng',
     },
 
     react: {
       useSuspense: false,
     },
+    
+    // Prevent SSR hydration mismatch
+    initImmediate: false,
   });
 
 export default i18n;

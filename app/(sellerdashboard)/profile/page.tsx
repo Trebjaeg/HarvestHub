@@ -8,6 +8,20 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import EditProfileModal from '@/components/ui/EditProfileModal';
 
+// Helper function to safely format dates on client-side only
+const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'Unknown';
+  try {
+    return new Date(dateString).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  } catch {
+    return 'Unknown';
+  }
+};
+
 interface ProfileData {
   _id: string;
   name: string;
@@ -350,7 +364,7 @@ export default function Profile() {
             <div>
               <label className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Member Since</label>
               <p className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                {loading ? 'Loading...' : profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : 'Unknown'}
+                {loading ? 'Loading...' : formatDate(profile?.createdAt)}
               </p>
             </div>
             <div>

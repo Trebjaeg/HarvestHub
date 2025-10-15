@@ -173,7 +173,9 @@ const AuthFormInput: FC = () => {
       if (response.ok) {
         console.log('Response OK, setting modal state');
         setVerificationSent(true);
-        setVerificationCodeExpires(Date.now() + (10 * 60 * 1000)); // 10 minutes
+        // Set expiry time when verification is successful
+        const expiryTime = Date.now() + (10 * 60 * 1000); // 10 minutes
+        setVerificationCodeExpires(expiryTime);
         setVerificationCode(''); // Clear any existing code
         setShowVerificationModal(true);
         setVerificationSuccessMessage(t('auth.verification.codeSent') || 'Verification code sent! Check your email.');
