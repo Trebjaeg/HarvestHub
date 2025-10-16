@@ -61,9 +61,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
 
-    // Send verification code email
+    // Send verification code email with timeout to prevent hanging
     try {
-      const emailSent = await emailService.sendVerificationCode(email, code);
+      // Create timeout promise (8 seconds - faster than email service's 10s timeout)
+      const timeoutPromise = new Promise<boolean>((resolve) => {
+        setTimeout(() => {
+          console.warn('[SEND_VERIFICATION_CODE] Email timeout - responding anyway');
+          resolve(false);
+        }, 8000);
+      });
+
+      // Race between email sending and timeout
+      const emailPromise = emailService.sendVerificationCode(email, code);
+      const emailSent = await Promise.race([emailPromise, timeoutPromise]);
+      
       if (emailSent) {
         console.log('[SEND_VERIFICATION_CODE] Verification code sent successfully to:', email);
         console.log('[SEND_VERIFICATION_CODE] CODE FOR TESTING:', code); // Show code in console for testing

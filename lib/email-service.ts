@@ -27,7 +27,7 @@ class EmailService {
     const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
     
     if (missingEnvVars.length > 0) {
-      console.warn(`Missing email environment variables: ${missingEnvVars.join(', ')}`);
+      console.warn(`⚠️ Missing email environment variables: ${missingEnvVars.join(', ')}`);
       console.warn('Email functionality will be disabled until these are configured.');
     }
 
@@ -40,6 +40,14 @@ class EmailService {
         pass: process.env.SMTP_PASS || '',
       },
     };
+
+    console.log('📧 Email Service Configuration:');
+    console.log('  - Host:', config.host);
+    console.log('  - Port:', config.port);
+    console.log('  - Secure:', config.secure);
+    console.log('  - User:', config.auth.user ? '✓ Set' : '✗ Not set');
+    console.log('  - Pass:', config.auth.pass ? '✓ Set (length: ' + config.auth.pass.length + ')' : '✗ Not set');
+    console.log('  - From:', process.env.MAIL_FROM || 'Using default');
 
     this.fromAddress = process.env.MAIL_FROM || `"HarvestHub Philippines" <${config.auth.user}>`;
     this.transporter = nodemailer.createTransport(config);
@@ -60,18 +68,28 @@ class EmailService {
   }
 
   /**
-   * Send a generic email
+   * Send a generic email with timeout
    */
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
       if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        console.log('Email would be sent to:', options.to);
-        console.log('Subject:', options.subject);
-        console.log('Email service not configured - check your environment variables');
+        console.log('📧 Email would be sent to:', options.to);
+        console.log('📧 Subject:', options.subject);
+        console.warn('⚠️ Email service not configured - SMTP credentials missing');
         return false;
       }
 
-      const info = await this.transporter.sendMail({
+      console.log('📧 Attempting to send email...');
+      console.log('  - To:', options.to);
+      console.log('  - From:', this.fromAddress);
+      console.log('  - Subject:', options.subject);
+
+      // Add 10 second timeout to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Email sending timeout after 10 seconds')), 10000);
+      });
+
+      const sendPromise = this.transporter.sendMail({
         from: this.fromAddress,
         to: options.to,
         subject: options.subject,
@@ -79,10 +97,27 @@ class EmailService {
         text: options.text,
       });
 
-      console.log(' Email sent successfully:', info.messageId);
+      const info = await Promise.race([sendPromise, timeoutPromise]);
+
+      console.log('✅ Email sent successfully!');
+      console.log('  - Message ID:', info.messageId);
+      console.log('  - Response:', info.response);
       return true;
-    } catch (error) {
-      console.error(' Failed to send email:', error);
+    } catch (error: any) {
+      if (error.message?.includes('timeout')) {
+        console.error('⏱️ Email sending timeout - SMTP server too slow');
+      } else {
+        console.error('❌ Failed to send email:');
+        console.error('  - Error:', error.message);
+        console.error('  - Code:', error.code);
+        console.error('  - Command:', error.command);
+        if (error.responseCode) {
+          console.error('  - Response Code:', error.responseCode);
+        }
+        if (error.response) {
+          console.error('  - Response:', error.response);
+        }
+      }
       return false;
     }
   }
