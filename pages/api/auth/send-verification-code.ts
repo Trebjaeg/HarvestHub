@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import dbConnect from '@/lib/mongodb';
 import { rateLimiter, RATE_LIMITS, getClientIP, applySecurityHeaders, sanitizeInput } from '@/lib/security';
 import { validateEmail } from '@/lib/validate-email';
-import emailService from '@/lib/email-service';
+import { sendVerificationEmail } from '@/lib/email-service-sendgrid';
 
 // Temporary storage for verification codes during registration
 // In production, you might want to use Redis or a database table
@@ -72,23 +72,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
 
       // Race between email sending and timeout
-      const emailPromise = emailService.sendVerificationCode(email, code);
-      const emailSent = await Promise.race([emailPromise, timeoutPromise]);
+      const emailPromise = sendVerificationEmail(email, code);
+      await Promise.race([emailPromise, timeoutPromise]);
       
-      if (emailSent) {
-        console.log('[SEND_VERIFICATION_CODE] Verification code sent successfully to:', email);
-        console.log('[SEND_VERIFICATION_CODE] CODE FOR TESTING:', code); // Show code in console for testing
-      } else {
-        console.error('[SEND_VERIFICATION_CODE] Failed to send verification code to:', email);
-        console.log('[SEND_VERIFICATION_CODE] CODE FOR TESTING:', code); // Show code even if email fails
-        // Don't fail - allow user to continue if they can see the console
-        console.warn('[SEND_VERIFICATION_CODE] Email service may not be configured. Code:', code);
-      }
+      console.log('[SEND_VERIFICATION_CODE] ✅ Verification code sent successfully to:', email);
+      console.log('[SEND_VERIFICATION_CODE] 🔑 CODE FOR TESTING:', code);
     } catch (emailError) {
-      console.error('[SEND_VERIFICATION_CODE] Email service error:', emailError);
-      console.log('[SEND_VERIFICATION_CODE] CODE FOR TESTING:', code); // Show code even on error
+      console.error('[SEND_VERIFICATION_CODE] ❌ Email sending failed:', emailError);
+      console.log('[SEND_VERIFICATION_CODE] 🔑 CODE FOR TESTING (email failed):', code);
       // Don't fail - allow user to continue if they can see the console
-      console.warn('[SEND_VERIFICATION_CODE] Email failed but continuing. Code:', code);
+      console.warn('[SEND_VERIFICATION_CODE] ⚠️ Email failed but continuing. Code:', code);
     }
 
     return res.status(200).json({

@@ -4,7 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { withSecurity, withLogging } from '@/lib/middleware';
 import { sanitizeInput, generateSecureToken, hashToken } from '@/lib/security';
-import emailService from '@/lib/email-service';
+import { sendPasswordResetEmail } from '@/lib/email-service-sendgrid';
 
 async function passwordResetHandler(req: NextApiRequest, res: NextApiResponse) {
   console.log('=== PASSWORD RESET REQUEST START ===');
@@ -62,30 +62,22 @@ async function passwordResetHandler(req: NextApiRequest, res: NextApiResponse) {
     
     try {
       // Create timeout promise (8 seconds)
-      const timeoutPromise = new Promise<boolean>((resolve) => {
+      const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
-          console.warn('[PASSWORD_RESET] Email timeout - responding anyway');
-          resolve(false);
+          reject(new Error('Email timeout'));
         }, 8000);
       });
 
       // Race between email sending and timeout
-      const emailPromise = emailService.sendPasswordResetCode(email, verificationCode, user.name);
-      const emailSent = await Promise.race([emailPromise, timeoutPromise]);
-      console.log('Email send result:', emailSent);
+      const emailPromise = sendPasswordResetEmail(email, verificationCode);
+      await Promise.race([emailPromise, timeoutPromise]);
       
-      if (!emailSent) {
-        console.error('Failed to send password reset email to:', email);
-        console.log('🔑 PASSWORD RESET CODE FOR TESTING:', verificationCode); // Show code in console
-        console.warn('Email service may not be configured. Check server logs for the code.');
-        // Still return success to prevent user enumeration, but log the error
-      } else {
-        console.log('Password reset email sent successfully to:', email);
-        console.log('🔑 PASSWORD RESET CODE FOR TESTING:', verificationCode); // Show code in console for testing
-      }
-    } catch (emailError) {
-      console.error('[PASSWORD_RESET] Email service error:', emailError);
+      console.log('✅ Password reset email sent successfully to:', email);
       console.log('🔑 PASSWORD RESET CODE FOR TESTING:', verificationCode);
+    } catch (emailError) {
+      console.error('❌ [PASSWORD_RESET] Email sending failed:', emailError);
+      console.log('🔑 PASSWORD RESET CODE FOR TESTING (email failed):', verificationCode);
+      console.warn('⚠️ Email failed but continuing. Code saved in database.');
     }
 
     return res.status(200).json({ 
