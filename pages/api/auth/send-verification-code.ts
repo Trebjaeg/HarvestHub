@@ -10,8 +10,6 @@ import { sendVerificationEmail } from '@/lib/email-service-sendgrid';
 const verificationCodes: { [email: string]: { code: string; expires: number; attempts: number } } = {};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  console.log('[SEND_VERIFICATION_CODE] API called', req.method, req.body);
-  
   // Apply security headers
   applySecurityHeaders(res);
   
@@ -45,7 +43,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     await dbConnect();
-    console.log('[SEND_VERIFICATION_CODE] Connected to DB');
 
     // Generate 6-digit verification code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -61,22 +58,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
 
-    // Send verification code email with timeout to prevent hanging
+    // Send verification code email with timeout
     try {
-      // Create timeout promise (8 seconds - faster than email service's 10s timeout)
       const timeoutPromise = new Promise<boolean>((resolve) => {
-        setTimeout(() => {
-          console.warn('[SEND_VERIFICATION_CODE] Email timeout - responding anyway');
-          resolve(false);
-        }, 8000);
+        setTimeout(() => resolve(false), 8000);
       });
 
-      // Race between email sending and timeout
       const emailPromise = sendVerificationEmail(email, code);
       await Promise.race([emailPromise, timeoutPromise]);
-      
-      console.log('[SEND_VERIFICATION_CODE] ✅ Verification code sent successfully to:', email);
-      console.log('[SEND_VERIFICATION_CODE] 🔑 CODE FOR TESTING:', code);
     } catch (emailError) {
       console.error('[SEND_VERIFICATION_CODE] ❌ Email sending failed:', emailError);
       console.log('[SEND_VERIFICATION_CODE] 🔑 CODE FOR TESTING (email failed):', code);
@@ -91,7 +80,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
   } catch (error: any) {
-    console.error('[SEND_VERIFICATION_CODE] Error:', error);
+    console.error('Verification code error:', error.message);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }

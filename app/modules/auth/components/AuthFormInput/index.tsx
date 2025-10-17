@@ -60,11 +60,6 @@ const AuthFormInput: FC = () => {
   const [step, setStep] = useState<'email' | 'password'>('email');
   const [loading, setLoading] = useState(false);
 
-  // Debug: Monitor showVerificationModal state changes
-  useEffect(() => {
-    console.log('🔍 showVerificationModal changed:', showVerificationModal);
-  }, [showVerificationModal]);
-
   // Reset verification code when modal is closed
   useEffect(() => {
     if (!showVerificationModal) {
@@ -152,18 +147,15 @@ const AuthFormInput: FC = () => {
 
   // Email verification handlers
   const handleSendVerificationCode = async () => {
-    console.log('handleSendVerificationCode called', { email: state.email });
     if (!state.email) {
-      console.log('No email, returning early');
       return;
     }
     
     // Clear any previous errors
     clearFieldError('general');
-    setVerificationSuccessMessage(''); // Clear any previous success messages
+    setVerificationSuccessMessage('');
     
     setLoading(true);
-    console.log('Setting loading to true, about to make API call');
     try {
       const response = await fetch('/api/auth/send-verification-code', {
         method: 'POST',
@@ -171,31 +163,22 @@ const AuthFormInput: FC = () => {
         body: JSON.stringify({ email: state.email }),
       });
       
-      console.log('API response received', { status: response.status, ok: response.ok });
       const data = await response.json();
-      console.log('API response data', data);
       
       if (response.ok) {
-        console.log('Response OK, setting modal state');
         setVerificationSent(true);
-        // Set expiry time when verification is successful
         const expiryTime = Date.now() + (10 * 60 * 1000); // 10 minutes
         setVerificationCodeExpires(expiryTime);
-        setVerificationCode(''); // Clear any existing code
+        setVerificationCode('');
         setShowVerificationModal(true);
         setVerificationSuccessMessage(t('auth.verification.codeSent') || 'Verification code sent! Check your email.');
-        console.log('Modal should be visible now, showVerificationModal set to true');
-        // Don't set success message as error - let the modal handle its own messaging
       } else {
-        console.log('Response not OK, setting error');
         setFieldError('general', data.message || t('auth.error.sendCodeFailed') || 'Failed to send verification code');
       }
     } catch (error) {
-      console.error('Error sending verification code:', error);
       setFieldError('general', t('auth.error.sendCodeFailed') || 'Failed to send verification code');
     } finally {
       setLoading(false);
-      console.log('Setting loading to false');
     }
   };
 
@@ -223,11 +206,10 @@ const AuthFormInput: FC = () => {
         clearFieldError('general'); // Clear any previous errors
         // No need to show success message here since the modal closes
       } else {
-        setVerificationSuccessMessage(''); // Clear success message when there's error
+        setVerificationSuccessMessage('');
         setFieldError('general', data.message || t('auth.verification.codeInvalid') || 'Invalid verification code');
       }
     } catch (error) {
-      console.error('Error verifying code:', error);
       setFieldError('general', t('auth.validation.verificationCodeInvalid') || 'Failed to verify code');
     } finally {
       setLoading(false);
@@ -706,9 +688,7 @@ const AuthFormInput: FC = () => {
 
         {/* Email Verification Modal - 6-digit code with z-[70] for mobile visibility */}
         {(() => {
-          console.log('🎭 Modal render check - showVerificationModal:', showVerificationModal);
           if (!showVerificationModal) return null;
-          console.log('✅ Modal DIV is being rendered!');
           return (
             <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
               <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100 max-h-[90vh] overflow-y-auto">

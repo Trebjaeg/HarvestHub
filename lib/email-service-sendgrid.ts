@@ -1,14 +1,11 @@
 import sgMail from '@sendgrid/mail';
 
-// 🔧 Configure SendGrid with API key
+// Configure SendGrid with API key
 const apiKey = process.env.SENDGRID_API_KEY || '';
 if (!apiKey) {
-  console.error('❌ SENDGRID_API_KEY is not configured!');
+  console.error('SendGrid API key is not configured');
 } else {
   sgMail.setApiKey(apiKey);
-  console.log('✅ SendGrid Web API initialized');
-  console.log(`📧 From: ${process.env.MAIL_FROM}`);
-  console.log(`🔑 API Key: ${apiKey.substring(0, 10)}...`);
 }
 
 interface EmailOptions {
@@ -24,16 +21,12 @@ interface EmailOptions {
  */
 export async function sendEmail(options: EmailOptions): Promise<void> {
   const startTime = Date.now();
-  console.log('\n📬 [SendGrid Web API] Sending email...');
-  console.log(`   To: ${options.to}`);
-  console.log(`   Subject: ${options.subject}`);
-  console.log(`   From: ${process.env.MAIL_FROM}`);
 
   try {
     // Create timeout promise (10 seconds)
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
-        reject(new Error('SendGrid API timeout - request took too long'));
+        reject(new Error('Email sending timeout'));
       }, 10000);
     });
 
@@ -47,20 +40,13 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
     });
 
     // Race between send and timeout
-    await Promise.race([sendPromise, timeoutPromise]);
+    const result = await Promise.race([sendPromise, timeoutPromise]);
 
     const duration = Date.now() - startTime;
-    console.log(`✅ [SendGrid Web API] Email sent successfully in ${duration}ms`);
+    console.log(`Email sent to ${options.to} in ${duration}ms`);
   } catch (error: any) {
     const duration = Date.now() - startTime;
-    console.error(`❌ [SendGrid Web API] Failed after ${duration}ms`);
-    console.error(`   Error: ${error.message}`);
-    
-    if (error.response) {
-      console.error(`   Status: ${error.response.statusCode}`);
-      console.error(`   Body:`, error.response.body);
-    }
-    
+    console.error(`Email sending failed after ${duration}ms: ${error.message}`);
     throw error;
   }
 }
