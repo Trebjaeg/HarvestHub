@@ -68,12 +68,22 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         body: JSON.stringify({ email })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to request reset');
-      setServerMessage(data.message || 'If that account exists, a reset link was sent.');
-      setShowSuccessModal(true); // Show our custom success modal instead
+      
+      if (!res.ok) {
+        // Show error below the input field if user not found
+        if (res.status === 404) {
+          setEmailError('No account found with this email address.');
+        } else {
+          setEmailError(data.message || 'Failed to request reset');
+        }
+        return;
+      }
+      
+      // Only show verification modal if user exists and email was sent
+      setServerMessage(data.message || 'Password reset code sent to your email.');
+      setShowVerificationModal(true);
     } catch (err: any) {
-      setServerMessage(err.message || 'Failed to request reset');
-      setShowSuccessModal(true); // Show success modal even on error for demo
+      setEmailError(err.message || 'Failed to request reset');
     } finally {
       setLoading(false);
     }
@@ -194,87 +204,114 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   };
 
   const content = (
-    <div className="p-6">
-      {/* Title and description */}
-      <div className="mb-6">
-        <h2 className="text-xl font-medium text-gray-900 mb-2 text-left" style={{ fontFamily: 'Poppins, sans-serif' }}>
-          {t('auth.resetPassword')}
-        </h2>
-        <p className="text-sm text-gray-600 text-left" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: '400' }}>
-          {t('auth.resetPasswordInstructions')}
-        </p>
+    <>
+      {/* Header with icon and close button */}
+      <div className="flex items-start justify-between p-6 pb-4">
+        <div className="flex items-start gap-3">
+          {/* Email icon */}
+          <div className="w-12 h-12 flex items-center justify-center bg-green-100 rounded-full flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="text-green-600">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <path d="M22 7.535v9.465a3 3 0 0 1 -2.824 2.995l-.176 .005h-14a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-9.465l9.445 6.297l.116 .066a1 1 0 0 0 .878 0l.116 -.066l9.445 -6.297z" />
+              <path d="M19 4c1.08 0 2.027 .57 2.555 1.427l-9.555 6.37l-9.555 -6.37a2.999 2.999 0 0 1 2.354 -1.42l.201 -.007h14z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Reset Password
+            </h2>
+            <p className="text-sm text-gray-500 mt-0.5" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Enter your email address
+            </p>
+          </div>
+        </div>
+        {/* Close button */}
+        <button
+          onClick={handleClose}
+          className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Email Address */}
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-2 text-left" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            {t('auth.email')}
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-              </svg>
-            </div>
+      {/* Divider */}
+      <div className="border-t border-gray-200"></div>
+
+      {/* Body */}
+      <div className="p-6">
+        <p className="text-center text-sm text-gray-600 mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          Enter your email address and we'll send you a link to reset your password.
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email Input */}
+          <div className="text-left">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Email
+            </label>
             <input
-              type="text"
+              type="email"
               id="email"
               value={email}
               onChange={handleEmailChange}
-              placeholder="hello@harvesthubph.app"
-              className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+              placeholder="ex: myname@example.com"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-700 text-sm bg-gray-50 font-normal placeholder:text-gray-400"
               disabled={loading}
             />
-          </div>
-          {emailError && (
-            <div className="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-md">
-              <div className="flex items-center">
-                <svg className="w-4 h-4 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            {emailError && (
+              <div className="mt-2 flex items-center gap-2">
+                <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
-                <span className="text-sm text-red-800">{emailError}</span>
+                <p className="text-sm text-red-500">{emailError}</p>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* Buttons side by side */}
-        <div className="flex space-x-3 pt-4">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="flex-1 px-4 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
-            style={{ fontFamily: 'Poppins, sans-serif', fontWeight: '400' }}
-          >
-            {t('auth.cancel')}
-          </button>
-          <button
-            type="submit"
-            disabled={loading || !email.trim()}
-            className="flex-1 px-4 py-2.5 text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-            style={{ fontFamily: 'Poppins, sans-serif', fontWeight: '400' }}
-          >
-            {loading ? t('auth.sending') : 'Confirm'}
-          </button>
-        </div>
-      </form>
+          {/* Buttons */}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleClose}
+              disabled={loading}
+              className="flex-1 px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !email.trim()}
+              className="flex-1 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Sending...
+                </div>
+              ) : (
+                'Send Reset Code'
+              )}
+            </button>
+          </div>
+        </form>
 
-      {/* Register link */}
-      <div className="text-left mt-6 pt-4 border-t border-gray-200">
-        <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: '400' }}>
-          {t('auth.dontHaveAccount')}{' '}
+        {/* Register link */}
+        <p className="text-sm text-gray-600 mt-6 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          Don't have an account yet?{' '}
           <button 
             onClick={handleClose}
-            className="text-green-600 font-medium hover:text-green-700"
+            className="text-green-600 hover:text-green-700 font-medium underline"
             style={{ fontFamily: 'Poppins, sans-serif' }}
           >
-            {t('auth.register')}
+            Create account
           </button>
         </p>
       </div>
-    </div>
+    </>
   );
 
   console.log('ForgotPasswordModal render state:', {
@@ -325,3 +362,5 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
 };
 
 export default ForgotPasswordModal;
+
+

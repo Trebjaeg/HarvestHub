@@ -219,39 +219,52 @@ const AuthFormInput: FC = () => {
 
   // Unified registration handler
   const handleRegisterUser = async () => {
-    // Clear all registration errors first
+    // Collect all validation errors in a temporary object
+    const newErrors: { field: string; key: string }[] = [];
+    
+    if (!state.firstName.trim()) {
+      newErrors.push({ field: 'firstName', key: 'auth.validation.firstNameRequired' });
+    }
+    if (!state.lastName.trim()) {
+      newErrors.push({ field: 'lastName', key: 'auth.validation.lastNameRequired' });
+    }
+    if (!state.email.trim()) {
+      newErrors.push({ field: 'email', key: 'auth.validation.emailRequired' });
+    }
+    if (!state.password) {
+      newErrors.push({ field: 'password', key: 'auth.validation.passwordRequired' });
+    }
+    if (state.password !== state.confirmPassword) {
+      newErrors.push({ field: 'confirmPassword', key: 'auth.validation.passwordMismatch' });
+    }
+    
+    // Check email verification (only if email is provided)
+    if (state.email.trim() && !state.emailVerified) {
+      newErrors.push({ field: 'email', key: 'auth.verification.emailMustBeVerified' });
+    }
+    
+    // Clear previous errors first
     clearFieldError('firstName');
     clearFieldError('lastName');
+    clearFieldError('email');
     clearFieldError('password');
     clearFieldError('confirmPassword');
     
-    // Check email verification first
-    if (!state.emailVerified) {
-      setFieldError('general', t('auth.verification.emailMustBeVerified') || 'Please verify your email address before completing registration');
-      return;
-    }
-    
-    // Validate fields using the new translatable error system
-    let hasErrors = false;
-    
-    if (!state.firstName.trim()) {
-      setFieldError('firstName', 'auth.validation.firstNameRequired');
-      hasErrors = true;
-    }
-    if (!state.lastName.trim()) {
-      setFieldError('lastName', 'auth.validation.lastNameRequired');
-      hasErrors = true;
-    }
-    if (!state.password) {
-      setFieldError('password', 'auth.validation.passwordRequired');
-      hasErrors = true;
-    }
-    if (state.password !== state.confirmPassword) {
-      setFieldError('confirmPassword', 'auth.validation.passwordMismatch');
-      hasErrors = true;
-    }
-    
-    if (hasErrors) {
+    // If there are errors, set them and return
+    if (newErrors.length > 0) {
+      // Set all errors
+      newErrors.forEach(({ field, key }) => {
+        setFieldError(field, key);
+      });
+      
+      // Force scroll to first error after state updates
+      setTimeout(() => {
+        const firstError = document.querySelector('.border-red-500');
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      
       return;
     }
 
@@ -379,10 +392,10 @@ const AuthFormInput: FC = () => {
                 placeholder={t('auth.firstName')}
                 value={state.firstName}
                 onChange={(e) => handleNameInput(e.target.value, 'firstName')}
-                className={`w-full h-12 rounded-lg border px-4 py-3 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-colors text-gray-700 text-sm bg-gray-50 font-normal ${
                   hasFieldError('firstName')
-                    ? "border-red-500 focus:ring-red-500"
-                    : "border-gray-300 focus:ring-green-600"
+                    ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                    : "border-gray-300 focus:ring-green-500 focus:border-green-500"
                 }`}
               />
               {getFieldError('firstName') && (
@@ -401,10 +414,10 @@ const AuthFormInput: FC = () => {
                 placeholder={t('auth.lastName')}
                 value={state.lastName}
                 onChange={(e) => handleNameInput(e.target.value, 'lastName')}
-                className={`w-full h-12 rounded-lg border px-4 py-3 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-colors text-gray-700 text-sm bg-gray-50 font-normal ${
                   hasFieldError('lastName')
-                    ? "border-red-500 focus:ring-red-500"
-                    : "border-gray-300 focus:ring-green-600"
+                    ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                    : "border-gray-300 focus:ring-green-500 focus:border-green-500"
                 }`}
               />
               {getFieldError('lastName') && (
@@ -436,7 +449,11 @@ const AuthFormInput: FC = () => {
               type="email"
               value={state.email}
               readOnly
-              className="w-full h-12 rounded-lg border border-gray-300 bg-gray-50 text-gray-600 px-4 py-3 pr-28 text-base"
+              className={`w-full h-12 rounded-lg border bg-gray-50 text-gray-600 px-4 py-3 pr-28 text-base ${
+                hasFieldError('email')
+                  ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                  : "border-gray-300 focus:ring-green-500 focus:border-green-500"
+              }`}
             />
             {state.emailVerified ? (
               <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
@@ -469,6 +486,14 @@ const AuthFormInput: FC = () => {
               </button>
             )}
           </div>
+          {getFieldError('email') && (
+            <div className="mt-2 flex items-center space-x-1">
+              <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm text-red-500">{getFieldError('email')}</p>
+            </div>
+          )}
         </div>
 
         {/* Password Section - RESTORED ORIGINAL + SECURITY IMPROVEMENTS */}
@@ -488,10 +513,10 @@ const AuthFormInput: FC = () => {
               value={state.password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
-              className={`w-full h-12 rounded-lg border px-4 py-3 pr-12 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
+              className={`w-full px-4 py-2.5 pr-12 border rounded-lg focus:outline-none focus:ring-2 transition-colors text-gray-700 text-sm bg-gray-50 font-normal ${
                 hasFieldError('password')
-                  ? "border-red-500 focus:ring-red-500"
-                  : "border-gray-300 focus:ring-green-600"
+                  ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                  : "border-gray-300 focus:ring-green-500 focus:border-green-500"
               }`}
             />
             <button
@@ -601,10 +626,10 @@ const AuthFormInput: FC = () => {
                 value={state.confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 autoComplete="new-password"
-                className={`w-full h-12 rounded-lg border px-4 py-3 pr-12 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
+                className={`w-full px-4 py-2.5 pr-12 border rounded-lg focus:outline-none focus:ring-2 transition-colors text-gray-700 text-sm bg-gray-50 font-normal ${
                   hasFieldError('confirmPassword')
-                    ? "border-red-500 focus:ring-red-500"
-                    : "border-gray-300 focus:ring-green-600"
+                    ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                    : "border-gray-300 focus:ring-green-500 focus:border-green-500"
                 }`}
               />
               <button
@@ -985,10 +1010,10 @@ const AuthFormInput: FC = () => {
         placeholder="ex: myname@example.com"
         value={state.email}
         onChange={(e) => setEmail(e.target.value)}
-        className={`w-full h-12 rounded-lg border px-4 py-3 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
+        className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-colors text-gray-700 text-sm bg-gray-50 font-normal placeholder:text-gray-400 ${
           step === 'email' && hasFieldError('email')
-            ? "border-red-500 focus:ring-red-500"
-            : "border-gray-300 focus:ring-green-600"
+            ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+            : "border-gray-300 focus:ring-green-500 focus:border-green-500"
         }`}
         disabled={step === 'password'}
       />
@@ -1014,8 +1039,10 @@ const AuthFormInput: FC = () => {
               placeholder={t('auth.password')}
               value={state.password}
               onChange={(e) => setPassword(e.target.value)}
-              className={`w-full h-12 rounded-lg border px-4 py-3 pr-12 text-base focus:outline-none focus:ring-2 focus:border-transparent ${
-                hasFieldError('loginPassword') ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-600'
+              className={`w-full px-4 py-2.5 pr-12 border rounded-lg focus:outline-none focus:ring-2 transition-colors text-gray-700 text-sm bg-gray-50 font-normal ${
+                hasFieldError('loginPassword') 
+                ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
               }`}
             />
             <button

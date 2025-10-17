@@ -33,7 +33,7 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
     // Send email via Web API
     const sendPromise = sgMail.send({
       to: options.to,
-      from: process.env.MAIL_FROM || 'admin@harvesthubph.app',
+      from: process.env.MAIL_FROM || 'no-reply@harvesthubph.app',
       subject: options.subject,
       html: options.html || options.text || '',
       text: options.text,
@@ -148,8 +148,114 @@ export async function sendPasswordResetEmail(to: string, code: string): Promise<
   });
 }
 
+/**
+ * Send password changed confirmation email
+ */
+export async function sendPasswordChangedEmail(to: string, userName?: string): Promise<void> {
+  const now = new Date();
+  const timestamp = now.toLocaleString('en-US', { 
+    timeZone: 'Asia/Manila',
+    dateStyle: 'long',
+    timeStyle: 'short'
+  });
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
+        .content { background: #f9f9f9; padding: 30px; }
+        .success-box { background: #D4EDDA; border-left: 4px solid #4CAF50; padding: 15px; margin: 20px 0; }
+        .info-box { background: #E3F2FD; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; }
+        .warning-box { background: #FFF3CD; border-left: 4px solid #FF6B6B; padding: 15px; margin: 20px 0; }
+        .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        .button { display: inline-block; background: #4CAF50; color: white; padding: 12px 24px; 
+                  text-decoration: none; border-radius: 5px; margin: 10px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>✅ Password Changed Successfully</h1>
+        </div>
+        <div class="content">
+          <p>Hello${userName ? ` ${userName}` : ''}!</p>
+          
+          <div class="success-box">
+            <strong>✓ Your HarvestHub password has been changed successfully.</strong>
+          </div>
+
+          <div class="info-box">
+            <strong>📅 Changed On:</strong> ${timestamp} (Philippine Time)
+            <br/>
+            <strong>📧 Account Email:</strong> ${to}
+          </div>
+
+          <p>You can now log in to your HarvestHub account using your new password.</p>
+
+          <div class="warning-box">
+            <strong>⚠️ Security Alert:</strong>
+            <br/>
+            If you did not make this change, please contact our support team immediately at 
+            <a href="mailto:support@harvesthubph.app">support@harvesthubph.app</a> or 
+            secure your account by resetting your password.
+          </div>
+
+          <p style="margin-top: 30px;">
+            <strong>Security Tips:</strong>
+          </p>
+          <ul>
+            <li>Never share your password with anyone</li>
+            <li>Use a unique password for HarvestHub</li>
+            <li>Enable email notifications for account changes</li>
+            <li>Log out from public computers after use</li>
+          </ul>
+        </div>
+        <div class="footer">
+          <p>This is an automated security notification from HarvestHub Philippines.</p>
+          <p>© 2025 HarvestHub. All rights reserved.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+Hello${userName ? ` ${userName}` : ''}!
+
+Your HarvestHub password has been changed successfully.
+
+Changed On: ${timestamp} (Philippine Time)
+Account Email: ${to}
+
+You can now log in using your new password.
+
+SECURITY ALERT: If you did not make this change, please contact support@harvesthubph.app immediately.
+
+Security Tips:
+- Never share your password with anyone
+- Use a unique password for HarvestHub
+- Enable email notifications for account changes
+- Log out from public computers after use
+
+This is an automated security notification from HarvestHub Philippines.
+© 2025 HarvestHub. All rights reserved.
+  `;
+
+  await sendEmail({
+    to,
+    subject: '🔒 Your HarvestHub Password Was Changed',
+    html,
+    text,
+  });
+}
+
 export default {
   sendEmail,
   sendVerificationEmail,
   sendPasswordResetEmail,
+  sendPasswordChangedEmail,
 };

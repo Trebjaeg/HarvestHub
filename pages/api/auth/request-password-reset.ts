@@ -25,16 +25,17 @@ async function passwordResetHandler(req: NextApiRequest, res: NextApiResponse) {
     
     const user = await User.findOne({ email }).exec();
 
-    // Always respond with success to prevent user enumeration
+    // Check if user exists - don't send email to non-existent accounts
     if (!user) {
-      return res.status(200).json({ 
-        success: true,
-        message: 'If that account exists, a reset link was sent.' 
+      // Return error to inform user that account doesn't exist
+      return res.status(404).json({ 
+        success: false,
+        message: 'No account found with this email address.' 
       });
     }
 
-    // Generate secure 4-digit verification code
-    const verificationCode = Math.floor(1000 + Math.random() * 9000).toString();
+    // Generate secure 6-digit verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const codeHash = hashToken(verificationCode);
     const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
@@ -52,11 +53,13 @@ async function passwordResetHandler(req: NextApiRequest, res: NextApiResponse) {
       const emailPromise = sendPasswordResetEmail(email, verificationCode);
       await Promise.race([emailPromise, timeoutPromise]);
     } catch (emailError) {
+      // If email fails, still return success to user but log the error
+      console.error('Failed to send password reset email:', emailError);
     }
 
     return res.status(200).json({ 
       success: true,
-      message: 'If that account exists, a reset link was sent.' 
+      message: 'Password reset code sent to your email.' 
     });
     
   } catch (err: any) {

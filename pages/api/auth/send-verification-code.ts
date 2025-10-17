@@ -1,13 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import crypto from 'crypto';
 import dbConnect from '@/lib/mongodb';
+import User from '@/models/User';
 import { rateLimiter, RATE_LIMITS, getClientIP, applySecurityHeaders, sanitizeInput } from '@/lib/security';
 import { validateEmail } from '@/lib/validate-email';
 import { sendVerificationEmail } from '@/lib/email-service-sendgrid';
-
-// Temporary storage for verification codes during registration
-// In production, you might want to use Redis or a database table
-const verificationCodes: { [email: string]: { code: string; expires: number; attempts: number } } = {};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Apply security headers
@@ -48,15 +45,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
     
-    // Store verification code
-    verificationCodes[email] = { code, expires, attempts: 0 };
+    // Hash the verification code before storing (for security)
+    const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
     
-    // Clean up old codes
-    Object.keys(verificationCodes).forEach(key => {
-      if (verificationCodes[key].expires < Date.now()) {
-        delete verificationCodes[key];
-      }
+    // Store verification code in a temporary collection or user model
+    // Using a simple approach: store in a temporary verification collection
+    const { default: mongoose } = await import('mongoose');
+    const VerificationCode = mongoose.models.VerificationCode || mongoose.model('VerificationCode', new mongoose.Schema({
+      email: { type: String, required: true, index: true },
+      code: { type: String, required: true },
+      expires: { type: Date, required: true, index: true },
+      attempts: { type: Number, default: 0 },
+      createdAt: { type: Date, default: Date.now, expires: 600 } // Auto-delete after 10 minutes
+    }));
+    
+    // Delete any existing codes for this email
+    await VerificationCode.deleteMany({ email });
+    
+    // Create new verification code
+    await VerificationCode.create({
+      email,
+      code: hashedCode,
+      expires: new Date(expires),
+      attempts: 0
     });
+    
+    console.log('[SEND_VERIFICATION_CODE] ✅ Code stored in DB for:', email, 'Code:', code);
 
     // Send verification code email with timeout
     try {
@@ -85,30 +99,65 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 }
 
-// Export function to verify code (for use in registration)
-export function verifyCode(email: string, inputCode: string): { valid: boolean; message?: string } {
-  const stored = verificationCodes[email];
-  
-  if (!stored) {
-    return { valid: false, message: 'No verification code found for this email' };
+// Export async function to verify code (for use in registration)
+export async function verifyCode(email: string, inputCode: string): Promise<{ valid: boolean; message?: string }> {
+  try {
+    await dbConnect();
+    
+    const { default: mongoose } = await import('mongoose');
+    const VerificationCode = mongoose.models.VerificationCode || mongoose.model('VerificationCode', new mongoose.Schema({
+      email: { type: String, required: true, index: true },
+      code: { type: String, required: true },
+      expires: { type: Date, required: true, index: true },
+      attempts: { type: Number, default: 0 },
+      createdAt: { type: Date, default: Date.now, expires: 600 }
+    }));
+    
+    // Hash the input code to compare with stored hash
+    const hashedInputCode = crypto.createHash('sha256').update(inputCode).digest('hex');
+    
+    console.log('[VERIFY_CODE_FUNC] Checking:', { 
+      email, 
+      inputCode, 
+      hashedInputCode,
+      inputCodeLength: inputCode.length
+    });
+    
+    // Find the verification code in DB
+    const stored = await VerificationCode.findOne({ email });
+    
+    console.log('[VERIFY_CODE_FUNC] DB lookup:', { 
+      found: !!stored,
+      stored: stored ? { expires: stored.expires, attempts: stored.attempts } : null
+    });
+    
+    if (!stored) {
+      return { valid: false, message: 'No verification code found for this email' };
+    }
+    
+    if (stored.expires < new Date()) {
+      await VerificationCode.deleteOne({ email });
+      return { valid: false, message: 'Verification code has expired' };
+    }
+    
+    if (stored.attempts >= 3) {
+      await VerificationCode.deleteOne({ email });
+      return { valid: false, message: 'Too many failed attempts. Please request a new code.' };
+    }
+    
+    if (stored.code !== hashedInputCode) {
+      stored.attempts++;
+      await stored.save();
+      console.log('[VERIFY_CODE_FUNC] Code mismatch. Attempts:', stored.attempts);
+      return { valid: false, message: 'Invalid verification code' };
+    }
+    
+    // Code is valid, clean up
+    await VerificationCode.deleteOne({ email });
+    console.log('[VERIFY_CODE_FUNC] ✅ Code verified successfully for:', email);
+    return { valid: true };
+  } catch (error) {
+    console.error('[VERIFY_CODE_FUNC] Error:', error);
+    return { valid: false, message: 'Error verifying code' };
   }
-  
-  if (stored.expires < Date.now()) {
-    delete verificationCodes[email];
-    return { valid: false, message: 'Verification code has expired' };
-  }
-  
-  if (stored.attempts >= 3) {
-    delete verificationCodes[email];
-    return { valid: false, message: 'Too many failed attempts. Please request a new code.' };
-  }
-  
-  if (stored.code !== inputCode) {
-    stored.attempts++;
-    return { valid: false, message: 'Invalid verification code' };
-  }
-  
-  // Code is valid, clean up
-  delete verificationCodes[email];
-  return { valid: true };
 }

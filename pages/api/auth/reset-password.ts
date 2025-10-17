@@ -8,6 +8,7 @@ import { withSecurity, withLogging } from '@/lib/middleware';
 import { DatabaseUtils, QueryProfiler } from '@/lib/database-utils';
 import { sanitizeInput, hashToken } from '@/lib/security';
 import { validatePasswordStrength } from '@/lib/password-strength';
+import { sendPasswordChangedEmail } from '@/lib/email-service-sendgrid';
 
 async function resetPasswordHandler(req: NextApiRequest, res: NextApiResponse) {
   let { resetToken, token, email, password } = req.body || {};
@@ -105,6 +106,15 @@ async function resetPasswordHandler(req: NextApiRequest, res: NextApiResponse) {
     // Verify the password immediately after saving
     const testMatch = await bcrypt.compare(password, hashedPassword);
     console.log('Immediate password verification test:', testMatch);
+
+    // Send password changed confirmation email
+    try {
+      await sendPasswordChangedEmail(user.email, user.name);
+      console.log('Password changed notification email sent to:', user.email);
+    } catch (emailError) {
+      console.error('Failed to send password change notification:', emailError);
+      // Don't fail the password reset if email fails
+    }
 
     return res.status(200).json({ 
       success: true,

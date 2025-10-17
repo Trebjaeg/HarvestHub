@@ -23,8 +23,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   email = sanitizeInput(email).toLowerCase();
   code = sanitizeInput(code);
 
+  console.log('[VERIFY_CODE] Verifying:', { email, code, codeLength: code.length });
+
   try {
-    const verification = verifyCode(email, code);
+    const verification = await verifyCode(email, code);
+    
+    console.log('[VERIFY_CODE] Verification result:', verification);
     
     if (verification.valid) {
       return res.status(200).json({
