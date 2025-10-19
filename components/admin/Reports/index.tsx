@@ -126,7 +126,7 @@ const Reports: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Reports Management</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Manage Disputes</h2>
         <div className="flex gap-2">
           <select
             value={filter}
@@ -150,7 +150,7 @@ const Reports: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Reports ({filteredReports.length})</CardTitle>
+          <CardTitle>To Review({filteredReports.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
