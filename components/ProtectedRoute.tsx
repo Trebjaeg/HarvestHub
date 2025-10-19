@@ -39,26 +39,58 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredRole = 'user',
   fallback 
 }) => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, checkAuth } = useAuth();
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
     const checkAccess = async () => {
-      if (isLoading) return;
-
-      if (!isAuthenticated) {
-        // Get current path to redirect back after login
-        const currentPath = window.location.pathname;
-        router.push(`/auth?returnUrl=${encodeURIComponent(currentPath)}`);
+      console.log('🛡️ ProtectedRoute: Checking access:', { isLoading, isAuthenticated, user: user?.email, hasInitialized });
+      
+      // ALWAYS wait if loading
+      if (isLoading) {
+        console.log('🛡️ ProtectedRoute: Still loading, waiting...');
         return;
       }
 
-      setIsChecking(false);
+      // If we haven't initialized yet, force a check
+      if (!hasInitialized) {
+        console.log('🛡️ ProtectedRoute: First time check, calling checkAuth...');
+        setHasInitialized(true);
+        
+        const authResult = await checkAuth();
+        
+        if (!authResult) {
+          console.log('🛡️ ProtectedRoute: User not authenticated after check, redirecting to auth');
+          const currentPath = window.location.pathname;
+          router.replace(`/auth?returnUrl=${encodeURIComponent(currentPath)}`);
+          setIsChecking(false);
+          return;
+        }
+        
+        console.log('🛡️ ProtectedRoute: User authenticated after check, allowing access');
+        setIsChecking(false);
+        return;
+      }
+
+      // Only redirect if we're done loading AND definitely not authenticated
+      if (!isAuthenticated && hasInitialized) {
+        console.log('🛡️ ProtectedRoute: User not authenticated after initialization, redirecting to auth');
+        const currentPath = window.location.pathname;
+        router.replace(`/auth?returnUrl=${encodeURIComponent(currentPath)}`);
+        setIsChecking(false);
+        return;
+      }
+
+      if (isAuthenticated) {
+        console.log('🛡️ ProtectedRoute: User authenticated, allowing access');
+        setIsChecking(false);
+      }
     };
 
     checkAccess();
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, user, checkAuth, hasInitialized]);
 
   // Show loading while checking authentication
   if (isLoading || isChecking) {

@@ -22,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const clientIP = getClientIP(req);
   
-  // Rate limiting
+  // Rate limiting for production
   if (!rateLimiter.check(`login:${clientIP}`, RATE_LIMITS.login)) {
     return res.status(429).json({ 
       message: 'Too many login attempts. Please try again later.',
@@ -124,6 +124,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const tokenPayload = {
       userId: user._id,
       email: user.email,
+      role: user.role,
       iat: Math.floor(Date.now() / 1000),
       jti: Math.random().toString(36).substr(2, 9), // Unique token ID
     };
@@ -145,8 +146,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ? `auth-token=${token}; HttpOnly; Secure; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}; Path=/`
       : `auth-token=${token}; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}; Path=/`;
     
-    res.setHeader('Set-Cookie', [cookieOptions]);
+    console.log('🍪 Setting cookie:', cookieOptions);
+    res.setHeader('Set-Cookie', cookieOptions);
 
+    // Return success response
     return res.status(200).json({ 
       success: true,
       token, 

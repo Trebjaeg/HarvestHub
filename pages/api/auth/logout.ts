@@ -8,9 +8,9 @@ interface DecodedToken {
   userId: string;
   email: string;
   role: string;
-  tokenVersion: number;
   iat: number;
   exp: number;
+  jti: string;
 }
 
 async function logoutHandler(req: NextApiRequest, res: NextApiResponse) {
@@ -31,24 +31,14 @@ async function logoutHandler(req: NextApiRequest, res: NextApiResponse) {
       }
     }
 
-    // If we have a token, invalidate it by incrementing token version
+    // If we have a token, we can optionally log the logout
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-        
-        await dbConnect();
-        
-        // Increment token version to invalidate all existing tokens for this user
-        await User.findByIdAndUpdate(
-          decoded.userId, 
-          { $inc: { tokenVersion: 1 } },
-          { new: true }
-        );
-        
-        console.log('User tokens invalidated:', decoded.email);
+        console.log('User logged out:', decoded.email);
       } catch (error) {
         // Token might be invalid, but we still want to clear cookies
-        console.error('Error invalidating token:', error);
+        console.error('Error during logout token verification:', error);
       }
     }
 

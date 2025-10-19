@@ -45,7 +45,18 @@ export const useProducts = (initialOptions: UseProductsOptions = {}): UseProduct
       params.append('page', currentPage.toString());
       if (options.sort) params.append('sort', options.sort);
 
-      const response = await fetch(`/api/products?${params.toString()}`);
+      // Use dynamic URL to ensure correct port in all environments
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const url = `${baseUrl}/api/products?${params.toString()}`;
+      
+      console.log('🛒 Fetching products from:', url);
+      
+      const response = await fetch(url, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch products');

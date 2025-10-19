@@ -32,9 +32,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       token = authHeader.substring(7);
     }
 
-    // Fallback to cookies
+    // Fallback to cookies (check all possible cookie names)
     if (!token) {
-      token = req.cookies.token;
+      token = req.cookies['auth-token'] || req.cookies.token || req.cookies.userToken;
     }
 
     if (!token) {

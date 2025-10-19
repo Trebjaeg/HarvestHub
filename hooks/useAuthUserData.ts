@@ -23,14 +23,17 @@ export const useAuthUserData = () => {
 
       setLoading(true);
       try {
+        // Get base URL for API calls
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+
         // Fetch cart count
-        const cartResponse = await fetch('/api/user/cart/count', {
+        const cartResponse = await fetch(`${baseUrl}/api/user/cart/count`, {
           credentials: 'include'
         });
         const cartData = cartResponse.ok ? await cartResponse.json() : { count: 0 };
 
         // Fetch notification count
-        const notificationResponse = await fetch('/api/user/notifications/count', {
+        const notificationResponse = await fetch(`${baseUrl}/api/user/notifications/count`, {
           credentials: 'include'
         });
         const notificationData = notificationResponse.ok ? await notificationResponse.json() : { count: 0 };

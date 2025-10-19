@@ -11,222 +11,41 @@ import PromoBanner from '../../components/PromoBanner';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { ProtectedRoute } from '../../components/ProtectedRoute';
 import { useAuthUserData } from '../../hooks/useAuthUserData';
+import { useProducts } from '../../hooks/useProducts';
 import { IProduct } from '../../types/product';
-// import { useProducts } from '../../hooks/useProducts'; // Will be used later when API is synced
 
 const HomePageContent = () => {
   const { t } = useTranslation();
   const { isAuthenticated, cartCount, notificationCount } = useAuthUserData();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
   
-  // Mock products for demonstration (matching our IProduct interface)
-  const mockProducts: IProduct[] = [
-    {
-      _id: '1',
-      name: "Bitter Gourd",
-      description: "Fresh organic bitter gourd, perfect for traditional Filipino dishes.",
-      category: 'vegetables' as const,
-      basePrice: 55,
-      currentPrice: 40,
-      unit: 'kg' as const,
-      stock: 25,
-      imageUrl: "/images/products/bittergourd.png",
-      farmer: {
-        name: "Juan Dela Cruz",
-        location: "Laguna",
-        contact: "+639123456789"
-      },
-      isOrganic: true,
-      isFeatured: true,
-      tags: ["healthy", "traditional", "bitter", "vegetable"],
-      nutritionalInfo: {
-        calories: 17,
-        protein: 1,
-        carbohydrates: 3.7,
-        fiber: 2.8
-      },
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      _id: '2',
-      name: "Fresh Lemon",
-      description: "Juicy and tangy lemons freshly picked from our organic farms.",
-      category: 'fruits' as const,
-      basePrice: 130,
-      currentPrice: 105,
-      unit: 'kg' as const,
-      stock: 40,
-      imageUrl: "/images/products/lemon.png",
-      farmer: {
-        name: "Maria Santos",
-        location: "Batangas",
-        contact: "+639987654321"
-      },
-      isOrganic: true,
-      isFeatured: true,
-      tags: ["citrus", "vitamin-c", "fresh", "organic"],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      _id: '3',
-      name: "Roma Tomato",
-      description: "Fresh, ripe Roma tomatoes perfect for sauces and salads.",
-      category: 'vegetables' as const,
-      basePrice: 66,
-      currentPrice: 50,
-      unit: 'kg' as const,
-      stock: 35,
-      imageUrl: "/images/products/tomato.png",
-      farmer: {
-        name: "Pedro Reyes",
-        location: "Nueva Ecija",
-        contact: "+639555123456"
-      },
-      isOrganic: false,
-      isFeatured: true,
-      tags: ["red", "juicy", "cooking", "salad"],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      _id: '4',
-      name: "Fresh Ginger",
-      description: "Premium quality ginger root, perfect for cooking and tea.",
-      category: 'spices' as const,
-      basePrice: 130,
-      currentPrice: 120,
-      unit: 'kg' as const,
-      stock: 20,
-      imageUrl: "/images/products/ginger.png",
-      farmer: {
-        name: "Rosa Garcia",
-        location: "Ilocos Norte",
-        contact: "+639777888999"
-      },
-      isOrganic: true,
-      isFeatured: false,
-      tags: ["spicy", "aromatic", "medicinal", "root"],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      _id: '5',
-      name: "Sweet Banana",
-      description: "Fresh, sweet bananas perfect for snacking or cooking.",
-      category: 'fruits' as const,
-      basePrice: 75,
-      currentPrice: 60,
-      unit: 'kg' as const,
-      stock: 50,
-      imageUrl: "/images/products/banana.png",
-      farmer: {
-        name: "Carlos Mendoza",
-        location: "Davao",
-        contact: "+639333222111"
-      },
-      isOrganic: false,
-      isFeatured: true,
-      tags: ["sweet", "potassium", "energy", "tropical"],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      _id: '6',
-      name: "Spring Onion",
-      description: "Fresh spring onions with green tops, perfect for garnishing.",
-      category: 'vegetables' as const,
-      basePrice: 45,
-      currentPrice: 30,
-      unit: 'bunch' as const,
-      stock: 30,
-      imageUrl: "/images/products/springonion.png",
-      farmer: {
-        name: "Elena Villanueva",
-        location: "Benguet",
-        contact: "+639111222333"
-      },
-      isOrganic: true,
-      isFeatured: false,
-      tags: ["green", "mild", "garnish", "fresh"],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      _id: '7',
-      name: "Fresh Carrots",
-      description: "Crisp and sweet carrots, perfect for salads and cooking.",
-      category: 'vegetables' as const,
-      basePrice: 65,
-      currentPrice: 55,
-      unit: 'kg' as const,
-      stock: 45,
-      imageUrl: "/images/products/carrot.png",
-      farmer: {
-        name: "Roberto Cruz",
-        location: "Baguio",
-        contact: "+639444555666"
-      },
-      isOrganic: false,
-      isFeatured: true,
-      tags: ["orange", "sweet", "crunchy", "beta-carotene"],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      _id: '8',
-      name: "Sweet Pineapple",
-      description: "Tropical pineapples at peak ripeness, sweet and juicy.",
-      category: 'fruits' as const,
-      basePrice: 85,
-      currentPrice: 70,
-      unit: 'kg' as const,
-      stock: 25,
-      imageUrl: "/images/products/pineapple.png",
-      farmer: {
-        name: "Ana Fernandez",
-        location: "Bukidnon",
-        contact: "+639666777888"
-      },
-      isOrganic: false,
-      isFeatured: true,
-      tags: ["tropical", "sweet", "juicy", "vitamin-c"],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-  ];
-
-  // Fetch products with fallback to mock data for now
+  // Use real API data via useProducts hook
   const { 
-    products = [], 
-    loading = false, 
-    error = null, 
-    totalPages = 1,
-    currentPage = 1,
-    setCurrentPage = () => {},
-    setFilters = () => {}
-  } = {
-    products: mockProducts,
-    loading: false,
-    error: null,
-    totalPages: 1,
-    currentPage: 1,
-    setCurrentPage: () => {},
-    setFilters: () => {}
-  };
+    products, 
+    loading, 
+    error,
+    totalPages,
+    currentPage: apiCurrentPage,
+    setCurrentPage: setApiCurrentPage,
+    setFilters,
+    refetch
+  } = useProducts({
+    category: selectedCategory === 'all' ? undefined : selectedCategory,
+    page: currentPage,
+    limit: 12
+  });
 
-  // Filter products based on selected category
-  const filteredProducts = selectedCategory === 'all' 
-    ? mockProducts 
-    : mockProducts.filter(product => product.category === selectedCategory);
+  // Use products directly from API - all mock data removed
+  const filteredProducts = products;
 
   // Handle category filter change
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
     setFilters({ category: category === 'all' ? undefined : category });
     setCurrentPage(1);
+    setApiCurrentPage(1);
   };
 
   const heroSlides = [
@@ -936,7 +755,11 @@ const HomePageContent = () => {
                     {totalPages > 1 && (
                       <div className="flex justify-center items-center space-x-4 mt-8">
                         <button
-                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          onClick={() => {
+                            const newPage = Math.max(1, currentPage - 1);
+                            setCurrentPage(newPage);
+                            setApiCurrentPage(newPage);
+                          }}
                           disabled={currentPage === 1}
                           className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 transition-colors"
                           style={{ fontFamily: 'Poppins, sans-serif' }}
@@ -950,7 +773,10 @@ const HomePageContent = () => {
                             return (
                               <button
                                 key={page}
-                                onClick={() => setCurrentPage(page)}
+                                onClick={() => {
+                                  setCurrentPage(page);
+                                  setApiCurrentPage(page);
+                                }}
                                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                                   currentPage === page
                                     ? 'bg-green-600 text-white'
@@ -965,7 +791,11 @@ const HomePageContent = () => {
                         </div>
                         
                         <button
-                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                          onClick={() => {
+                            const newPage = Math.min(totalPages, currentPage + 1);
+                            setCurrentPage(newPage);
+                            setApiCurrentPage(newPage);
+                          }}
                           disabled={currentPage === totalPages}
                           className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 transition-colors"
                           style={{ fontFamily: 'Poppins, sans-serif' }}

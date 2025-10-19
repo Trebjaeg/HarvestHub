@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { IProduct } from '../../types/product';
+import { IProduct } from '../../../types/product';
 import { ProtectedRoute } from '../../../components/ProtectedRoute';
 
 const AddProductContent = () => {
@@ -52,11 +52,14 @@ const AddProductContent = () => {
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
       };
 
-      const response = await fetch('/api/products', {
+      // Use dynamic URL to ensure correct port in all environments
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const response = await fetch(`${baseUrl}/api/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(productData),
       });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { FC, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import SuccessModal from "@/components/ui/SuccessModal";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -9,29 +10,57 @@ import { useTranslation } from "react-i18next";
 import { validatePasswordStrength, getPasswordStrengthColor } from "@/lib/password-strength";
 import TrmsNConAndPP from "@/components/ui/trmsnconandpp";
 import { TermsContent, PrivacyContent } from "@/components/legal/LegalContent";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { AuthValidator } from "@/lib/auth-validation";
 import { useTranslatableErrors } from "@/hooks/useTranslatableErrors";
 
 const AuthFormInput: FC = () => {
   const { t } = useTranslation();
-  const { 
-    state, 
-    setEmail, 
-    setPassword, 
-    setConfirmPassword, 
-    setFirstName, 
-    setLastName,
-    setAcceptTerms,
-    setAcceptPrivacy,
-    setNextStep,
-    setError,
-    setEmailVerified,
-    setVerificationCode,
-    setVerificationSent,
-    setVerificationCodeExpires,
-    dispatch
-  } = useAuth();
+  const { login, refreshUser } = useAuth(); // Use new auth context
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Local state for form management
+  const [formState, setFormState] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    firstName: '',
+    lastName: '',
+    acceptTerms: false,
+    acceptPrivacy: false,
+    error: '',
+    emailVerified: false,
+    verificationCode: '',
+    isNewUser: false,
+    nextStep: false,
+    loading: false
+  });
+
+  // Additional state for registration flow
+  const [nextStep, setNextStep] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [verificationCodeExpires, setVerificationCodeExpires] = useState<Date | null>(null);
+
+  // Helper function to update form state
+  const updateFormState = (field: string, value: any) => {
+    setFormState(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Legacy setters for compatibility
+  const setEmail = (value: string) => updateFormState('email', value);
+  const setPassword = (value: string) => updateFormState('password', value);
+  const setConfirmPassword = (value: string) => updateFormState('confirmPassword', value);
+  const setFirstName = (value: string) => updateFormState('firstName', value);
+  const setLastName = (value: string) => updateFormState('lastName', value);
+  const setAcceptTerms = (value: boolean) => updateFormState('acceptTerms', value);
+  const setAcceptPrivacy = (value: boolean) => updateFormState('acceptPrivacy', value);
+  const setEmailVerified = (value: boolean) => updateFormState('emailVerified', value);
+  const setVerificationCode = (value: string) => updateFormState('verificationCode', value);
+  const setError = (value: string) => updateFormState('error', value);
+
+  // State object for compatibility with existing code
+  const state = formState;
 
   // Use translatable errors for smooth translation
   const {
@@ -55,7 +84,7 @@ const AuthFormInput: FC = () => {
     isPending: boolean;
     email?: string;
   }>({ isVerified: false, isPending: false });
-  const passwordStrength = state.password ? validatePasswordStrength(state.password) : null;
+  const passwordStrength = formState.password ? validatePasswordStrength(formState.password) : null;
   // Login pane state: first ask email, then show password (single button switches label)
   const [step, setStep] = useState<'email' | 'password'>('email');
   const [loading, setLoading] = useState(false);
@@ -167,7 +196,7 @@ const AuthFormInput: FC = () => {
       
       if (response.ok) {
         setVerificationSent(true);
-        const expiryTime = Date.now() + (10 * 60 * 1000); // 10 minutes
+        const expiryTime = new Date(Date.now() + (10 * 60 * 1000)); // 10 minutes
         setVerificationCodeExpires(expiryTime);
         setVerificationCode('');
         setShowVerificationModal(true);
@@ -279,7 +308,7 @@ const AuthFormInput: FC = () => {
     }
 
     // If all accepted, call API
-    dispatch({ type: 'SET_LOADING', payload: true });
+    updateFormState('loading', true);
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -296,7 +325,22 @@ const AuthFormInput: FC = () => {
         throw new Error(data.message || 'Registration failed');
       }
       
-      dispatch({ type: 'RESET_FORM' });
+      // Reset form after successful registration
+      setFormState({
+        email: '',
+        password: '',
+        confirmPassword: '',
+        firstName: '',
+        lastName: '',
+        acceptTerms: false,
+        acceptPrivacy: false,
+        error: '',
+        emailVerified: false,
+        verificationCode: '',
+        isNewUser: false,
+        nextStep: false,
+        loading: false
+      });
       
       // Check if registration requires verification
       if (data.requiresVerification) {
@@ -305,24 +349,24 @@ const AuthFormInput: FC = () => {
         
         // Reset to login form after a delay
         setTimeout(() => {
-          dispatch({ type: 'RESET_TO_EMAIL_STEP' });
+          setStep('email');
+          setNextStep(false);
           clearAllFieldErrors();
-          setStep('email'); // Start fresh on login
         }, 3000);
       } else {
         // Old flow - immediate success
         setShowSuccessModal(true);
         setTimeout(() => {
           setShowSuccessModal(false);
-          dispatch({ type: 'RESET_TO_EMAIL_STEP' });
-          clearAllFieldErrors();
           setStep('password');
+          setNextStep(false);
+          clearAllFieldErrors();
         }, 1500);
       }
     } catch (err: any) {
       setError(err.message || t('auth.error.generic'));
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      updateFormState('loading', false);
     }
   };
 
@@ -349,7 +393,7 @@ const AuthFormInput: FC = () => {
   };
 
   const resetLegalModals = () => {
-    dispatch({ type: 'SET_SHOW_LEGAL_MODALS', payload: false });
+    // Close any open modals (no dispatch needed for this)
   };
   
   // Step 2: Registration form - RESTORED ORIGINAL STRUCTURE
@@ -363,8 +407,9 @@ const AuthFormInput: FC = () => {
           type="button"
           className="inline-flex items-center text-green-700 hover:text-green-800 focus:outline-none"
           onClick={() => {
-            dispatch({ type: 'RESET_TO_EMAIL_STEP' });
-            dispatch({ type: 'CLEAR_ALL_ERRORS' });
+            setStep('email');
+            setNextStep(false);
+            clearAllFieldErrors();
             clearAllFieldErrors(); // Clear translatable errors too
           }}
           aria-label={t('auth.back') || 'Back'}
@@ -447,7 +492,7 @@ const AuthFormInput: FC = () => {
             <Input
               id="email"
               type="email"
-              value={state.email}
+              value={formState.email}
               readOnly
               className={`w-full h-12 rounded-lg border bg-gray-50 text-gray-600 px-4 py-3 pr-28 text-base ${
                 hasFieldError('email')
@@ -510,8 +555,8 @@ const AuthFormInput: FC = () => {
               id="password"
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
-              value={state.password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={formState.password}
+              onChange={(e) => updateFormState('password', e.target.value)}
               autoComplete="new-password"
               className={`w-full px-4 py-2.5 pr-12 border rounded-lg focus:outline-none focus:ring-2 transition-colors text-gray-700 text-sm bg-gray-50 font-normal ${
                 hasFieldError('password')
@@ -871,13 +916,13 @@ const AuthFormInput: FC = () => {
           );
         })()}
 
-        {state.error && (
+        {formState.error && (
           <div className="bg-red-50 p-3 rounded-lg">
             <div className="flex items-center space-x-2">
               <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
-              <p className="text-sm text-red-500">{state.error}</p>
+              <p className="text-sm text-red-500">{formState.error}</p>
             </div>
           </div>
         )}
@@ -891,11 +936,11 @@ const AuthFormInput: FC = () => {
     clearFieldError('email');
     clearFieldError('loginPassword');
     if (step === 'email') {
-      if (!state.email) {
+      if (!formState.email) {
         setFieldError('email', 'auth.validation.emailRequired');
         return;
       }
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(state.email)) {
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formState.email)) {
         setFieldError('email', 'auth.validation.emailInvalid');
         return;
       }
@@ -904,7 +949,7 @@ const AuthFormInput: FC = () => {
         const res = await fetch('/api/auth/check-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: state.email })
+          body: JSON.stringify({ email: formState.email })
         });
         const data = await res.json();
         if (res.status === 200 && data.exists) {
@@ -913,8 +958,8 @@ const AuthFormInput: FC = () => {
           clearFieldError('email');
         } else if (res.status === 200 && !data.exists) {
           // Unknown email → go to registration form
-          dispatch({ type: 'SET_IS_NEW_USER', payload: true });
-          dispatch({ type: 'SET_NEXT_STEP', payload: true });
+          updateFormState('isNewUser', true);
+          setNextStep(true);
         } else {
           // For API error messages, we might not have translation keys, so store as is
           setFieldError('email', data.message || 'auth.validation.emailCheckError');
@@ -925,49 +970,40 @@ const AuthFormInput: FC = () => {
         setLoading(false);
       }
     } else if (step === 'password') {
-      // Perform login and redirect to home
-      if (!state.password) {
+      // Perform login
+      if (!formState.password) {
         setFieldError('loginPassword', 'auth.validation.passwordRequired');
         return;
       }
+      
       setLoading(true);
+      
       try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: state.email, password: state.password })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          if (res.status === 401) {
-            // Use translated message for wrong password
-            setFieldError('loginPassword', 'auth.validation.wrongPassword');
-            return;
-          }
-          if (res.status === 403 && data.requiresVerification) {
-            // Email not verified
-            setFieldError('loginPassword', data.message || 'Please verify your email first');
-            
-            // Show resend verification option
-            setTimeout(() => {
-              setFieldError('loginPassword', `${data.message || 'Please verify your email first'} Click here to resend verification email.`);
-            }, 2000);
-            return;
-          }
-          setFieldError('loginPassword', data.message || 'auth.validation.loginFailed');
-          return;
+        console.log('🔐 Starting login...');
+        
+        const result = await login(formState.email, formState.password);
+        
+        console.log('🔐 Login result:', result);
+        
+        if (result.success) {
+          console.log('✅ Login successful! Cookie should be set now.');
+          console.log('🔀 Forcing hard redirect to /home');
+          
+          // Use window.location.href for HARD redirect - forces full page reload
+          // This ensures the cookie is sent with the next request
+          window.location.href = '/home';
+          
+          // Don't set loading to false - page is reloading anyway
+        } else {
+          console.log('❌ Login failed:', result.message);
+          
+          setFieldError('loginPassword', result.message || 'auth.validation.loginFailed');
+          setLoading(false);
         }
-        // Store token for fallback authentication (especially for mobile/IP access)
-        if (data.token) {
-          try { 
-            localStorage.setItem('hh_token', data.token);
-            localStorage.setItem('auth-token', data.token); // Also store with cookie name for consistency
-          } catch {}
-        }
-        window.location.href = '/home';
+        
       } catch (err: any) {
+        console.error('❌ Login error:', err);
         setFieldError('loginPassword', 'auth.validation.loginFailed');
-      } finally {
         setLoading(false);
       }
     }
@@ -985,7 +1021,7 @@ const AuthFormInput: FC = () => {
             setPassword('');
             clearFieldError('email');
             clearFieldError('loginPassword');
-            dispatch({ type: 'CLEAR_ALL_ERRORS' });
+            clearAllFieldErrors();
           }}
           aria-label={t('auth.back') || 'Back'}
         >
@@ -1008,8 +1044,8 @@ const AuthFormInput: FC = () => {
         id="initialEmail"
         type="text"
         placeholder="ex: myname@example.com"
-        value={state.email}
-        onChange={(e) => setEmail(e.target.value)}
+        value={formState.email}
+        onChange={(e) => updateFormState('email', e.target.value)}
         className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-colors text-gray-700 text-sm bg-gray-50 font-normal placeholder:text-gray-400 ${
           step === 'email' && hasFieldError('email')
             ? "border-red-500 focus:ring-red-500 focus:border-red-500"
@@ -1037,8 +1073,8 @@ const AuthFormInput: FC = () => {
               id="loginPassword"
               type={showLoginPassword ? "text" : "password"}
               placeholder={t('auth.password')}
-              value={state.password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={formState.password}
+              onChange={(e) => updateFormState('password', e.target.value)}
               className={`w-full px-4 py-2.5 pr-12 border rounded-lg focus:outline-none focus:ring-2 transition-colors text-gray-700 text-sm bg-gray-50 font-normal ${
                 hasFieldError('loginPassword') 
                 ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 

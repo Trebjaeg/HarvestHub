@@ -33,54 +33,9 @@ const AdminDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   // Fetch recent activities
   const { activities, loading: activitiesLoading, error: activitiesError, refetch: refetchActivities } = useRecentActivities(5);
-
-  // Check authentication on component mount
-  useEffect(() => {
-    const verifyAuth = async () => {
-      try {
-        const authHeaders = getAuthHeaders();
-        
-        // Check if we have any tokens in localStorage
-        const hasToken = localStorage.getItem('hh_token') || 
-                        localStorage.getItem('auth-token') || 
-                        localStorage.getItem('adminToken');
-        
-        if (!hasToken) {
-          console.log('No authentication tokens found');
-          router.replace('/auth');
-          return;
-        }
-
-        // Verify with server
-        const response = await fetch('/api/admin/verify', {
-          method: 'GET',
-          headers: authHeaders,
-          credentials: 'include',
-        });
-
-        if (!response.ok) {
-          console.log('Authentication verification failed');
-          // Clear any invalid tokens
-          localStorage.removeItem('hh_token');
-          localStorage.removeItem('auth-token');
-          localStorage.removeItem('adminToken');
-          router.replace('/auth');
-          return;
-        }
-
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Auth verification error:', error);
-        router.replace('/auth');
-      }
-    };
-
-    verifyAuth();
-  }, [router]);
 
   const fetchStats = async (isRefresh = false) => {
     try {
@@ -116,10 +71,8 @@ const AdminDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchStats();
-    }
-  }, [isAuthenticated]);
+    fetchStats();
+  }, []);
 
   // Unified refresh function for all dashboard data
   const refreshDashboard = async () => {
@@ -152,25 +105,6 @@ const AdminDashboard: React.FC = () => {
       window.location.replace('/auth');
     }
   };
-
-  // Don't render anything until authentication is verified
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <LoadingDots size="lg" color="#16a34a" />
-          </div>
-          <h3 className="text-lg font-bold text-gray-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            Verifying Access
-          </h3>
-          <p className="text-gray-500 font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            Please wait...
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (

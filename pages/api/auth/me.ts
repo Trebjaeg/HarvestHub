@@ -8,9 +8,9 @@ interface DecodedToken {
   userId: string;
   email: string;
   role: string;
-  tokenVersion: number;
   iat: number;
   exp: number;
+  jti: string;
 }
 
 async function meHandler(req: NextApiRequest, res: NextApiResponse) {
@@ -45,7 +45,7 @@ async function meHandler(req: NextApiRequest, res: NextApiResponse) {
     
     // Get current user from database
     const user = await User.findById(decoded.userId)
-      .select('+tokenVersion +status +role +emailVerified +firstName +lastName +profileImage +lastLogin')
+      .select('+status +role +emailVerified +firstName +lastName +profileImage +lastLogin')
       .lean();
     
     if (!user) {
@@ -56,32 +56,24 @@ async function meHandler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // Check if user account is deleted
-    if (user.status === 'deleted') {
+    if ((user as any).status === 'deleted') {
       return res.status(404).json({ 
         error: 'Account not found',
         message: 'User account has been deleted' 
       });
     }
 
-    // Check token version (for session invalidation)
-    if (user.tokenVersion !== decoded.tokenVersion) {
-      return res.status(401).json({ 
-        error: 'Token invalidated',
-        message: 'Please log in again' 
-      });
-    }
-
     // Return user data (excluding sensitive fields)
     const userData = {
-      id: user._id.toString(),
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      status: user.status,
-      emailVerified: user.emailVerified,
-      profileImage: user.profileImage,
-      lastLogin: user.lastLogin
+      id: (user as any)._id.toString(),
+      email: (user as any).email,
+      firstName: (user as any).firstName,
+      lastName: (user as any).lastName,
+      role: (user as any).role,
+      status: (user as any).status,
+      emailVerified: (user as any).emailVerified,
+      profileImage: (user as any).profileImage,
+      lastLogin: (user as any).lastLogin
     };
 
     return res.status(200).json({ 

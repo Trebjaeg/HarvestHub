@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiRequest } from '@/lib/api-utils';
 
 export interface User {
   id: string;
@@ -20,10 +19,14 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; message?: string; requiresVerification?: boolean }>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
   checkAuth: () => Promise<boolean>;
+  refreshUser: () => Promise<void>;
+}
+
+interface AuthProviderProps {
+  children: React.ReactNode;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,10 +39,6 @@ export const useAuth = () => {
   return context;
 };
 
-interface AuthProviderProps {
-  children: React.ReactNode;
-}
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,23 +46,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const isAuthenticated = !!user;
 
+  // Helper to make API requests with correct URL
+  const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
+    // Use window.location.origin to ensure we use the current port
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const url = `${baseUrl}${endpoint}`;
+    
+    return fetch(url, {
+      credentials: 'include',
+      ...options,
+    });
+  };
+
   // Check authentication status
   const checkAuth = useCallback(async (): Promise<boolean> => {
     try {
       console.log('🔐 AuthContext: Checking authentication...');
       
-      const response = await apiRequest('/api/auth/me', {
+      const response = await makeApiRequest('/api/auth/me', {
         method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       console.log('🔐 AuthContext: Auth check response:', { status: response.status });
 
       if (response.ok) {
         const userData = await response.json();
-        console.log('🔐 AuthContext: User authenticated:', userData.user?.email);
+        console.log('🔐 AuthContext: User authenticated:', userData.user.email);
         setUser(userData.user);
         
-        // Store in sessionStorage as backup
+        // Store in sessionStorage for persistence
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('auth_user', JSON.stringify(userData.user));
         }
@@ -81,7 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       }
     } catch (error) {
-      console.error('🔐 AuthContext: Auth check failed:', error);
+      console.error('🔐 AuthContext: Auth check error:', error);
       setUser(null);
       return false;
     }
@@ -97,42 +111,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('🔐 AuthContext: Starting login for:', email);
       
-      const response = await apiRequest('/api/auth/login', {
+      const response = await makeApiRequest('/api/auth/login', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ email, password }),
       });
 
-      console.log('🔐 AuthContext: Response status:', response.status);
       const data = await response.json();
-      console.log('🔐 AuthContext: Response data:', data);
+      console.log('🔐 AuthContext: Login API response:', { status: response.status, data });
 
-      if (response.ok && data.success) {
-        console.log('🔐 AuthContext: Login successful, setting user');
+      if (response.ok) {
+        console.log('🔐 AuthContext: Login successful, setting user data:', data.user);
         setUser(data.user);
         
+        // Store in sessionStorage
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('auth_user', JSON.stringify(data.user));
         }
         
-        return { success: true };
+        return true;
       } else {
-        console.log('🔐 AuthContext: Login failed:', data.message);
-        return { 
-          success: false, 
-          message: data.message || 'Login failed',
-          requiresVerification: data.requiresVerification 
-        };
+        console.error('🔐 AuthContext: Login failed:', data.message);
+        return false;
       }
     } catch (error) {
       console.error('🔐 AuthContext: Login error:', error);
-      return { success: false, message: 'Network error occurred' };
+      return false;
     }
   };
 
   // Logout function
   const logout = async () => {
     try {
-      await apiRequest('/api/auth/logout', {
+      await makeApiRequest('/api/auth/logout', {
         method: 'POST',
       });
     } catch (error) {
@@ -149,70 +162,65 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Check auth on mount 
+  // Initialize authentication state
   useEffect(() => {
     const initAuth = async () => {
-      // SIMPLE RULE: Only check auth if we're NOT on the auth page
-      const isOnAuthPage = typeof window !== 'undefined' && window.location.pathname === '/auth';
+      console.log('🔐 AuthContext: Initializing auth...');
       
-      if (isOnAuthPage) {
-        // On auth page - don't check, just set as not loading
-        console.log('🔐 AuthContext: On auth page, skipping auth check');
-        setIsLoading(false);
-        setUser(null);
-        return;
-      }
-
-      // Not on auth page - check if user is authenticated IMMEDIATELY
-      console.log('🔐 AuthContext: Checking authentication...');
-      try {
-        const authResult = await checkAuth();
-        console.log('🔐 AuthContext: Auth check result:', authResult);
-        
-        if (!authResult) {
-          // Clear any stale data
-          setUser(null);
-          if (typeof window !== 'undefined') {
+      // Try to restore user from sessionStorage first
+      if (typeof window !== 'undefined') {
+        const storedUser = sessionStorage.getItem('auth_user');
+        if (storedUser) {
+          try {
+            const userData = JSON.parse(storedUser);
+            console.log('🔐 AuthContext: Restoring user from sessionStorage:', userData.email);
+            setUser(userData);
+          } catch (error) {
+            console.error('🔐 AuthContext: Error parsing stored user:', error);
             sessionStorage.removeItem('auth_user');
           }
         }
-      } catch (error) {
-        console.error('🔐 AuthContext: Auth check failed:', error);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
       }
+      
+      // Always verify with server
+      const authResult = await checkAuth();
+      console.log('🔐 AuthContext: Initial auth check result:', authResult);
+      
+      setIsLoading(false);
     };
 
     initAuth();
   }, [checkAuth]);
 
-  // Listen for storage events (logout in other tabs)
+  // Session check effect
   useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'auth-logout') {
-        setUser(null);
-        router.push('/auth');
+    if (!isAuthenticated || isLoading) return;
+
+    const sessionCheckInterval = setInterval(async () => {
+      console.log('🔐 AuthContext: Periodic session check...');
+      const isValid = await checkAuth();
+      if (!isValid) {
+        console.log('🔐 AuthContext: Session expired, logging out...');
+        logout();
       }
-    };
+    }, 5 * 60 * 1000); // Check every 5 minutes
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [router]);
-
-  const value: AuthContextType = {
-    user,
-    isAuthenticated,
-    isLoading,
-    login,
-    logout,
-    refreshUser,
-    checkAuth,
-  };
+    return () => clearInterval(sessionCheckInterval);
+  }, [isAuthenticated, isLoading, checkAuth]);
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated,
+      isLoading,
+      login,
+      logout,
+      checkAuth,
+      refreshUser
+    }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+export default AuthProvider;

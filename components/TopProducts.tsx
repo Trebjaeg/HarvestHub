@@ -25,7 +25,13 @@ const TopProducts: React.FC<TopProductsProps> = ({
     try {
       setLoading(true);
       // Fetch products sorted by some criteria (e.g., most popular, best sellers, highest rated)
-      const response = await fetch('/api/products?limit=20&sortBy=popular');
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const response = await fetch(`${baseUrl}/api/products?limit=20&sortBy=popular`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       const data = await response.json();
       
       if (data.success) {
