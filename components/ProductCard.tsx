@@ -16,130 +16,65 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
     : 0;
 
   return (
-    <div className={`bg-white rounded-2xl border-2 border-green-200 hover:border-green-400 transition-all duration-300 hover:shadow-lg hover:scale-105 ${className}`}>
-      <div className="relative">
-        {/* Product Image */}
-        <div className="relative h-48 rounded-t-xl overflow-hidden">
-          <Image
-            src={product.imageUrl}
-            alt={product.name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
-          
-          {/* Badges */}
-          <div className="absolute top-3 left-3 flex flex-col gap-2">
-            {hasDiscount && (
-              <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                -{discountPercentage}%
+    <div className={`bg-white rounded-3xl border-2 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${className}`} style={{ width: '218px', height: '275px', borderColor: '#40613D' }}>
+      {/* Product Image - Takes remaining space after info section (275px - 89px = 186px) */}
+      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6" style={{ height: '186px' }}>
+        <Image
+          src={product.imageUrl}
+          alt={product.name}
+          fill
+          className="object-contain p-3"
+          sizes="218px"
+        />
+      </div>
+
+      {/* Product Info - Beige/Cream Background - Fixed height 89px */}
+      <div className="bg-[#F5ECDE] flex flex-col" style={{ height: '89px', padding: '8px 12px' }}>
+        {/* Category - 12px height */}
+        <p className="text-[11px] text-gray-600 font-normal mb-0.5" style={{ fontFamily: 'Poppins, sans-serif', lineHeight: '12px', height: '12px' }}>
+          {product.category}
+        </p>
+
+        {/* Product Name - 33px height */}
+        <h3 className="text-[17px] font-bold text-[#1E3A2F] mb-1 line-clamp-1" style={{ fontFamily: 'Poppins, sans-serif', lineHeight: '22px', height: '33px', display: 'flex', alignItems: 'center' }}>
+          {product.name}
+        </h3>
+
+        {/* Price Section with Cart Button */}
+        <div className="flex items-end justify-between mt-auto">
+          <div className="flex items-center gap-1.5" style={{ height: '24px' }}>
+            <span className="text-[16px] font-bold text-[#1E3A2F]" style={{ fontFamily: 'Poppins, sans-serif', lineHeight: '24px' }}>
+              ₱{product.currentPrice}/{product.unit}
+            </span>
+            {hasDiscount && product.basePrice && (
+              <span className="text-[12px] text-gray-500 line-through" style={{ fontFamily: 'Poppins, sans-serif', lineHeight: '24px' }}>
+                ₱{product.basePrice}/{product.unit}
               </span>
             )}
-            {product.isOrganic && (
-              <span className="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-full">
-                Organic
-              </span>
-            )}
-            {product.isFeatured && (
-              <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                Featured
-              </span>
-            )}
           </div>
 
-          {/* Stock indicator */}
-          {product.stock < 10 && product.stock > 0 && (
-            <div className="absolute top-3 right-3">
-              <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                Low Stock
-              </span>
-            </div>
-          )}
-          
-          {product.stock === 0 && (
-            <div className="absolute top-3 right-3">
-              <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
-                Out of Stock
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Product Info */}
-        <div className="p-4 space-y-3">
-          {/* Category */}
-          <p className="text-sm text-green-600 font-medium">
-            {product.category}
-          </p>
-
-          {/* Product Name */}
-          <h3 className="text-lg font-bold text-gray-900 line-clamp-2">
-            {product.name}
-          </h3>
-
-          {/* Farmer Info */}
-          <div className="flex items-center text-sm text-gray-600">
-            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-            </svg>
-            <span>by {product.farmer.name}</span>
-          </div>
-
-          {/* Location */}
-          <div className="flex items-center text-sm text-gray-500">
-            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-            </svg>
-            <span>{product.farmer.location}</span>
-          </div>
-
-          {/* Price */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className="text-xl font-bold text-green-600">
-                ₱{product.currentPrice}/{product.unit}
-              </span>
-              {hasDiscount && (
-                <span className="text-sm text-gray-500 line-through">
-                  ₱{product.basePrice}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Remove Harvest Date section as it's not in our interface */}
-
-          {/* Tags */}
-          {product.tags && product.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {product.tags.slice(0, 3).map((tag, index) => (
-                <span
-                  key={index}
-                  className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Add to Cart Button */}
+          {/* Add to Cart Button - 28x28px Rounded Square - Positioned 2px higher */}
           <button 
-            className={`w-full py-2 px-4 rounded-lg font-semibold transition-all duration-200 ${
+            className={`flex items-center justify-center transition-all duration-200 flex-shrink-0 ${
               product.stock > 0
-                ? 'bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? 'bg-[#1E3A2F] hover:bg-[#2D5240] text-white hover:scale-105'
+                : 'bg-gray-400 text-gray-200 cursor-not-allowed'
             }`}
+            style={{ 
+              width: '28px', 
+              height: '28px', 
+              minWidth: '28px',
+              minHeight: '28px',
+              borderRadius: '6px',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+              marginBottom: '2px'
+            }}
             disabled={product.stock === 0}
+            aria-label="Add to cart"
           >
-            <div className="flex items-center justify-center space-x-2">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-              </svg>
-              <span>
-                {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
-              </span>
-            </div>
+            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20" style={{ width: '14px', height: '14px' }}>
+              <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
+            </svg>
           </button>
         </div>
       </div>

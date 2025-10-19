@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { IProduct } from '../../types/product';
+import { ProtectedRoute } from '../../../components/ProtectedRoute';
 
-const AddProductPage = () => {
+const AddProductContent = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [formData, setFormData] = useState({
@@ -397,6 +398,14 @@ const AddProductPage = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const AddProductPage = () => {
+  return (
+    <ProtectedRoute requiredRole="user">
+      <AddProductContent />
+    </ProtectedRoute>
   );
 };
 

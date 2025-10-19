@@ -25,7 +25,8 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
       search,
       limit = '20',
       page = '1',
-      sort = 'createdAt'
+      sort = 'createdAt',
+      sortBy
     } = req.query;
 
     const query: any = { isActive: true };
@@ -44,21 +45,38 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
 
     // Sort options
     let sortOption: any = {};
-    switch (sort) {
-      case 'price_asc':
-        sortOption = { price: 1 };
-        break;
-      case 'price_desc':
-        sortOption = { price: -1 };
-        break;
-      case 'name':
-        sortOption = { name: 1 };
-        break;
-      case 'newest':
-        sortOption = { createdAt: -1 };
-        break;
-      default:
-        sortOption = { createdAt: -1 };
+    
+    // Handle sortBy parameter (for Top Products)
+    if (sortBy === 'popular') {
+      // Sort by products with discounts first, then by highest discount percentage
+      query.$expr = {
+        $and: [
+          { $gt: ['$basePrice', '$currentPrice'] } // Has discount
+        ]
+      };
+      sortOption = { 
+        // Calculate discount percentage and sort by it
+        discountPercentage: -1,
+        createdAt: -1 
+      };
+    } else {
+      // Regular sort options
+      switch (sort) {
+        case 'price_asc':
+          sortOption = { price: 1 };
+          break;
+        case 'price_desc':
+          sortOption = { price: -1 };
+          break;
+        case 'name':
+          sortOption = { name: 1 };
+          break;
+        case 'newest':
+          sortOption = { createdAt: -1 };
+          break;
+        default:
+          sortOption = { createdAt: -1 };
+      }
     }
 
     const products = await Product.find(query)
@@ -71,7 +89,8 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
 
     return res.status(200).json({
       success: true,
-      data: products,
+      products: products, // Changed from 'data' to 'products' for consistency with TopProducts component
+      data: products, // Keep 'data' for backward compatibility
       pagination: {
         current: pageNum,
         total: Math.ceil(total / limitNum),

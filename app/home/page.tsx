@@ -6,14 +6,17 @@ import { useState, useEffect } from "react";
 import { useTranslation } from 'react-i18next';
 import I18nProvider from '../../components/I18nProvider';
 import ProductCard from '../../components/ProductCard';
+import TopProducts from '../../components/TopProducts';
+import PromoBanner from '../../components/PromoBanner';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
-import { useUserData } from '../../hooks/useUserData';
+import { ProtectedRoute } from '../../components/ProtectedRoute';
+import { useAuthUserData } from '../../hooks/useAuthUserData';
 import { IProduct } from '../../types/product';
 // import { useProducts } from '../../hooks/useProducts'; // Will be used later when API is synced
 
 const HomePageContent = () => {
   const { t } = useTranslation();
-  const { isAuthenticated, cartCount, notificationCount } = useUserData();
+  const { isAuthenticated, cartCount, notificationCount } = useAuthUserData();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState('all');
   
@@ -785,99 +788,8 @@ const HomePageContent = () => {
                 </div>
               </div>
 
-              {/* Top Products Section */}
-              <div className="bg-white rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 
-                    className="text-lg font-semibold"
-                    style={{ color: '#614124', fontFamily: 'Poppins, sans-serif' }}
-                  >
-                    {t('home.bestOffers')}
-                  </h3>
-                  <div className="flex gap-1">
-                    <button className="w-6 h-6 bg-green-600 text-white rounded flex items-center justify-center">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                    <button className="w-6 h-6 bg-gray-300 text-gray-600 rounded flex items-center justify-center">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Bitter Gourd */}
-                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                    <div className="w-12 h-12 relative">
-                      <Image
-                        src="/images/products/bittergourd.png"
-                        alt="Bitter Gourd"
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>Fresh Vegetables</p>
-                      <h4 className="font-medium text-sm" style={{ color: '#614124', fontFamily: 'Poppins, sans-serif' }}>Bitter Gourd</h4>
-                      <p className="font-bold text-green-600 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>₱40.00/kg <span className="text-xs text-gray-400 line-through">₱55/kg</span></p>
-                    </div>
-                  </div>
-
-                  {/* Lemon */}
-                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                    <div className="w-12 h-12 relative">
-                      <Image
-                        src="/images/products/lemon.png"
-                        alt="Lemon"
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>Fruits & Harvest</p>
-                      <h4 className="font-medium text-sm" style={{ color: '#614124', fontFamily: 'Poppins, sans-serif' }}>Lemon</h4>
-                      <p className="font-bold text-green-600 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>₱105/kg <span className="text-xs text-gray-400 line-through">₱130/kg</span></p>
-                    </div>
-                  </div>
-
-                  {/* Tomato */}
-                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                    <div className="w-12 h-12 relative">
-                      <Image
-                        src="/images/products/tomato.png"
-                        alt="Tomato"
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>Fresh Vegetables</p>
-                      <h4 className="font-medium text-sm" style={{ color: '#614124', fontFamily: 'Poppins, sans-serif' }}>Tomato</h4>
-                      <p className="font-bold text-green-600 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>₱50/kg <span className="text-xs text-gray-400 line-through">₱60/kg</span></p>
-                    </div>
-                  </div>
-
-                  {/* Carrots */}
-                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                    <div className="w-12 h-12 relative">
-                      <Image
-                        src="/images/products/carrot.png"
-                        alt="Carrots"
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>Fresh Vegetables</p>
-                      <h4 className="font-medium text-sm" style={{ color: '#614124', fontFamily: 'Poppins, sans-serif' }}>Carrots</h4>
-                      <p className="font-bold text-green-600 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>₱55/kg <span className="text-xs text-gray-400 line-through">₱65/kg</span></p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* Top Products Section - Dynamic Component */}
+              <TopProducts title={t('home.bestOffers')} maxItems={4} />
             </div>
 
             {/* Right Side - Featured Products Grid */}
@@ -952,15 +864,15 @@ const HomePageContent = () => {
               {/* Products Grid */}
               <div className="min-h-[400px]">
                 {loading ? (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 lg:gap-10 justify-items-center">
                     {/* Loading skeleton cards */}
                     {[...Array(8)].map((_, index) => (
-                      <div key={index} className="border-2 border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden h-80 animate-pulse">
-                        <div className="h-48 bg-gray-200"></div>
-                        <div className="p-4 space-y-2">
+                      <div key={index} className="border-2 border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden animate-pulse" style={{ width: '218px', height: '275px' }}>
+                        <div className="bg-gray-200" style={{ height: '186px' }}></div>
+                        <div className="p-4 space-y-2" style={{ height: '89px' }}>
+                          <div className="h-2 bg-gray-200 rounded w-1/2"></div>
+                          <div className="h-3 bg-gray-200 rounded w-3/4"></div>
                           <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                         </div>
                       </div>
                     ))}
@@ -1014,7 +926,7 @@ const HomePageContent = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 lg:gap-10 justify-items-center">
                       {filteredProducts.map((product) => (
                         <ProductCard key={product._id} product={product} />
                       ))}
@@ -1065,6 +977,11 @@ const HomePageContent = () => {
                   </>
                 )}
               </div>
+
+              {/* Promo Banner - Below Products */}
+              <div className="mt-12 flex justify-center">
+                <PromoBanner />
+              </div>
             </div>
           </div>
         </div>
@@ -1075,9 +992,11 @@ const HomePageContent = () => {
 
 const HomePage = () => {
   return (
-    <I18nProvider>
-      <HomePageContent />
-    </I18nProvider>
+    <ProtectedRoute>
+      <I18nProvider>
+        <HomePageContent />
+      </I18nProvider>
+    </ProtectedRoute>
   );
 };
 
