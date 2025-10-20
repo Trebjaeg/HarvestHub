@@ -109,23 +109,99 @@ const AuditLogs: React.FC = () => {
   };
 
   const filteredLogs = logs.filter(log => {
-    if (filter !== 'all' && !log.action.toLowerCase().includes(filter.toLowerCase())) {
-      return false;
+    // For "Login" filter, we want to show admin login records specifically
+    if (filter === 'login') {
+      const loginMatches = log.action.toLowerCase().includes('login') ||
+             log.action.toLowerCase().includes('admin_login') ||
+             log.action.toLowerCase().includes('user_login') ||
+             log.action === 'LOGIN' ||
+             log.action === 'ADMIN_LOGIN';
+      
+      if (!loginMatches) {
+        return false;
+      }
+    } else if (filter !== 'all') {
+      // Only show specific actions for other filters
+      const allowedActions = [
+        'user_password_changed',
+        'user_email_changed', 
+        'user_username_changed',
+        'user_suspended',
+        'user_deactivated',
+        'password_changed',
+        'email_changed',
+        'username_changed',
+        'account_suspended',
+        'account_deactivated',
+        'change_password',
+        'change_email',
+        'change_username',
+        'suspend_user',
+        'deactivate_user'
+      ];
+      
+      const actionMatches = allowedActions.some(allowedAction => 
+        log.action.toLowerCase().includes(allowedAction.toLowerCase()) ||
+        allowedAction.toLowerCase().includes(log.action.toLowerCase())
+      );
+      
+      if (!actionMatches) {
+        return false;
+      }
+
+      // Apply specific action filter for non-login filters
+      let shouldShow = false;
+      
+      switch (filter) {
+        case 'create':
+          shouldShow = log.action.toLowerCase().includes('password') || 
+                      log.action.toLowerCase().includes('change_password') ||
+                      log.action.toLowerCase().includes('password_changed');
+          break;
+        case 'update':
+          shouldShow = log.action.toLowerCase().includes('email') ||
+                      log.action.toLowerCase().includes('change_email') ||
+                      log.action.toLowerCase().includes('email_changed');
+          break;
+        case 'delete':
+          shouldShow = log.action.toLowerCase().includes('username') ||
+                      log.action.toLowerCase().includes('change_username') ||
+                      log.action.toLowerCase().includes('username_changed');
+          break;
+        case 'approve':
+          shouldShow = log.action.toLowerCase().includes('deactivat') ||
+                      log.action.toLowerCase().includes('deactivated');
+          break;
+        case 'reject':
+          shouldShow = true;
+          break;
+        default:
+          shouldShow = true;
+      }
+      
+      if (!shouldShow) {
+        return false;
+      }
     }
 
+    // Apply date filter
     if (dateFilter !== 'all') {
       const logDate = new Date(log.createdAt);
       const now = new Date();
       
+      // Create date objects for comparison (normalize to UTC to avoid timezone issues)
+      const logDateOnly = new Date(Date.UTC(logDate.getUTCFullYear(), logDate.getUTCMonth(), logDate.getUTCDate()));
+      const todayOnly = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      
       switch (dateFilter) {
         case 'today':
-          return logDate.toDateString() === now.toDateString();
+          return logDateOnly.getTime() === todayOnly.getTime();
         case 'week':
-          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          return logDate >= weekAgo;
+          const weekAgo = new Date(todayOnly.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return logDateOnly >= weekAgo;
         case 'month':
-          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          return logDate >= monthAgo;
+          const monthAgo = new Date(todayOnly.getTime() - 30 * 24 * 60 * 60 * 1000);
+          return logDateOnly >= monthAgo;
         default:
           return true;
       }

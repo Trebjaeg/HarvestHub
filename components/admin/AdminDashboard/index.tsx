@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useTranslation } from 'react-i18next';
 import LoadingDots from '@/components/ui/LoadingDots';
 import { useRecentActivities } from '../../../hooks/useRecentActivities';
 import { StatCardSkeleton, ActivitySkeleton, ChartSkeleton } from '@/components/ui/SkeletonLoader';
@@ -16,6 +15,7 @@ import FarmerVerification from '../FarmerVerification';
 import Reports from '../Reports';
 import Appeals from '../Appeals';
 import AuditLogs from '../AuditLogs';
+import AdsManagement from '../AdsManagement';
 
 interface AdminStats {
   totalUsers: number;
@@ -25,7 +25,6 @@ interface AdminStats {
 }
 
 const AdminDashboard: React.FC = () => {
-  const { t } = useTranslation();
   const router = useRouter();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true); // Initial loading
@@ -152,7 +151,7 @@ const AdminDashboard: React.FC = () => {
   }
 
   // Helper function to format audit log actions for display
-  const formatActivityAction = (action: string, targetUser?: any, targetResource?: string): string => {
+  const formatActivityAction = (action: string, targetUser?: { email: string }, targetResource?: string): string => {
     const actionMap: { [key: string]: string } = {
       'user_suspended': targetUser ? `Suspended user: ${targetUser.email}` : 'User suspended',
       'user_unsuspended': targetUser ? `Unsuspended user: ${targetUser.email}` : 'User unsuspended',
@@ -340,6 +339,16 @@ const AdminDashboard: React.FC = () => {
                   )
                 },
                 { 
+                  id: 'ads', 
+                  label: 'Ads', 
+                  icon: (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="icon icon-tabler icons-tabler-filled icon-tabler-ad">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M19 4h-14a3 3 0 0 0 -3 3v10a3 3 0 0 0 3 3h14a3 3 0 0 0 3 -3v-10a3 3 0 0 0 -3 -3zm-10 4a3 3 0 0 1 2.995 2.824l.005 .176v4a1 1 0 0 1 -1.993 .117l-.007 -.117v-1h-2v1a1 1 0 0 1 -1.993 .117l-.007 -.117v-4a3 3 0 0 1 3 -3zm0 2a1 1 0 0 0 -.993 .883l-.007 .117v1h2v-1a1 1 0 0 0 -1 -1zm8 -2a1 1 0 0 1 .993 .883l.007 .117v6a1 1 0 0 1 -.883 .993l-.117 .007h-1.5a2.5 2.5 0 1 1 .326 -4.979l.174 .029v-2.05a1 1 0 0 1 .883 -.993l.117 -.007zm-1.41 5.008l-.09 -.008a.5 .5 0 0 0 -.09 .992l.09 .008h.5v-.5l-.008 -.09a.5 .5 0 0 0 -.318 -.379l-.084 -.023z" />
+                    </svg>
+                  )
+                },
+                { 
                   id: 'users', 
                   label: 'Users', 
                   icon: (
@@ -384,7 +393,7 @@ const AdminDashboard: React.FC = () => {
                 },
                 { 
                   id: 'reports', 
-                  label: 'Reports', 
+                  label: 'Disputes', 
                   icon: (
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-report">
                       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -467,18 +476,7 @@ const AdminDashboard: React.FC = () => {
 
         {/* Main Content */}
         <div className="flex-1 lg:ml-0 p-4 lg:p-6">
-          {/* Desktop Page Header */}
-          <div className="hidden lg:block mb-6">
-            <h2 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              {activeTab === 'overview' && 'Dashboard Overview'}
-              {activeTab === 'users' && 'User Management'}
-              {activeTab === 'farmers' && 'Farmer Management'}
-              {activeTab === 'farmers-verification' && 'Farmer Verification'}
-              {activeTab === 'reports' && 'Reports'}
-              {activeTab === 'appeals' && 'Appeals'}
-              {activeTab === 'audit' && 'Audit Logs'}
-            </h2>
-          </div>
+          
 
           {activeTab === 'overview' && (
             <div className="space-y-6">
@@ -686,6 +684,7 @@ const AdminDashboard: React.FC = () => {
           )}
 
           {activeTab === 'users' && <UserManagement />}
+          {activeTab === 'ads' && <AdsManagement />}
           {activeTab === 'farmers' && <FarmerManagement />}
           {activeTab === 'farmers-verification' && <FarmerVerification />}
           {activeTab === 'reports' && <Reports />}
