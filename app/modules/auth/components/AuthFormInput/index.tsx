@@ -431,24 +431,32 @@ const AuthFormInput: FC = () => {
       <>
         <SuccessModal open={showSuccessModal} onClose={() => setShowSuccessModal(false)} />
         <div className="space-y-6">
-        {/* Top Back Control */}
+        {/* Top Back Control - Mobile Optimized with z-index */}
         <button
           type="button"
-          className="inline-flex items-center text-green-700 hover:text-green-800 focus:outline-none"
-          onClick={() => {
+          className="relative z-10 inline-flex items-center text-green-700 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 rounded-lg p-3 -ml-2 active:bg-green-50 transition-all touch-manipulation min-h-[48px]"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Reset to login view
             setStep('email');
             setNextStep(false);
+            updateFormState('nextStep', false);
+            updateFormState('email', '');
+            updateFormState('password', '');
+            updateFormState('firstName', '');
+            updateFormState('lastName', '');
+            updateFormState('selectedRole', '');
             clearAllFieldErrors();
-            clearAllFieldErrors(); // Clear translatable errors too
           }}
           aria-label={t('auth.back') || 'Back'}
         >
-          <span className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-green-700 shadow flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+          <span className="w-10 h-10 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-green-500 to-green-700 shadow-md flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 sm:w-4 sm:h-4 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
               <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M5 12l4-4m-4 4 4 4"/>
             </svg>
           </span>
-          <span className="ml-2 font-medium">{t('auth.back') || 'Back'}</span>
+          <span className="ml-2 sm:ml-2 font-semibold text-base sm:text-sm">{t('auth.back') || 'Back'}</span>
         </button>
         {/* Name Section */}
         <div>
@@ -754,12 +762,12 @@ const AuthFormInput: FC = () => {
                   updateFormState('selectedRole', role.id);
                   clearFieldError('role');
                 }}
-                className={`relative p-4 border-2 rounded-lg transition-all duration-200 text-left ${
+                className={`relative p-4 border-2 rounded-lg transition-all duration-200 text-left touch-manipulation active:scale-[0.98] ${
                   state.selectedRole === role.id
                     ? 'border-green-500 bg-green-50'
                     : hasFieldError('role')
-                    ? 'border-red-300 bg-white hover:border-red-400'
-                    : 'border-gray-200 bg-white hover:border-green-300'
+                    ? 'border-red-300 bg-white hover:border-red-400 active:bg-red-50'
+                    : 'border-gray-200 bg-white hover:border-green-300 active:bg-green-50'
                 }`}
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
@@ -823,7 +831,7 @@ const AuthFormInput: FC = () => {
             }}
             disabled={state.loading}
             variant="default"
-            className="w-full h-12 text-white font-semibold text-base rounded-lg disabled:opacity-50"
+            className="w-full h-12 sm:h-12 text-white font-semibold text-base rounded-lg disabled:opacity-50 active:scale-[0.98] transition-transform touch-manipulation"
           >
             {state.loading ? (
               <span className="flex items-center justify-center w-full">

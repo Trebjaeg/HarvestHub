@@ -20,9 +20,9 @@ const AuthForm: FC<AuthFormProps> = ({
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
   return (
-    <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-gray-50 relative overflow-auto min-h-screen lg:min-h-0">
+    <div className="w-full lg:w-1/2 flex items-start justify-center p-4 sm:p-6 md:p-8 bg-gray-50 relative min-h-screen lg:min-h-0 overflow-y-auto">
       <LanguageSwitcher />
-      <div className="w-full max-w-md shadow-xl rounded-2xl bg-white p-6 sm:p-8 mx-auto border border-gray-100">
+      <div className="w-full max-w-md shadow-xl rounded-2xl bg-white p-6 sm:p-8 mx-auto border border-gray-100 my-4">
         {/* Header Section */}
         <div className="mb-6 sm:mb-8">
           <div className="flex justify-center items-center mb-4">
