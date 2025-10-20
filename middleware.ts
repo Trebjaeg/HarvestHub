@@ -61,6 +61,8 @@ export async function middleware(request: NextRequest) {
     console.log(`🔐 Middleware: ${pathname} is public, allowing access`);
     return response;
   }
+  
+  console.log(`🔐 Middleware: ${pathname} NOT in public paths`);
 
   // Check if route requires protection
   const isProtectedRoute = isProtectedPath(pathname);
@@ -75,6 +77,9 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // For API routes that are not public, check authentication
+  // (Public API routes were already handled above)
+  
   // Get token from cookies or Authorization header
   let token = request.cookies.get('auth-token')?.value || 
               request.cookies.get('userToken')?.value ||

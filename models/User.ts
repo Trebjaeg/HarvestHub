@@ -26,8 +26,8 @@ const UserSchema = new Schema({
   // User role and moderation fields
   role: {
     type: String,
-    enum: ['user', 'admin', 'superadmin'],
-    default: 'user'
+    enum: ['buyer', 'seller', 'admin', 'superadmin'],
+    default: 'buyer'
   },
   status: {
     type: String,
@@ -152,6 +152,11 @@ UserSchema.methods.resetLoginAttempts = function(this: any) {
   });
 };
 
-const User = models.User || mongoose.model('User', UserSchema);
+// Delete the cached model to ensure schema changes take effect
+if (models.User) {
+  delete models.User;
+}
+
+const User = mongoose.model('User', UserSchema);
 
 export default User;

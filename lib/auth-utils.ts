@@ -135,12 +135,14 @@ export function isPublicPath(pathname: string): boolean {
     '/api/auth/request-password-reset',
     '/api/auth/verify-email',
     '/api/auth/check-email',
+    '/api/auth/verify-code',
     '/api/auth/verify-reset-code',
     '/api/auth/send-verification-code',
     '/api/auth/resend-verification',
     '/api/auth/check-verification',
     '/api/auth/csrf-token',
     '/api/auth/post-login-redirect',
+    '/api/auth/roles',
     '/api/products',
     '/api/promo-banners'
   ];

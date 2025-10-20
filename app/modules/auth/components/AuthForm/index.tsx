@@ -20,11 +20,11 @@ const AuthForm: FC<AuthFormProps> = ({
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
   return (
-    <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50 relative overflow-auto">
+    <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-gray-50 relative overflow-auto min-h-screen lg:min-h-0">
       <LanguageSwitcher />
-      <div className="w-full max-w-md shadow-xl rounded-2xl bg-white p-8 mx-auto border border-gray-100">
+      <div className="w-full max-w-md shadow-xl rounded-2xl bg-white p-6 sm:p-8 mx-auto border border-gray-100">
         {/* Header Section */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="flex justify-center items-center mb-4">
             <Image
               src="/images/harvesthub.png"
@@ -32,11 +32,11 @@ const AuthForm: FC<AuthFormProps> = ({
               width={32}
               height={32}
             />
-            <h1 className="text-lg font-medium text-green-700 ml-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <h1 className="text-base sm:text-lg font-medium text-green-700 ml-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
               Harvest Hub
             </h1>
           </div>
-          <h2 className="text-2xl font-medium mb-2 text-gray-900 text-left" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <h2 className="text-xl sm:text-2xl font-medium mb-2 text-gray-900 text-left" style={{ fontFamily: 'Poppins, sans-serif' }}>
             {t('auth.title')}
           </h2>
           <p className="text-gray-600 text-sm text-left" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: '400' }}>
@@ -48,12 +48,12 @@ const AuthForm: FC<AuthFormProps> = ({
           onSubmit={(e) => {
             handleSubmit?.(e);
           }}
-          className="space-y-6"
+          className="space-y-4 sm:space-y-6"
         >
           <AuthFormInput />
         </form>
 
-        <p className="text-center mt-6 text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: '400' }}>
+        <p className="text-center mt-4 sm:mt-6 text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: '400' }}>
           <button
             type="button"
             onClick={() => setShowForgotPasswordModal(true)}

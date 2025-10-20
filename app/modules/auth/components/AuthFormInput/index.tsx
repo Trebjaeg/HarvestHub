@@ -27,6 +27,7 @@ const AuthFormInput: FC = () => {
     confirmPassword: '',
     firstName: '',
     lastName: '',
+    selectedRole: '',
     acceptTerms: false,
     acceptPrivacy: false,
     error: '',
@@ -41,6 +42,11 @@ const AuthFormInput: FC = () => {
   const [nextStep, setNextStep] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [verificationCodeExpires, setVerificationCodeExpires] = useState<Date | null>(null);
+  const [availableRoles, setAvailableRoles] = useState<Array<{
+    id: string;
+    name: string;
+    description: string;
+  }>>([]);
 
   // Helper function to update form state
   const updateFormState = (field: string, value: any) => {
@@ -95,6 +101,20 @@ const AuthFormInput: FC = () => {
       setVerificationCode('');
     }
   }, [showVerificationModal]);
+
+  // Fetch available roles when registration form is shown
+  useEffect(() => {
+    if (state.nextStep && availableRoles.length === 0) {
+      fetch('/api/auth/roles')
+        .then(res => res.json())
+        .then(data => {
+          if (data.roles) {
+            setAvailableRoles(data.roles);
+          }
+        })
+        .catch(err => console.error('Failed to fetch roles:', err));
+    }
+  }, [state.nextStep, availableRoles.length]);
 
   // Animated loading indicator SVG (bigger, white bouncing dots)
   const LoadingDots = () => (
@@ -266,6 +286,9 @@ const AuthFormInput: FC = () => {
     if (state.password !== state.confirmPassword) {
       newErrors.push({ field: 'confirmPassword', key: 'auth.validation.passwordMismatch' });
     }
+    if (!state.selectedRole) {
+      newErrors.push({ field: 'role', key: 'auth.validation.roleRequired' });
+    }
     
     // Check email verification (only if email is provided)
     if (state.email.trim() && !state.emailVerified) {
@@ -278,6 +301,7 @@ const AuthFormInput: FC = () => {
     clearFieldError('email');
     clearFieldError('password');
     clearFieldError('confirmPassword');
+    clearFieldError('role');
     
     // If there are errors, set them and return
     if (newErrors.length > 0) {
@@ -317,6 +341,7 @@ const AuthFormInput: FC = () => {
           name: `${state.firstName.trim()} ${state.lastName.trim()}`.trim(),
           email: state.email,
           password: state.password,
+          role: state.selectedRole,
           emailVerified: state.emailVerified,
         }),
       });
@@ -332,6 +357,7 @@ const AuthFormInput: FC = () => {
         confirmPassword: '',
         firstName: '',
         lastName: '',
+        selectedRole: '',
         acceptTerms: false,
         acceptPrivacy: false,
         error: '',
@@ -364,7 +390,10 @@ const AuthFormInput: FC = () => {
         }, 1500);
       }
     } catch (err: any) {
-      setError(err.message || t('auth.error.generic'));
+      console.error('[Registration Error]', err);
+      const errorMessage = err.message || t('auth.error.generic') || 'Registration failed';
+      setFieldError('general', errorMessage);
+      setError(errorMessage);
     } finally {
       updateFormState('loading', false);
     }
@@ -707,6 +736,83 @@ const AuthFormInput: FC = () => {
           )}
         </div>
 
+        {/* Role Selection Section */}
+        <div>
+          <Label 
+            className="block text-sm font-semibold text-gray-800 mb-2"
+            style={{ fontFamily: 'Poppins, sans-serif' }}
+          >
+            {t('auth.selectRole') || 'Select Your Role'}
+          </Label>
+          
+          <div className="grid grid-cols-2 gap-3">
+            {availableRoles.map((role) => (
+              <button
+                key={role.id}
+                type="button"
+                onClick={() => {
+                  updateFormState('selectedRole', role.id);
+                  clearFieldError('role');
+                }}
+                className={`relative p-4 border-2 rounded-lg transition-all duration-200 text-left ${
+                  state.selectedRole === role.id
+                    ? 'border-green-500 bg-green-50'
+                    : hasFieldError('role')
+                    ? 'border-red-300 bg-white hover:border-red-400'
+                    : 'border-gray-200 bg-white hover:border-green-300'
+                }`}
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                {/* Selection Indicator */}
+                {state.selectedRole === role.id && (
+                  <div className="absolute top-2 right-2">
+                    <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Role Name */}
+                <h3 className={`text-base font-semibold mb-1 transition-colors ${
+                  state.selectedRole === role.id ? 'text-green-700' : 'text-gray-900'
+                }`}>
+                  {role.name}
+                </h3>
+                
+                {/* Role Description */}
+                <p className="text-xs text-gray-600 leading-snug">
+                  {role.description}
+                </p>
+              </button>
+            ))}
+          </div>
+          
+          {getFieldError('role') && (
+            <div className="mt-2 flex items-center space-x-1">
+              <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm text-red-500">{getFieldError('role') || t('auth.validation.roleRequired') || 'Please select a role'}</p>
+            </div>
+          )}
+        </div>
+
+        {/* General Error Display */}
+        {(getFieldError('general') || state.error) && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm text-red-600 font-medium">
+                {getFieldError('general') || state.error}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons - NO CHECKBOXES, JUST BUTTONS */}
         <div className="space-y-4">
           <Button
@@ -958,7 +1064,10 @@ const AuthFormInput: FC = () => {
           clearFieldError('email');
         } else if (res.status === 200 && !data.exists) {
           // Unknown email → go to registration form
+          // UI checks `formState.nextStep` (stored in formState), so update both
+          // the nested formState and the local `nextStep` for compatibility.
           updateFormState('isNewUser', true);
+          updateFormState('nextStep', true);
           setNextStep(true);
         } else {
           // For API error messages, we might not have translation keys, so store as is

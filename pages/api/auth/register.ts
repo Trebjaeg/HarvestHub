@@ -29,12 +29,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
-  let { name, email, password, emailVerified } = req.body;
+  let { name, email, password, emailVerified, role } = req.body;
   
   // Input validation and sanitization
   if (!name || !email || !password) {
     console.log('[REGISTER] Missing fields', { name, email, password });
     return res.status(400).json({ message: 'All fields are required' });
+  }
+
+  // Check if role is provided (now required for registration)
+  if (!role) {
+    console.log('[REGISTER] Missing role');
+    return res.status(400).json({ message: 'Role selection is required' });
+  }
+
+  // Validate role if provided
+  if (!['buyer', 'seller'].includes(role)) {
+    console.log('[REGISTER] Invalid role', { role });
+    return res.status(400).json({ message: 'Invalid role. Must be either buyer or seller' });
   }
 
   // Check if email was verified during registration process
@@ -87,12 +99,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       name,
       email,
       password: hashedPassword,
+      role: role || 'buyer', // Default to buyer if no role specified
       isVerified: true, // Email already verified during registration
       verificationToken: null, // No token needed since already verified
       verificationTokenExpires: null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
+    
+    console.log('[REGISTER] Creating user with data:', {
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+      isVerified: userData.isVerified
+    });
     
     // Create user with error handling
     const newUser = new User(userData);
@@ -119,6 +139,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error: any) {
     console.error('[REGISTER] Error:', error);
+    console.error('[REGISTER] Error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      errors: error.errors
+    });
     
     // Handle specific MongoDB errors
     if (error.code === 11000) {
@@ -127,6 +153,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     if (error.name === 'ValidationError') {
       const validationErrors = Object.values(error.errors).map((err: any) => err.message);
+      console.error('[REGISTER] Validation errors:', validationErrors);
       return res.status(400).json({ 
         message: 'Validation failed',
         errors: validationErrors

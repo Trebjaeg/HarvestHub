@@ -45,6 +45,8 @@
     "loginHere": "Mag-login dito",
     "forgotPassword": "Nakalimutan ang Password?",
     "resetPassword": "I-reset ang Password",
+    "selectRole": "Pumili ng Inyong Tungkulin",
+    "roleDescription": "Piliin kung paano ninyo gagamitin ang Harvest Hub",
     "validation": {
       "emailRequired": "Kailangan ang email address",
       "emailInvalid": "Pakisulat ang tamang email address",
@@ -69,6 +71,7 @@
       "passwordCouldBeStronger": "Maging mas malakas pa ang password",
       "confirmPasswordRequired": "Pakikumpirma ang password",
       "passwordMismatch": "Hindi magkatugma ang mga password",
+      "roleRequired": "Pakipili ng tungkulin para magpatuloy",
       "passwordsNoMatch": "Hindi magkatugma ang mga password",
       "termsRequired": "Dapat tanggapin ang Terms and Conditions",
       "privacyRequired": "Dapat tanggapin ang Privacy Policy",

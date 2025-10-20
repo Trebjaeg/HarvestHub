@@ -48,6 +48,8 @@
     "acceptTerms": "I accept the Terms and Conditions",
     "acceptPrivacy": "I accept the Privacy Policy",
     "termsLink": "Terms and Conditions",
+    "selectRole": "Select Your Role",
+    "roleDescription": "Choose how you want to use Harvest Hub",
     "verification": {
       "emailSent": "Registration successful! Please check your email to verify your account before logging in.",
       "emailNotVerified": "Please verify your email first. Check your inbox for the verification link.",
@@ -98,6 +100,7 @@
       "passwordCouldBeStronger": "Consider making your password stronger",
       "confirmPasswordRequired": "Please confirm your password",
       "passwordMismatch": "Passwords do not match",
+      "roleRequired": "Please select a role to continue",
       "passwordsNoMatch": "Passwords do not match",
       "termsRequired": "You must accept the Terms and Conditions",
       "privacyRequired": "You must accept the Privacy Policy",
