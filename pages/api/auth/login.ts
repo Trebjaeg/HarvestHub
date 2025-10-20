@@ -74,8 +74,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!isMatch) {
       console.log('Password mismatch for user:', user.email);
       // Increment failed login attempts
-      if (user.incLoginAttempts) {
-        await user.incLoginAttempts();
+      try {
+        await (user as any).incLoginAttempts();
+      } catch (err) {
+        console.error('Error incrementing login attempts:', err);
       }
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -93,8 +95,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Login successful for user:', user.email);
 
     // Reset failed login attempts on successful login
-    if (user.resetLoginAttempts) {
-      await user.resetLoginAttempts();
+    try {
+      await (user as any).resetLoginAttempts();
+    } catch (err) {
+      console.error('Error resetting login attempts:', err);
     }
 
     // Log admin login for audit trail

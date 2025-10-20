@@ -51,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         address: seller.address || null,
         profileImage: seller.profileImage || null,
         farmName: seller.farmName || null,
-        location: seller.location || null,
+        location: (seller as any).location || null,
         createdAt: seller.createdAt,
         joinedAt: seller.createdAt
       }
@@ -61,7 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('Error fetching seller profile:', error);
     return res.status(500).json({ 
       message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
     });
   }
 }

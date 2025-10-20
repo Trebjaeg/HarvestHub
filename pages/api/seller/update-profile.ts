@@ -108,16 +108,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('Error updating profile:', error);
     
     // Handle validation errors
-    if (error.name === 'ValidationError') {
+    if ((error as any).name === 'ValidationError') {
       return res.status(400).json({ 
         message: 'Validation error',
-        errors: Object.values(error.errors).map((err: any) => err.message)
+        errors: Object.values((error as any).errors).map((err: any) => err.message)
       });
     }
 
     return res.status(500).json({ 
       message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
     });
   }
 }
