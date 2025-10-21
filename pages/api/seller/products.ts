@@ -1,101 +1,99 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
 import User from '@/models/User';
 
-export async function GET(request: NextRequest) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  await dbConnect();
+
+  // Get token from header or cookies
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.replace('Bearer ', '') || req.cookies['hh_token'] || req.cookies['auth-token'];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
   try {
-    await dbConnect();
-
-    // Get token from header
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
-    if (!token) {
-      return NextResponse.json({ error: 'No token provided' }, { status: 401 });
-    }
-
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
     
     // Verify user exists
     const user = await User.findById(decoded.userId);
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    // Get query parameters
-    const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search') || '';
-    const category = searchParams.get('category') || '';
-    const status = searchParams.get('status') || '';
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '12');
+    if (req.method === 'GET') {
+      return handleGET(req, res, decoded.userId);
+    } else if (req.method === 'POST') {
+      return handlePOST(req, res, decoded.userId, user);
+    } else {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+  } catch (error) {
+    console.error('API Error:', error);
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+async function handleGET(req: NextApiRequest, res: NextApiResponse, userId: string) {
+  try {
+    const { search, category, status, page = '1', limit = '12' } = req.query;
 
     // Build query
-    const query: any = { farmerId: decoded.userId };
+    const query: any = { farmerId: userId };
 
-    if (search) {
+    if (search && typeof search === 'string') {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } }
       ];
     }
 
-    if (category && category !== 'All') {
+    if (category && category !== 'All' && typeof category === 'string') {
       query.category = category;
     }
 
-    if (status && status !== 'All') {
+    if (status && status !== 'All' && typeof status === 'string') {
       query.status = status;
     }
 
     // Get products with pagination
-    const skip = (page - 1) * limit;
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const skip = (pageNum - 1) * limitNum;
+    
     const products = await Product.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limitNum);
 
     // Get total count for pagination
     const total = await Product.countDocuments(query);
 
-    return NextResponse.json({
+    return res.status(200).json({
       products,
       pagination: {
-        current: page,
-        total: Math.ceil(total / limit),
+        current: pageNum,
+        total: Math.ceil(total / limitNum),
         count: total
       }
     });
-
   } catch (error) {
     console.error('Error fetching products:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(req: NextApiRequest, res: NextApiResponse, userId: string, user: any) {
   try {
-    await dbConnect();
+    console.log('=== CREATE PRODUCT REQUEST ===');
+    console.log('User ID:', userId);
+    console.log('User Name:', user.name);
+    console.log('Request Body:', JSON.stringify(req.body, null, 2));
 
-    // Get token from header
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
-    if (!token) {
-      return NextResponse.json({ error: 'No token provided' }, { status: 401 });
-    }
-
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    
-    // Verify user exists and get user data
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const body = await request.json();
     const {
       name,
       description,
@@ -105,15 +103,27 @@ export async function POST(request: NextRequest) {
       unit,
       stock,
       images,
-      harvestDate
-    } = body;
+      harvestDate,
+      lowStockAlert
+    } = req.body;
 
     // Validate required fields
     if (!name || !price || !category || !unit || stock === undefined) {
-      return NextResponse.json({ 
-        error: 'Missing required fields' 
-      }, { status: 400 });
+      console.error('Validation failed - missing fields:', { name, price, category, unit, stock });
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        message: 'Name, price, category, unit, and stock are required'
+      });
     }
+
+    console.log('Creating product with data:', {
+      name,
+      price: parseFloat(price),
+      category,
+      unit,
+      stock: parseInt(stock),
+      images: images?.length || 0
+    });
 
     // Create product
     const product = new Product({
@@ -124,9 +134,10 @@ export async function POST(request: NextRequest) {
       status: status || 'Available',
       unit,
       stock: parseInt(stock),
+      lowStockAlert: lowStockAlert ? parseInt(lowStockAlert) : 10,
       image: images?.[0] || '/images/products/default.png',
       images: images || [],
-      farmerId: decoded.userId,
+      farmerId: userId,
       farmerName: user.name,
       location: user.address,
       harvestDate: harvestDate ? new Date(harvestDate) : undefined,
@@ -136,14 +147,22 @@ export async function POST(request: NextRequest) {
     });
 
     await product.save();
+    console.log('Product created successfully:', product._id);
 
-    return NextResponse.json({
+    return res.status(201).json({
       message: 'Product created successfully',
       product
-    }, { status: 201 });
-
+    });
   } catch (error) {
-    console.error('Error creating product:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('!!! ERROR CREATING PRODUCT !!!');
+    console.error('Error details:', error);
+    console.error('Error message:', error instanceof Error ? error.message : 'Unknown');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+    
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Failed to create product',
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : String(error)) : undefined
+    });
   }
 }

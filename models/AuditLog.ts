@@ -24,7 +24,10 @@ const AuditLogSchema = new Schema({
       'listing_hidden',
       'listing_restored',
       'admin_login',
-      'admin_action_failed'
+      'admin_action_failed',
+      'seller_verification_submitted',
+      'seller_verification_approved',
+      'seller_verification_rejected'
     ]
   },
   // Target of the action (if applicable)
@@ -33,7 +36,16 @@ const AuditLogSchema = new Schema({
     ref: 'User',
     default: null
   },
-  // Target resource (listing, product, etc.)
+  // Target resource (listing, product, etc.) - flexible for different types
+  targetType: {
+    type: String,
+    default: null
+  },
+  targetId: {
+    type: Schema.Types.ObjectId,
+    default: null
+  },
+  // Legacy fields for backward compatibility
   targetResource: {
     type: String,
     default: null
@@ -45,7 +57,12 @@ const AuditLogSchema = new Schema({
   // Action details
   reason: {
     type: String,
-    required: true
+    required: false // Made optional for flexibility
+  },
+  // Flexible metadata field
+  metadata: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
   },
   details: {
     type: mongoose.Schema.Types.Mixed,

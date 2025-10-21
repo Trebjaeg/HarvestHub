@@ -19,6 +19,9 @@ async function logoutHandler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   try {
+    console.log('🚪 Logout API called');
+    console.log('🚪 Current cookies:', req.cookies);
+    
     // Get token from cookies or Authorization header
     let token = req.cookies['auth-token'] || 
                 req.cookies['userToken'] || 
@@ -35,21 +38,35 @@ async function logoutHandler(req: NextApiRequest, res: NextApiResponse) {
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-        console.log('User logged out:', decoded.email);
+        console.log('🚪 User logging out:', decoded.email);
       } catch (error) {
         // Token might be invalid, but we still want to clear cookies
-        console.error('Error during logout token verification:', error);
+        console.error('🚪 Error during logout token verification:', error);
       }
     }
 
-    // Clear all possible auth cookies
-    const cookieOptions = 'HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/';
+    // Clear all possible auth cookies with multiple variations to ensure deletion
+    const cookieNames = ['auth-token', 'userToken', 'hh_token'];
+    const cookieHeaders: string[] = [];
     
-    res.setHeader('Set-Cookie', [
-      `auth-token=; ${cookieOptions}`,
-      `userToken=; ${cookieOptions}`,
-      `hh_token=; ${cookieOptions}`
-    ]);
+    // For each cookie, try multiple deletion strategies
+    cookieNames.forEach(name => {
+      // Delete with path=/
+      cookieHeaders.push(`${name}=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`);
+      
+      // Delete with path=/api
+      cookieHeaders.push(`${name}=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/api`);
+      
+      // Delete with domain
+      if (req.headers.host) {
+        const hostname = req.headers.host.split(':')[0];
+        cookieHeaders.push(`${name}=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/; Domain=${hostname}`);
+      }
+    });
+    
+    res.setHeader('Set-Cookie', cookieHeaders);
+    
+    console.log('🚪 Cookies cleared, headers set:', cookieHeaders.length);
 
     return res.status(200).json({ 
       success: true,
@@ -57,16 +74,23 @@ async function logoutHandler(req: NextApiRequest, res: NextApiResponse) {
     });
 
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error('🚪 Logout error:', error);
     
     // Even if there's an error, clear cookies
-    const cookieOptions = 'HttpOnly; Secure; SameSite=Strict; Max-Age=0; Path=/';
+    const cookieNames = ['auth-token', 'userToken', 'hh_token'];
+    const cookieHeaders: string[] = [];
     
-    res.setHeader('Set-Cookie', [
-      `auth-token=; ${cookieOptions}`,
-      `userToken=; ${cookieOptions}`,
-      `hh_token=; ${cookieOptions}`
-    ]);
+    cookieNames.forEach(name => {
+      cookieHeaders.push(`${name}=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`);
+      cookieHeaders.push(`${name}=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/api`);
+      
+      if (req.headers.host) {
+        const hostname = req.headers.host.split(':')[0];
+        cookieHeaders.push(`${name}=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/; Domain=${hostname}`);
+      }
+    });
+    
+    res.setHeader('Set-Cookie', cookieHeaders);
 
     return res.status(200).json({ 
       success: true,

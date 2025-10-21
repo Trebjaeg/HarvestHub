@@ -10,9 +10,18 @@ export default function RootPage() {
   const { user, isLoading } = useAuth();
 
   useEffect(() => {
+    console.log('🏠 RootPage: Auth state changed', { 
+      isLoading, 
+      hasUser: !!user,
+      userEmail: user?.email 
+    });
+    
     // If user is authenticated, redirect to home
     if (!isLoading && user) {
+      console.log('🏠 RootPage: Redirecting authenticated user to /home');
       router.push('/home');
+    } else if (!isLoading && !user) {
+      console.log('🏠 RootPage: User not authenticated, staying on auth page');
     }
   }, [user, isLoading, router]);
 

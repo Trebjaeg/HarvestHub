@@ -5,10 +5,13 @@ import {
   isAdminPath, 
   isPublicPath, 
   isAuthPath, 
+  isSellerPath,
+  isBuyerPath,
   sanitizeReturnUrl, 
   preventAuthLoop,
   safeEncodeUrl
 } from '@/lib/auth-utils';
+import { fetchAuthoritativeUser, RoleHierarchy } from '@/lib/rbac';
 
 // Force Node.js runtime instead of Edge runtime for JWT verification
 export const runtime = 'nodejs';
@@ -27,9 +30,16 @@ export async function middleware(request: NextRequest) {
   
   console.log(`🔐 Middleware: Processing request for ${pathname}`);
   
-  // Apply security headers to all responses
+  // Create response - will be used throughout
   const response = NextResponse.next();
+  
+  // Apply security headers to all responses
   applySecurityHeaders(response);
+  
+  // Add cache control headers to prevent caching of protected pages
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
   
   // Skip middleware for static files and Next.js internals
   if (
@@ -71,15 +81,13 @@ export async function middleware(request: NextRequest) {
 
   console.log(`🔐 Middleware: ${pathname} - Protected: ${isProtectedRoute}, Admin: ${isAdminRoute}, API: ${isApiRoute}`);
 
-  // If not a route that needs protection, continue
-  if (!isProtectedRoute && !isAdminRoute && !isApiRoute) {
-    console.log(`🔐 Middleware: ${pathname} doesn't need protection, allowing access`);
+  // If not a protected route, admin route, or API route, allow access (public route)
+  if (!isApiRoute && !isProtectedRoute && !isAdminRoute) {
+    console.log(`🔐 Middleware: ${pathname} is not protected - allowing public access`);
     return response;
   }
 
-  // For API routes that are not public, check authentication
-  // (Public API routes were already handled above)
-  
+  // For protected or admin routes, check authentication
   // Get token from cookies or Authorization header
   let token = request.cookies.get('auth-token')?.value || 
               request.cookies.get('userToken')?.value ||
@@ -128,7 +136,11 @@ export async function middleware(request: NextRequest) {
     console.log(`🔐 Middleware: Token length: ${token?.length || 0}`);
     console.log(`🔐 Middleware: JWT_SECRET exists: ${!!process.env.JWT_SECRET}`);
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET not configured');
+    }
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as DecodedToken;
     console.log(`🔐 Middleware: Token decoded successfully for user: ${decoded.email}`);
     
     // Check if token is expired
@@ -137,33 +149,121 @@ export async function middleware(request: NextRequest) {
       throw new Error('Token expired');
     }
 
-    // For admin routes, check role
-    if (isAdminRoute) {
-      const hasAdminAccess = decoded.role === 'admin' || decoded.role === 'superadmin';
+    // Fetch authoritative user data from database for role checking
+    // NEVER trust JWT claims for roles - always fetch from DB
+    const user = await fetchAuthoritativeUser(decoded.userId);
+    
+    if (!user) {
+      console.log(`🔐 Middleware: User not found for ID: ${decoded.userId}`);
+      throw new Error('User not found');
+    }
+
+    if (user.status !== 'active') {
+      console.log(`🔐 Middleware: User ${user.email} is not active (status: ${user.status})`);
+      throw new Error('User account is not active');
+    }
+
+    // Check role-based access
+    const requiresSeller = isSellerPath(pathname);
+    const requiresBuyer = isBuyerPath(pathname);
+    const requiresAdmin = isAdminRoute;
+
+    console.log(`🔐 Middleware: Role checks - User: ${user.role}, Seller: ${requiresSeller}, Buyer: ${requiresBuyer}, Admin: ${requiresAdmin}`);
+
+    // Admin route access
+    if (requiresAdmin && !RoleHierarchy.canAccessAdminFeatures(user)) {
+      console.log(`🔐 Middleware: User ${user.email} lacks admin access for ${pathname}`);
+      if (isApiRoute) {
+        return NextResponse.json(
+          { 
+            error: 'Insufficient permissions',
+            message: 'Admin access required'
+          },
+          { status: 403 }
+        );
+      }
+      // Redirect non-admin users to their dashboard
+      const userDashboard = RoleHierarchy.getDashboardRoute(user);
+      return NextResponse.redirect(new URL(userDashboard, request.url));
+    }
+
+    // Seller route access
+    if (requiresSeller) {
+      // Special case: Allow ALL sellers (including unverified) to access their dashboard and verification
+      // Verification happens WITHIN the dashboard, so they need access first
+      // Note: Due to route group (sellerdashboard), the actual route is /profile
+      const isSellerDashboard = pathname === '/profile' || 
+                                pathname.startsWith('/profile/') ||
+                                pathname === '/sellerdashboard' || 
+                                pathname.startsWith('/sellerdashboard/');
       
-      if (!hasAdminAccess) {
-        console.log(`🔐 Middleware: User ${decoded.email} lacks admin access for ${pathname}`);
-        if (isApiRoute) {
-          return NextResponse.json(
-            { 
-              error: 'Insufficient permissions',
-              message: 'Admin access required'
-            },
-            { status: 403 }
-          );
+      // Allow verification-related endpoints and profile/stats for all sellers
+      const isVerificationEndpoint = pathname.startsWith('/api/seller/verification');
+      const isProfileEndpoint = pathname === '/api/seller/profile' || 
+                                pathname === '/api/seller/stats' ||
+                                pathname === '/api/seller/low-stock-products' ||
+                                pathname === '/api/seller/upload-profile-image';
+      
+      if (isSellerDashboard || isVerificationEndpoint || isProfileEndpoint) {
+        // Dashboard/verification/profile access: Allow if user has seller role (regardless of verification)
+        if (user.role !== 'seller' && user.role !== 'admin' && user.role !== 'superadmin') {
+          console.log(`🔐 Middleware: User ${user.email} (${user.role}) lacks seller role for ${pathname}`);
+          if (isApiRoute) {
+            return NextResponse.json(
+              { 
+                error: 'Insufficient permissions',
+                message: 'Seller role required'
+              },
+              { status: 403 }
+            );
+          }
+          // Redirect non-sellers to buyer profile
+          return NextResponse.redirect(new URL('/buyer-profile', request.url));
         }
-        
-        // Redirect non-admin users away from admin routes
-        return NextResponse.redirect(new URL('/home', request.url));
+      } else {
+        // Other seller features (products, orders): Require verification
+        if (!RoleHierarchy.canAccessSellerFeatures(user)) {
+          console.log(`🔐 Middleware: User ${user.email} (${user.role}) lacks seller verification for ${pathname}`);
+          if (isApiRoute) {
+            return NextResponse.json(
+              { 
+                error: 'Insufficient permissions',
+                message: 'Verified seller access required'
+              },
+              { status: 403 }
+            );
+          }
+          // Redirect unverified sellers to their dashboard to complete verification
+          return NextResponse.redirect(new URL('/profile', request.url));
+        }
       }
     }
 
-    // Token is valid, proceed with request
-    console.log(`🔐 Middleware: Access granted to ${pathname} for user: ${decoded.email}`);
+    // Buyer route access - all authenticated users can access buyer features
+    // Sellers have union access (can access both seller and buyer features)
+    if (requiresBuyer && !RoleHierarchy.canAccessBuyerFeatures(user)) {
+      console.log(`🔐 Middleware: User ${user.email} lacks buyer access for ${pathname}`);
+      if (isApiRoute) {
+        return NextResponse.json(
+          { 
+            error: 'Insufficient permissions',
+            message: 'Buyer access required'
+          },
+          { status: 403 }
+        );
+      }
+      return NextResponse.redirect(new URL('/auth', request.url));
+    }
+
+    // Token is valid and role checks passed, proceed with request
+    console.log(`🔐 Middleware: Access granted to ${pathname} for user: ${user.email} (${user.role})`);
     const requestHeaders = new Headers(request.headers);
-    requestHeaders.set('x-user-id', decoded.userId);
-    requestHeaders.set('x-user-email', decoded.email);
-    requestHeaders.set('x-user-role', decoded.role);
+    requestHeaders.set('x-user-id', user.id);
+    requestHeaders.set('x-user-email', user.email);
+    requestHeaders.set('x-user-role', user.role);
+    requestHeaders.set('x-user-seller-status', user.sellerStatus);
+    requestHeaders.set('x-can-access-seller', RoleHierarchy.canAccessSellerFeatures(user).toString());
+    requestHeaders.set('x-can-access-buyer', RoleHierarchy.canAccessBuyerFeatures(user).toString());
 
     return NextResponse.next({
       request: {

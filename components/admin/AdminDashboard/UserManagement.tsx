@@ -27,7 +27,7 @@ interface User {
 
 interface UserActionDialog {
   isOpen: boolean;
-  action: 'suspend' | 'delete' | 'promote' | 'demote' | null;
+  action: 'suspend' | 'delete' | 'promote' | 'demote' | 'activate' | null;
   user: User | null;
   reason: string;
 }
@@ -368,22 +368,22 @@ const UserManagement: React.FC = () => {
             </DialogTitle>
             <DialogDescription>
               {actionDialog.action === 'suspend' && 
-                t('admin.users.dialogs.suspend.description', 'This will suspend {{name}} and prevent them from accessing the platform.', {
+                (t as any)('admin.users.dialogs.suspend.description', 'This will suspend {{name}} and prevent them from accessing the platform.', {
                   name: actionDialog.user?.name
                 })
               }
               {actionDialog.action === 'delete' && 
-                t('admin.users.dialogs.delete.description', 'This will permanently delete {{name}}\'s account. This action cannot be undone.', {
+                (t as any)('admin.users.dialogs.delete.description', 'This will permanently delete {{name}}\'s account. This action cannot be undone.', {
                   name: actionDialog.user?.name
                 })
               }
               {actionDialog.action === 'promote' && 
-                t('admin.users.dialogs.promote.description', 'This will promote {{name}} to admin role with elevated privileges.', {
+                (t as any)('admin.users.dialogs.promote.description', 'This will promote {{name}} to admin role with elevated privileges.', {
                   name: actionDialog.user?.name
                 })
               }
               {actionDialog.action === 'demote' && 
-                t('admin.users.dialogs.demote.description', 'This will demote {{name}} back to regular user role.', {
+                (t as any)('admin.users.dialogs.demote.description', 'This will demote {{name}} back to regular user role.', {
                   name: actionDialog.user?.name
                 })
               }

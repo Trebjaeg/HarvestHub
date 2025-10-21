@@ -350,45 +350,75 @@ const AuthFormInput: FC = () => {
         throw new Error(data.message || 'Registration failed');
       }
       
-      // Reset form after successful registration
-      setFormState({
-        email: '',
-        password: '',
-        confirmPassword: '',
-        firstName: '',
-        lastName: '',
-        selectedRole: '',
-        acceptTerms: false,
-        acceptPrivacy: false,
-        error: '',
-        emailVerified: false,
-        verificationCode: '',
-        isNewUser: false,
-        nextStep: false,
-        loading: false
-      });
+      // Store credentials temporarily for auto-login
+      const registrationEmail = state.email;
+      const registrationPassword = state.password;
       
-      // Check if registration requires verification
-      if (data.requiresVerification) {
-        // Show verification success message (do not set as error)
-        // Success message will be shown through the normal success flow
+      // Show success modal
+      setShowSuccessModal(true);
+      
+      // Auto-login after successful registration
+      setTimeout(async () => {
+        setShowSuccessModal(false);
         
-        // Reset to login form after a delay
-        setTimeout(() => {
-          setStep('email');
-          setNextStep(false);
-          clearAllFieldErrors();
-        }, 3000);
-      } else {
-        // Old flow - immediate success
-        setShowSuccessModal(true);
-        setTimeout(() => {
-          setShowSuccessModal(false);
+        try {
+          console.log('🔐 Auto-login after registration...');
+          
+          // Attempt to log the user in automatically
+          const result = await login(registrationEmail, registrationPassword);
+          
+          if (result.success) {
+            console.log('✅ Auto-login successful! Redirecting to home...');
+            // Hard redirect to home page
+            window.location.href = '/home';
+          } else {
+            console.log('❌ Auto-login failed, showing login form');
+            // If auto-login fails, reset to login form with email pre-filled
+            setFormState({
+              email: registrationEmail,
+              password: '',
+              confirmPassword: '',
+              firstName: '',
+              lastName: '',
+              selectedRole: '',
+              acceptTerms: false,
+              acceptPrivacy: false,
+              error: '',
+              emailVerified: false,
+              verificationCode: '',
+              isNewUser: false,
+              nextStep: false,
+              loading: false
+            });
+            setStep('password');
+            setNextStep(false);
+            clearAllFieldErrors();
+          }
+        } catch (err) {
+          console.error('Auto-login error:', err);
+          // On error, reset to login form with email pre-filled
+          setFormState({
+            email: registrationEmail,
+            password: '',
+            confirmPassword: '',
+            firstName: '',
+            lastName: '',
+            selectedRole: '',
+            acceptTerms: false,
+            acceptPrivacy: false,
+            error: '',
+            emailVerified: false,
+            verificationCode: '',
+            isNewUser: false,
+            nextStep: false,
+            loading: false
+          });
           setStep('password');
           setNextStep(false);
           clearAllFieldErrors();
-        }, 1500);
-      }
+        }
+      }, 1500);
+
     } catch (err: any) {
       console.error('[Registration Error]', err);
       const errorMessage = err.message || t('auth.error.generic') || 'Registration failed';
@@ -1114,6 +1144,7 @@ const AuthFormInput: FC = () => {
         } else {
           console.log('❌ Login failed:', result.message);
           
+          // Display the error message directly from the API (includes suspended account messages)
           setFieldError('loginPassword', result.message || 'auth.validation.loginFailed');
           setLoading(false);
         }
@@ -1218,12 +1249,29 @@ const AuthFormInput: FC = () => {
             </button>
           </div>
           {getFieldError('loginPassword') && (
-            <div className="mt-2 bg-red-50 p-3 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <div className={`mt-2 p-4 rounded-lg border-2 ${
+              getFieldError('loginPassword').toLowerCase().includes('suspended') || 
+              getFieldError('loginPassword').toLowerCase().includes('deactivated') ||
+              getFieldError('loginPassword').toLowerCase().includes('contact')
+                ? 'bg-red-100 border-red-400'
+                : 'bg-red-50 border-red-200'
+            }`}>
+              <div className="flex items-start space-x-3">
+                <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
-                <p className="text-sm text-red-500">{getFieldError('loginPassword')}</p>
+                <div className="flex-1">
+                  <p className="text-sm text-red-700 font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    {getFieldError('loginPassword')}
+                  </p>
+                  {(getFieldError('loginPassword').toLowerCase().includes('suspended') || 
+                    getFieldError('loginPassword').toLowerCase().includes('deactivated') ||
+                    getFieldError('loginPassword').toLowerCase().includes('contact')) && (
+                    <p className="text-xs text-red-600 mt-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      For assistance, contact: <a href="mailto:support@harvesthub.com" className="underline font-semibold">support@harvesthub.com</a>
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           )}

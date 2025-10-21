@@ -7,6 +7,7 @@ import { User, Package, TrendingUp, Star, Camera, Upload, Edit, AlertTriangle } 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import EditProfileModal from '@/components/ui/EditProfileModal';
+import SellerVerification from '@/components/seller/SellerVerification';
 
 // Helper function to safely format dates on client-side only
 const formatDate = (dateString: string | null | undefined): string => {
@@ -71,14 +72,15 @@ export default function Profile() {
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
       const response = await fetch('/api/seller/profile', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        credentials: 'include' // Use HTTP-only cookies instead of localStorage
       });
 
       if (response.ok) {
         const data = await response.json();
         setProfile(data.seller);
+      } else {
+        console.error('Failed to fetch profile:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -89,9 +91,8 @@ export default function Profile() {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
       const response = await fetch('/api/seller/stats', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        credentials: 'include' // Use HTTP-only cookies
       });
 
       if (response.ok) {
@@ -112,9 +113,8 @@ export default function Profile() {
 
   const fetchLowStockProducts = async () => {
     try {
-      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
       const response = await fetch('/api/seller/low-stock-products', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        credentials: 'include' // Use HTTP-only cookies
       });
 
       if (response.ok) {
@@ -148,10 +148,9 @@ export default function Profile() {
       const formData = new FormData();
       formData.append('profileImage', file);
 
-      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
       const response = await fetch('/api/seller/upload-profile-image', {
         method: 'POST',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        credentials: 'include', // Use HTTP-only cookies
         body: formData
       });
 
@@ -201,21 +200,20 @@ export default function Profile() {
     // Also update localStorage or trigger a refresh if needed
   };
   return (
-    <div className="bg-gray-50 min-h-screen p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <User className="w-8 h-8 text-green-600" />
-            <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Seller Profile
-            </h1>
-          </div>
-          <Button className="bg-green-600 hover:bg-green-700 text-white" style={{ fontFamily: 'Poppins, sans-serif' }} onClick={() => setShowEditModal(true)}>
-            <Edit className="w-4 h-4 mr-2" />
-            Edit Profile
-          </Button>
+    <div className="max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <User className="w-8 h-8 text-green-600" />
+          <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Seller Profile
+          </h1>
         </div>
+        <Button className="bg-green-600 hover:bg-green-700 text-white" style={{ fontFamily: 'Poppins, sans-serif' }} onClick={() => setShowEditModal(true)}>
+          <Edit className="w-4 h-4 mr-2" />
+          Edit Profile
+        </Button>
+      </div>
 
         {/* Profile Header with Avatar */}
         <Card className="p-6 bg-white border border-gray-200 mb-6">
@@ -269,10 +267,10 @@ export default function Profile() {
             
             {/* Profile Info */}
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <h2 className="text-2xl font-bold text-gray-900 mb-1 font-poppins">
                 {loading ? 'Loading...' : profile?.name || 'Unknown User'}
               </h2>
-              <p className="text-gray-600 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <p className="text-gray-600 mb-2 font-poppins">
                 {loading ? 'Loading...' : profile?.email || 'No email provided'}
               </p>
               <Badge className="bg-green-100 text-green-800">Active Seller</Badge>
@@ -329,6 +327,11 @@ export default function Profile() {
               <Star className="w-8 h-8 text-yellow-600" />
             </div>
           </Card>
+        </div>
+
+        {/* Seller Verification Section */}
+        <div className="mb-6">
+          <SellerVerification onStatusChange={fetchProfile} />
         </div>
 
         {/* Profile Information */}
@@ -472,15 +475,14 @@ export default function Profile() {
           )}
         </Card>
 
-        {/* Edit Profile Modal */}
-        <EditProfileModal
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-          profile={profile}
-          onSave={handleProfileUpdate}
-        />
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        profile={profile}
+        onSave={handleProfileUpdate}
+      />
 
-      </div>
     </div>
   );
 }

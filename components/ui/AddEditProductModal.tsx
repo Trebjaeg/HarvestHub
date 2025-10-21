@@ -29,9 +29,11 @@ interface AddEditProductModalProps {
   onClose: () => void;
   product?: Product | null;
   onSave: (product: Product) => void;
+  verificationError?: string;
 }
 
-export default function AddEditProductModal({ isOpen, onClose, product, onSave }: AddEditProductModalProps) {
+export default function AddEditProductModal({ isOpen, onClose, product, onSave, verificationError }: AddEditProductModalProps) {
+  
   const [formData, setFormData] = useState<Product>({
     name: '',
     category: '',
@@ -47,6 +49,7 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
 
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Update form data when product prop changes
@@ -64,8 +67,8 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
         unit: 'kg',
         status: 'Available',
         description: '',
-        price: 0,
-        stock: 0,
+        price: '' as any,
+        stock: '' as any,
         lowStockAlert: 10,
         images: [],
         harvestDate: ''
@@ -98,33 +101,54 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
     if (!files) return;
 
     setUploading(true);
-    const newImages: string[] = [];
+    const uploadedUrls: string[] = [];
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      
-      if (!file.type.startsWith('image/')) {
-        alert('Please select only image files');
-        continue;
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        if (!file.type.startsWith('image/')) {
+          alert('Please select only image files');
+          continue;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+          alert('Image size should be less than 5MB');
+          continue;
+        }
+
+        // Upload to DigitalOcean Spaces
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('folder', 'products');
+
+        const response = await fetch('/api/upload/product-image', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          uploadedUrls.push(data.url);
+        } else {
+          const error = await response.json();
+          alert(error.message || 'Failed to upload image');
+        }
       }
 
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
-        continue;
-      }
-
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(file);
-      newImages.push(previewUrl);
+      // Add uploaded URLs to images
+      setPreviewImages(prev => [...prev, ...uploadedUrls]);
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...uploadedUrls]
+      }));
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      alert('Failed to upload images');
+    } finally {
+      setUploading(false);
     }
-
-    setPreviewImages(prev => [...prev, ...newImages]);
-    setFormData(prev => ({
-      ...prev,
-      images: [...prev.images, ...newImages]
-    }));
-    
-    setUploading(false);
   };
 
   const removeImage = (index: number) => {
@@ -136,11 +160,57 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
   };
 
   const handleSave = () => {
-    if (!formData.name || !formData.category || !formData.price || !formData.stock) {
-      alert('Please fill in all required fields');
+    // Clear previous errors
+    const errors: Record<string, string> = {};
+
+    // Validate required fields
+    if (!formData.name || formData.name.trim() === '') {
+      errors.name = 'Product name is required';
+    } else if (formData.name.length > 100) {
+      errors.name = 'Product name cannot exceed 100 characters';
+    }
+
+    if (!formData.category) {
+      errors.category = 'Please select a category';
+    }
+
+    if (!formData.unit) {
+      errors.unit = 'Please select a unit';
+    }
+
+    // Check if price is empty or invalid
+    if (!formData.price || formData.price <= 0) {
+      errors.price = 'Please enter a valid price greater than 0';
+    }
+
+    // Check if stock is empty or invalid
+    if (formData.stock === undefined || formData.stock === null || formData.stock < 0) {
+      errors.stock = 'Please enter a valid stock quantity (0 or more)';
+    }
+
+    if (formData.lowStockAlert !== undefined && formData.lowStockAlert < 0) {
+      errors.lowStockAlert = 'Low stock alert must be 0 or greater';
+    }
+
+    if (formData.description && formData.description.length > 500) {
+      errors.description = 'Description cannot exceed 500 characters';
+    }
+
+    if (formData.images.length === 0) {
+      errors.images = 'Please upload at least one product image';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      // Scroll to first error
+      setTimeout(() => {
+        const firstError = document.querySelector('.border-red-500');
+        firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
       return;
     }
 
+    setValidationErrors({});
     onSave(formData);
     onClose();
   };
@@ -182,8 +252,10 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
               <div className="flex gap-4">
                 {/* Main Image Upload Area */}
                 <div 
-                  className="w-48 h-48 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center cursor-pointer hover:border-green-500 transition-all duration-300 bg-white"
-                  onClick={() => fileInputRef.current?.click()}
+                  className={`w-48 h-48 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center transition-all duration-300 bg-white ${
+                    verificationError ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-green-500'
+                  }`}
+                  onClick={() => !verificationError && fileInputRef.current?.click()}
                 >
                   {previewImages.length > 0 ? (
                     <div className="relative w-full h-full">
@@ -196,9 +268,10 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          removeImage(0);
+                          if (!verificationError) removeImage(0);
                         }}
-                        className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors duration-200"
+                        disabled={!!verificationError}
+                        className={`absolute -top-2 -right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors duration-200 ${verificationError ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -224,8 +297,9 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
                           className="object-cover"
                         />
                         <button
-                          onClick={() => removeImage(index + 1)}
-                          className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors duration-200"
+                          onClick={() => !verificationError && removeImage(index + 1)}
+                          disabled={!!verificationError}
+                          className={`absolute -top-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors duration-200 ${verificationError ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -247,6 +321,20 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
                   )}
                 </div>
               </div>
+              
+              {/* Image Upload Error */}
+              {validationErrors.images && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <p className="text-sm text-red-700 font-poppins">{validationErrors.images}</p>
+                  </div>
+                </div>
+              )}
               
               <input
                 ref={fileInputRef}
@@ -275,17 +363,48 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
                   <Input
                     placeholder="e.g., Fresh Organic Tomatoes"
                     value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 font-poppins"
+                    onChange={(e) => {
+                      handleInputChange('name', e.target.value);
+                      if (validationErrors.name) {
+                        setValidationErrors(prev => ({ ...prev, name: '' }));
+                      }
+                    }}
+                    disabled={!!verificationError}
+                    className={`bg-white transition-all duration-200 font-poppins ${
+                      validationErrors.name
+                        ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                        : "border-gray-300 focus:border-green-500 focus:ring-green-500"
+                    } ${verificationError ? "opacity-50 cursor-not-allowed" : ""}`}
                   />
+                  {validationErrors.name && (
+                    <div className="flex items-center space-x-1 mt-1">
+                      <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-sm text-red-500">{validationErrors.name}</p>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 font-poppins">
                     Category *
                   </label>
-                  <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
-                    <SelectTrigger className="bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 font-poppins">
+                  <Select 
+                    value={formData.category} 
+                    onValueChange={(value) => {
+                      handleInputChange('category', value);
+                      if (validationErrors.category) {
+                        setValidationErrors(prev => ({ ...prev, category: '' }));
+                      }
+                    }}
+                    disabled={!!verificationError}
+                  >
+                    <SelectTrigger className={`bg-white transition-all duration-200 font-poppins ${
+                      validationErrors.category
+                        ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                        : "border-gray-300 focus:border-green-500 focus:ring-green-500"
+                    } ${verificationError ? "opacity-50 cursor-not-allowed" : ""}`}>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent className="font-poppins">
@@ -294,6 +413,14 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
                       ))}
                     </SelectContent>
                   </Select>
+                  {validationErrors.category && (
+                    <div className="flex items-center space-x-1 mt-1">
+                      <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-sm text-red-500">{validationErrors.category}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -307,7 +434,8 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={4}
-                  className="bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 font-poppins"
+                  disabled={!!verificationError}
+                  className={`bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 font-poppins ${verificationError ? "opacity-50 cursor-not-allowed" : ""}`}
                 />
               </div>
 
@@ -321,7 +449,8 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
                     type="date"
                     value={formData.harvestDate}
                     onChange={(e) => handleInputChange('harvestDate', e.target.value)}
-                    className="bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200"
+                    disabled={!!verificationError}
+                    className={`bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 ${verificationError ? "opacity-50 cursor-not-allowed" : ""}`}
                   />
                 </div>
                 
@@ -329,8 +458,12 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
                   <label className="text-sm font-medium text-gray-700 font-poppins">
                     Unit *
                   </label>
-                  <Select value={formData.unit} onValueChange={(value) => handleInputChange('unit', value)}>
-                    <SelectTrigger className="bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 font-poppins">
+                  <Select 
+                    value={formData.unit} 
+                    onValueChange={(value) => handleInputChange('unit', value)}
+                    disabled={!!verificationError}
+                  >
+                    <SelectTrigger className={`bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 font-poppins ${verificationError ? "opacity-50 cursor-not-allowed" : ""}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="font-poppins">
@@ -360,20 +493,42 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
                   <Input
                     type="number"
                     value={formData.price}
-                    onChange={(e) => handleInputChange('price', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      handleInputChange('price', parseFloat(e.target.value) || 0);
+                      if (validationErrors.price) {
+                        setValidationErrors(prev => ({ ...prev, price: '' }));
+                      }
+                    }}
                     placeholder="0.00"
-                    className="bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 font-poppins"
+                    disabled={!!verificationError}
+                    className={`bg-white transition-all duration-200 font-poppins [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                      validationErrors.price
+                        ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                        : "border-gray-300 focus:border-green-500 focus:ring-green-500"
+                    } ${verificationError ? "opacity-50 cursor-not-allowed" : ""}`}
                     min="0"
                     step="0.01"
                   />
+                  {validationErrors.price && (
+                    <div className="flex items-center space-x-1 mt-1">
+                      <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-sm text-red-500">{validationErrors.price}</p>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 font-poppins">
                     Status
                   </label>
-                  <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
-                    <SelectTrigger className="bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 font-poppins">
+                  <Select 
+                    value={formData.status} 
+                    onValueChange={(value) => handleInputChange('status', value)}
+                    disabled={!!verificationError}
+                  >
+                    <SelectTrigger className={`bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 font-poppins ${verificationError ? "opacity-50 cursor-not-allowed" : ""}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="font-poppins">
@@ -394,11 +549,29 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
                   <Input
                     type="number"
                     value={formData.stock}
-                    onChange={(e) => handleInputChange('stock', parseInt(e.target.value) || 0)}
+                    onChange={(e) => {
+                      handleInputChange('stock', parseInt(e.target.value) || 0);
+                      if (validationErrors.stock) {
+                        setValidationErrors(prev => ({ ...prev, stock: '' }));
+                      }
+                    }}
                     placeholder="0"
-                    className="bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 font-poppins"
+                    disabled={!!verificationError}
+                    className={`bg-white transition-all duration-200 font-poppins [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                      validationErrors.stock
+                        ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                        : "border-gray-300 focus:border-green-500 focus:ring-green-500"
+                    } ${verificationError ? "opacity-50 cursor-not-allowed" : ""}`}
                     min="0"
                   />
+                  {validationErrors.stock && (
+                    <div className="flex items-center space-x-1 mt-1">
+                      <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-sm text-red-500">{validationErrors.stock}</p>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -410,7 +583,8 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
                     value={formData.lowStockAlert}
                     onChange={(e) => handleInputChange('lowStockAlert', parseInt(e.target.value) || 0)}
                     placeholder="10"
-                    className="bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 font-poppins"
+                    disabled={!!verificationError}
+                    className={`bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 font-poppins [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${verificationError ? "opacity-50 cursor-not-allowed" : ""}`}
                     min="0"
                   />
                 </div>
@@ -418,6 +592,29 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
             </div>
           </div>
         </div>
+
+        {/* Verification Error Banner */}
+        {verificationError && (
+          <div className="mt-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg animate-fade-in">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-red-800 mb-1 font-poppins">Verification Required</h4>
+                <p className="text-sm text-red-700 font-poppins">{verificationError}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.href = '/profile'}
+                  className="mt-3 border-red-500 text-red-600 hover:bg-red-50 font-poppins"
+                >
+                  Complete Verification
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
@@ -431,7 +628,7 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave }
           <Button 
             onClick={handleSave}
             className="px-8 py-2 bg-green-600 hover:bg-green-700 text-white transition-all duration-200 font-poppins"
-            disabled={uploading}
+            disabled={uploading || !!verificationError}
           >
             {product ? 'Update Product' : 'Save Product'}
           </Button>

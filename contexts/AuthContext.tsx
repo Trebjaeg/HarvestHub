@@ -52,6 +52,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('🔐 AuthContext: Checking authentication...');
       
+      // Log current cookies to debug
+      if (typeof window !== 'undefined') {
+        console.log('🔐 AuthContext: Current cookies:', document.cookie);
+      }
+      
       const response = await apiRequest('/api/auth/me', {
         method: 'GET',
       });
@@ -143,9 +148,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('userToken');
         localStorage.removeItem('auth-token');
+        localStorage.removeItem('hh_token');
         sessionStorage.removeItem('auth_user');
+        
+        // Trigger storage event for other tabs
+        localStorage.setItem('auth-logout', Date.now().toString());
+        localStorage.removeItem('auth-logout');
       }
-      router.push('/auth');
+      
+      // Force a hard redirect to clear any cached state
+      window.location.href = '/auth';
     }
   };
 

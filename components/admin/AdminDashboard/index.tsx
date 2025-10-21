@@ -16,6 +16,7 @@ import FarmerVerification from '../FarmerVerification';
 import Reports from '../Reports';
 import Appeals from '../Appeals';
 import AuditLogs from '../AuditLogs';
+import AdsManagement from '../AdsManagement';
 
 interface AdminStats {
   totalUsers: number;
@@ -83,26 +84,47 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleLogout = async () => {
+    console.log('🚪 [ADMIN] Starting logout process...');
     try {
       // Call logout API to clear server-side session
-      await fetch('/api/admin/logout', {
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
-        headers: getAuthHeaders(),
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
       });
+      
+      console.log('🚪 [ADMIN] Logout API response:', response.status);
+      
+      // Clear ALL possible storage
+      if (typeof window !== 'undefined') {
+        // Clear localStorage
+        localStorage.removeItem('hh_token');
+        localStorage.removeItem('auth-token');
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('auth_user');
+        
+        // Clear sessionStorage
+        sessionStorage.clear();
+        
+        // Trigger logout event for other tabs
+        localStorage.setItem('logout-event', Date.now().toString());
+        localStorage.removeItem('logout-event');
+        
+        console.log('🚪 [ADMIN] Cleared all storage');
+      }
+      
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('🚪 [ADMIN] Logout error:', error);
     } finally {
-      // Clear all client-side authentication data
-      localStorage.removeItem('hh_token');
-      localStorage.removeItem('auth-token');
-      localStorage.removeItem('adminToken');
+      console.log('🚪 [ADMIN] Redirecting to auth page...');
       
-      // Clear any other admin-related data
-      localStorage.clear();
-      
-      // Use replace to prevent back navigation to admin dashboard
-      window.location.replace('/auth');
+      // Force a complete page reload to clear any cached state
+      window.location.href = '/auth';
     }
   };
 
@@ -236,26 +258,42 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
         
-        {/* Mobile Home Button */}
-        <Button
-          onClick={() => {
-            console.log('Mobile Home button clicked');
-            router.push('/home');
-            setSidebarOpen(false); // Close sidebar on mobile after selection
-          }}
-          variant="outline"
-          size="sm"
-          className="relative z-50 border-gray-200 hover:border-green-300 hover:bg-green-50 text-gray-600 hover:text-green-600 transition-colors font-medium min-h-[40px] px-3"
-          style={{ fontFamily: 'Poppins, sans-serif' }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <path d="M5 12l-2 0l9 -9l9 9l-2 0" />
-            <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
-            <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
-          </svg>
-          Home
-        </Button>
+        <div className="flex items-center space-x-2">
+          {/* Mobile Profile Icon */}
+          <button
+            onClick={() => router.push('/admin-profile')}
+            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+            title="Profile"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+              <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+              <path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" />
+            </svg>
+          </button>
+          
+          {/* Mobile Home Button */}
+          <Button
+            onClick={() => {
+              console.log('Mobile Home button clicked');
+              router.push('/home');
+              setSidebarOpen(false); // Close sidebar on mobile after selection
+            }}
+            variant="outline"
+            size="sm"
+            className="relative z-50 border-gray-200 hover:border-green-300 hover:bg-green-50 text-gray-600 hover:text-green-600 transition-colors font-medium min-h-[40px] px-3"
+            style={{ fontFamily: 'Poppins, sans-serif' }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <path d="M5 12l-2 0l9 -9l9 9l-2 0" />
+              <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+              <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+            </svg>
+            Home
+          </Button>
+        </div>
       </div>
 
       {/* Mobile Overlay */}
@@ -277,20 +315,36 @@ const AdminDashboard: React.FC = () => {
                 HarvestHub Management
               </p>
             </div>
-          <Button
-            onClick={() => router.push('/home')}
-            variant="outline"
-            className="border-gray-200 hover:border-green-300 hover:bg-green-50 text-gray-600 hover:text-green-600 transition-colors font-medium"
-            style={{ fontFamily: 'Poppins, sans-serif' }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M5 12l-2 0l9 -9l9 9l-2 0" />
-              <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
-              <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
-            </svg>
-            Home
-          </Button>
+          <div className="flex items-center space-x-3">
+            {/* Desktop Profile Icon */}
+            <button
+              onClick={() => router.push('/admin-profile')}
+              className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              title="Profile"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                <path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" />
+              </svg>
+            </button>
+            
+            <Button
+              onClick={() => router.push('/home')}
+              variant="outline"
+              className="border-gray-200 hover:border-green-300 hover:bg-green-50 text-gray-600 hover:text-green-600 transition-colors font-medium"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M5 12l-2 0l9 -9l9 9l-2 0" />
+                <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+                <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+              </svg>
+              Home
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -399,6 +453,19 @@ const AdminDashboard: React.FC = () => {
                   )
                 },
                 { 
+                  id: 'ads', 
+                  label: 'Ads Management', 
+                  icon: (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-ad">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M3 5m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" />
+                      <path d="M7 15v-4a2 2 0 0 1 4 0v4" />
+                      <path d="M7 13l4 0" />
+                      <path d="M17 9v6h-1.5a1.5 1.5 0 1 1 1.5 -1.5" />
+                    </svg>
+                  )
+                },
+                { 
                   id: 'appeals', 
                   label: 'Appeals', 
                   icon: (
@@ -475,6 +542,7 @@ const AdminDashboard: React.FC = () => {
               {activeTab === 'farmers' && 'Farmer Management'}
               {activeTab === 'farmers-verification' && 'Farmer Verification'}
               {activeTab === 'reports' && 'Reports'}
+              {activeTab === 'ads' && 'Ads Management'}
               {activeTab === 'appeals' && 'Appeals'}
               {activeTab === 'audit' && 'Audit Logs'}
             </h2>
@@ -689,6 +757,7 @@ const AdminDashboard: React.FC = () => {
           {activeTab === 'farmers' && <FarmerManagement />}
           {activeTab === 'farmers-verification' && <FarmerVerification />}
           {activeTab === 'reports' && <Reports />}
+          {activeTab === 'ads' && <AdsManagement />}
           {activeTab === 'appeals' && <Appeals />}
           {activeTab === 'audit' && <AuditLogs />}
         </div>

@@ -41,6 +41,15 @@ html, body {
   height: 100%;
 }
 
+/* Prevent layout shift when scrollbar appears/disappears */
+html {
+  scrollbar-gutter: stable !important;
+}
+
+body {
+  scrollbar-gutter: stable !important;
+}
+
 * {
   -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
@@ -361,6 +370,13 @@ html {
 
 .animate-modal-in {
   animation: modal-scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Prevent Radix UI Select/Dialog from removing scrollbar and causing layout shift */
+body[data-radix-scroll-lock] {
+  overflow-y: scroll !important;
+  scrollbar-gutter: stable !important;
+  padding-right: 0 !important;
 }
 
 .animate-modal-out {

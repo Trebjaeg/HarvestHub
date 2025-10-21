@@ -62,10 +62,31 @@ export const useProducts = (initialOptions: UseProductsOptions = {}): UseProduct
         throw new Error('Failed to fetch products');
       }
 
-      const data: IProductsResponse = await response.json();
-      
-      setProducts(data.products);
-      setTotalPages(data.totalPages);
+      const raw: any = await response.json();
+
+      // Support multiple response shapes for backward compatibility:
+      // - { success, products, total, page, totalPages, hasNextPage }
+      // - { success, products, data, pagination: { current, total, count, totalItems } }
+      const productsData: IProduct[] = raw.products ?? raw.data ?? [];
+
+      // Determine total pages:
+      let totalPagesFromResponse: number | undefined = undefined;
+
+      if (typeof raw.totalPages === 'number') {
+        totalPagesFromResponse = raw.totalPages;
+      } else if (raw.pagination && typeof raw.pagination.total === 'number') {
+        totalPagesFromResponse = raw.pagination.total;
+      } else if (typeof raw.total === 'number') {
+        totalPagesFromResponse = Math.ceil(raw.total / (options.limit || 12));
+      }
+
+      // Fallback: calculate from items length and limit
+      if (!totalPagesFromResponse) {
+        totalPagesFromResponse = Math.max(1, Math.ceil((raw.totalItems ?? productsData.length) / (options.limit || 12)));
+      }
+
+      setProducts(productsData);
+      setTotalPages(totalPagesFromResponse);
     } catch (err: any) {
       setError(err.message || 'An error occurred while fetching products');
       setProducts([]);

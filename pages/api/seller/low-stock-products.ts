@@ -15,7 +15,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Fallback to cookies
     if (!token) {
-      token = req.cookies['hh_token'] || req.cookies['auth-token'];
+      token = req.cookies['auth-token'] || 
+              req.cookies['userToken'] || 
+              req.cookies['hh_token'];
     }
 
     if (!token) {

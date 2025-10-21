@@ -15,16 +15,29 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
     ? Math.round(((product.basePrice - product.currentPrice) / product.basePrice) * 100)
     : 0;
 
+  // Get image URL - check multiple possible fields
+  const imageUrl = (product as any).image || 
+                   (product as any).images?.[0] || 
+                   product.imageUrl || 
+                   '/images/products/default.png';
+
+  console.log('ProductCard image URL:', imageUrl, 'for product:', product.name);
+
   return (
     <div className={`bg-white rounded-3xl border-2 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${className}`} style={{ width: '218px', height: '275px', borderColor: '#40613D' }}>
       {/* Product Image - Takes remaining space after info section (275px - 89px = 186px) */}
       <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6" style={{ height: '186px' }}>
         <Image
-          src={product.imageUrl}
+          src={imageUrl}
           alt={product.name}
           fill
           className="object-contain p-3"
           sizes="218px"
+          unoptimized={imageUrl.includes('digitaloceanspaces.com')}
+          onError={(e) => {
+            console.error('Image failed to load:', imageUrl);
+            (e.target as HTMLImageElement).src = '/images/products/default.png';
+          }}
         />
       </div>
 

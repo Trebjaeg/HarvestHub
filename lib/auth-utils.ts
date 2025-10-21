@@ -98,11 +98,16 @@ export function sanitizeReturnUrl(
 export function isProtectedPath(pathname: string): boolean {
   const protectedRoutes = [
     '/home',
+    '/shop',
     '/profile', 
+    '/my-profile',
     '/dashboard',
     '/orders',
     '/farmer',
-    '/sellerdashboard'
+    '/sellerdashboard',
+    '/buyerdashboard', 
+    '/buyer-profile',
+    '/seller-profile'
   ];
   
   return protectedRoutes.some(route => pathname.startsWith(route));
@@ -163,6 +168,37 @@ export function isAuthPath(pathname: string): boolean {
   return pathname === '/auth' || 
          pathname.startsWith('/auth/') ||
          pathname.startsWith('/api/auth/');
+}
+
+/**
+ * Checks if a path requires seller role
+ * @param pathname - The path to check
+ * @returns boolean indicating if the path is seller-only
+ */
+export function isSellerPath(pathname: string): boolean {
+  const sellerRoutes = [
+    '/sellerdashboard',
+    '/seller-profile',
+    '/api/seller'
+  ];
+  
+  return sellerRoutes.some(route => pathname.startsWith(route));
+}
+
+/**
+ * Checks if a path is buyer-accessible
+ * @param pathname - The path to check
+ * @returns boolean indicating if the path is for buyers
+ */
+export function isBuyerPath(pathname: string): boolean {
+  const buyerRoutes = [
+    '/buyerdashboard',
+    '/buyer-profile',
+    '/shop',
+    '/api/buyer'
+  ];
+  
+  return buyerRoutes.some(route => pathname.startsWith(route));
 }
 
 /**

@@ -33,6 +33,7 @@ export interface IProductFilters {
   minPrice?: number;
   maxPrice?: number;
   search?: string;
+  sort?: 'price_asc' | 'price_desc' | 'name' | 'newest' | 'createdAt';
 }
 
 export interface IProductsResponse {

@@ -116,24 +116,45 @@ export default function Sidebar() {
   };
 
   const handleLogout = async () => {
+    console.log('🚪 Starting logout process...');
     try {
       // Call logout API to clear server-side session
-      await fetch('/api/auth/logout', {
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+      
+      console.log('🚪 Logout API response:', response.status);
+      
+      // Clear ALL possible storage
+      if (typeof window !== 'undefined') {
+        // Clear localStorage
+        localStorage.removeItem('hh_token');
+        localStorage.removeItem('auth-token');
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('auth_user');
+        
+        // Clear sessionStorage
+        sessionStorage.clear();
+        
+        // Trigger logout event for other tabs
+        localStorage.setItem('logout-event', Date.now().toString());
+        localStorage.removeItem('logout-event');
+        
+        console.log('🚪 Cleared all storage');
+      }
+      
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('🚪 Logout error:', error);
     } finally {
-      // Clear all client-side authentication data
-      localStorage.removeItem('hh_token');
-      localStorage.removeItem('auth-token');
+      console.log('🚪 Redirecting to auth page...');
       
-      // Clear any other seller-related data
-      localStorage.clear();
-      
-      // Redirect to auth page
-      window.location.replace('/auth');
+      // Force a complete page reload to clear any cached state
+      window.location.href = '/auth';
     }
   };
 

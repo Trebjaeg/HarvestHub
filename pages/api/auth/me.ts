@@ -19,6 +19,10 @@ async function meHandler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   try {
+    console.log('🔍 /api/auth/me: Handler called');
+    console.log('🔍 /api/auth/me: All cookies:', Object.keys(req.cookies));
+    console.log('🔍 /api/auth/me: Cookie values:', req.cookies);
+    
     // Get token from cookies or Authorization header
     let token = req.cookies['auth-token'] || 
                 req.cookies['userToken'] || 
@@ -31,10 +35,14 @@ async function meHandler(req: NextApiRequest, res: NextApiResponse) {
       }
     }
 
+    console.log('🔍 /api/auth/me: Token found:', !!token, token ? `(${token.substring(0, 20)}...)` : '');
+
     if (!token) {
+      console.log('🔍 /api/auth/me: No token, returning 401');
       return res.status(401).json({ 
         error: 'No token provided',
-        message: 'Authentication required' 
+        message: 'Authentication required',
+        authenticated: false
       });
     }
 

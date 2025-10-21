@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { withAuth, AuthenticatedUser } from '@/lib/auth-api';
 
-export async function GET() {
+async function handler(req: NextRequest, user: AuthenticatedUser): Promise<NextResponse> {
   try {
     const recentOrders = [
       { orderId: '1001', buyer: 'Cameron Williamson', product: '5 kg Mangoes', status: 'Pending' },
@@ -16,3 +17,5 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
   }
 }
+
+export const GET = withAuth(handler);

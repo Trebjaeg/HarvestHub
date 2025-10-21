@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { withAuth, AuthenticatedUser } from '@/lib/auth-api';
 
-export async function GET() {
+async function handler(req: NextRequest, user: AuthenticatedUser): Promise<NextResponse> {
   try {
     // Replace with your actual database queries
     const stats = {
@@ -15,3 +16,5 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
   }
 }
+
+export const GET = withAuth(handler);

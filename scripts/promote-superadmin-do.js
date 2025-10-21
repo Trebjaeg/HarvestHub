@@ -46,7 +46,7 @@ async function promoteToSuperAdmin() {
     
     console.log('✅ Connected to DigitalOcean MongoDB');
     
-    const email = "iamraymondbautista17@gmail.com";
+    const email = "mirafuentesaprodhite@gmail.com";
     
     // First, check if user exists
     const existingUser = await User.findOne({ email: email });
@@ -54,13 +54,13 @@ async function promoteToSuperAdmin() {
     if (!existingUser) {
       console.log(`❌ User not found with email: ${email}`);
       console.log('💡 Creating superadmin account...');
-      
+
       // Create new superadmin user
       const bcrypt = require('bcrypt');
       const hashedPassword = await bcrypt.hash('HarvestHub2024!', 12); // Default password
       
       const newUser = new User({
-        name: "Raymond Bautista",
+        name: "Mira Fuentes",
         email: email,
         password: hashedPassword,
         role: "superadmin",

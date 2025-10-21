@@ -44,9 +44,9 @@ export async function withAuth(req: NextRequest, requiredRole?: string) {
         details: {
           requestPath: req.nextUrl.pathname,
           userAgent: req.headers.get('user-agent'),
-          ip: req.ip || req.headers.get('x-forwarded-for')
+          ip: getClientIP(req)
         },
-        ipAddress: req.ip || req.headers.get('x-forwarded-for'),
+        ipAddress: getClientIP(req),
         userAgent: req.headers.get('user-agent'),
         severity: 'medium'
       });
@@ -83,7 +83,7 @@ export async function withAuth(req: NextRequest, requiredRole?: string) {
             requiredRole,
             userRole: user.role
           },
-          ipAddress: req.ip || req.headers.get('x-forwarded-for'),
+          ipAddress: getClientIP(req),
           userAgent: req.headers.get('user-agent'),
           severity: 'high'
         });
@@ -109,8 +109,7 @@ export async function withSuperAdminAuth(req: NextRequest) {
 
 // Utility function to get user IP
 export function getClientIP(req: NextRequest): string {
-  return req.ip || 
-         req.headers.get('x-forwarded-for')?.split(',')[0] || 
+  return req.headers.get('x-forwarded-for')?.split(',')[0] || 
          req.headers.get('x-real-ip') || 
          'unknown';
 }

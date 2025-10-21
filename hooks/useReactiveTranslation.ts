@@ -27,10 +27,11 @@ export const useReactiveTranslation = () => {
   }, [i18n]);
 
   // Function that always returns fresh translation
-  const rt = (key: string, options?: any): string => {
+  // Accept the same flexible argument signature as i18next's `t` function
+  const rt = (...args: any[]): string => {
     // Force re-evaluation by including current language in dependency
-    const result = t(key, options);
-    return typeof result === 'string' ? result : key;
+    const result = (t as any)(...args);
+    return typeof result === 'string' ? result : String(result);
   };
 
   return { t: rt, i18n, currentLanguage };

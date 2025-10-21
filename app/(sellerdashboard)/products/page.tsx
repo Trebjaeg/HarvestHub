@@ -43,6 +43,8 @@ export default function Products() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [verificationMessage, setVerificationMessage] = useState<string>("");
+  const [isVerified, setIsVerified] = useState<boolean>(true); // Assume verified until checked
 
   const categories = [
     "Leafy Greens",
@@ -57,7 +59,27 @@ export default function Products() {
 
   useEffect(() => {
     fetchProducts();
+    checkVerificationStatus();
   }, []);
+
+  const checkVerificationStatus = async () => {
+    try {
+      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
+      const response = await fetch('/api/seller/verification/status', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const verified = data.sellerStatus === 'verified';
+        setIsVerified(verified);
+        console.log('Verification status:', data.sellerStatus, 'isVerified:', verified);
+      }
+    } catch (error) {
+      console.error('Error checking verification status:', error);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -75,6 +97,12 @@ export default function Products() {
           harvestDate: product.harvestDate ? new Date(product.harvestDate).toISOString().split('T')[0] : undefined
         }));
         setProducts(formattedProducts);
+      } else if (response.status === 403) {
+        const error = await response.json();
+        if (error.error === 'Insufficient permissions' || error.message?.includes('verification')) {
+          // Don't show anything on page load - user will see error when trying to add/edit
+          console.log('User needs verification to manage products');
+        }
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -85,6 +113,7 @@ export default function Products() {
 
   const handleAddProduct = async (product: Product) => {
     try {
+      console.log('Attempting to create product:', product);
       const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
       const response = await fetch('/api/seller/products', {
         method: 'POST',
@@ -95,18 +124,28 @@ export default function Products() {
         body: JSON.stringify(product)
       });
 
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Product created successfully:', data);
         // Refresh the products list
         fetchProducts();
         setShowAddModal(false);
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to create product');
+        console.error('Server error response:', error);
+        // Check if it's a verification error
+        if (response.status === 403 && (error.error === 'Insufficient permissions' || error.message?.includes('verification'))) {
+          // Keep modal open and show error inline
+          setVerificationMessage(error.message || 'You must be a verified seller to add products');
+        } else {
+          alert(error.error || error.message || 'Failed to create product');
+        }
       }
     } catch (error) {
       console.error('Error creating product:', error);
-      alert('Failed to create product');
+      alert('Failed to create product: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
@@ -129,7 +168,13 @@ export default function Products() {
         setEditingProduct(null);
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to update product');
+        // Check if it's a verification error
+        if (response.status === 403 && (error.error === 'Insufficient permissions' || error.message?.includes('verification'))) {
+          // Keep modal open and show error inline
+          setVerificationMessage(error.message || 'You must be a verified seller to edit products');
+        } else {
+          alert(error.error || 'Failed to update product');
+        }
       }
     } catch (error) {
       console.error('Error updating product:', error);
@@ -155,7 +200,12 @@ export default function Products() {
           fetchProducts();
         } else {
           const error = await response.json();
-          alert(error.error || 'Failed to delete product');
+          // Check if it's a verification error
+          if (response.status === 403 && (error.error === 'Insufficient permissions' || error.message?.includes('verification'))) {
+            alert(error.message || 'You must be a verified seller to delete products. Please complete verification in your profile.');
+          } else {
+            alert(error.error || 'Failed to delete product');
+          }
         }
       } catch (error) {
         console.error('Error deleting product:', error);
@@ -197,7 +247,15 @@ export default function Products() {
             </h1>
           </div>
           <Button 
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              console.log('Add Product clicked, isVerified:', isVerified);
+              if (!isVerified) {
+                setVerificationMessage('You must complete seller verification to add products. Please verify your account in the Profile section.');
+              } else {
+                setVerificationMessage('');
+              }
+              setShowAddModal(true);
+            }}
             className="bg-green-600 hover:bg-green-700 text-white font-poppins" 
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -272,8 +330,16 @@ export default function Products() {
                 ? "No products match your current filters." 
                 : "You haven't added any products yet."}
             </p>
-            <Button 
-              onClick={() => setShowAddModal(true)}
+            <Button
+              onClick={() => {
+                console.log('Add Your First Product clicked, isVerified:', isVerified);
+                if (!isVerified) {
+                  setVerificationMessage('You must complete seller verification to add products. Please verify your account in the Profile section.');
+                } else {
+                  setVerificationMessage('');
+                }
+                setShowAddModal(true);
+              }}
               className="bg-green-600 hover:bg-green-700 text-white font-poppins"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -313,7 +379,12 @@ export default function Products() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => setEditingProduct(product)}
+                          onClick={() => {
+                            if (!isVerified) {
+                              setVerificationMessage('Verified seller access required');
+                            }
+                            setEditingProduct(product);
+                          }}
                           className="w-8 h-8 p-0"
                         >
                           <Edit className="w-4 h-4" />
@@ -363,16 +434,24 @@ export default function Products() {
         {/* Add/Edit Product Modal */}
         <AddEditProductModal
           isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
+          onClose={() => {
+            setShowAddModal(false);
+            setVerificationMessage(''); // Clear error when closing
+          }}
           product={null}
           onSave={handleAddProduct}
+          verificationError={verificationMessage}
         />
 
         <AddEditProductModal
           isOpen={!!editingProduct}
-          onClose={() => setEditingProduct(null)}
+          onClose={() => {
+            setEditingProduct(null);
+            setVerificationMessage(''); // Clear error when closing
+          }}
           product={editingProduct}
           onSave={handleEditProduct}
+          verificationError={verificationMessage}
         />
       </div>
     </div>

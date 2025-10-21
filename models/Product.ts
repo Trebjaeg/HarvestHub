@@ -37,17 +37,7 @@ const ProductSchema = new mongoose.Schema<IProduct>({
   category: {
     type: String,
     required: [true, 'Category is required'],
-    enum: [
-      'Fresh Vegetables',
-      'Fruits',
-      'Leafy Greens', 
-      'Root Crops',
-      'Grains and Rice',
-      'Spices and Aromatics',
-      'Eggplant and Gourds',
-      'Herbs',
-      'Others'
-    ]
+    trim: true
   },
   price: {
     type: Number,
@@ -56,8 +46,7 @@ const ProductSchema = new mongoose.Schema<IProduct>({
   },
   unit: {
     type: String,
-    required: [true, 'Unit is required'],
-    enum: ['kg', 'piece', 'bundle', 'grams', 'lbs']
+    required: [true, 'Unit is required']
   },
   originalPrice: {
     type: Number,
@@ -93,7 +82,6 @@ const ProductSchema = new mongoose.Schema<IProduct>({
   },
   status: {
     type: String,
-    enum: ['Available', 'Out of Stock', 'Coming Soon'],
     default: 'Available'
   },
   isOrganic: {

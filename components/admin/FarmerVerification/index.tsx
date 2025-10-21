@@ -12,37 +12,41 @@ import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import LoadingDots from '../../ui/LoadingDots';
 
-interface FarmerDocument {
-  filename: string;
-  originalName: string;
-  fileUrl: string;
-  uploadedAt: string;
-  fileSize?: number;
-  mimeType?: string;
-}
-
-interface FarmerDetails {
-  farmName?: string;
-  farmAddress?: string;
-  contactNumber?: string;
-}
-
-interface PendingFarmer {
+interface SellerApplication {
   _id: string;
-  name: string;
-  email: string;
-  sellerStatus: 'pending' | 'verified' | 'rejected';
-  farmerVerification?: {
-    governmentId?: FarmerDocument;
-    farmDetails?: FarmerDetails;
-    submittedAt?: string;
-    reviewedAt?: string;
-    reviewedBy?: string;
-    rejectionReason?: string;
-    notes?: string;
+  userId: {
+    _id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    address?: string;
+    createdAt: string;
   };
-  createdAt: string;
+  status: 'pending' | 'approved' | 'rejected';
+  governmentIdFrontKey: string;
+  governmentIdFrontOriginalName: string;
+  governmentIdFrontSize: number;
+  governmentIdFrontMimeType: string;
+  governmentIdBackKey: string;
+  governmentIdBackOriginalName: string;
+  governmentIdBackSize: number;
+  governmentIdBackMimeType: string;
+  birDocumentKey: string;
+  birDocumentOriginalName: string;
+  birDocumentSize: number;
+  birDocumentMimeType: string;
+  submittedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  rejectionReason?: string;
+  adminNotes?: string;
 }
+
+interface PendingFarmer extends SellerApplication {}
 
 const FarmerVerification: React.FC = () => {
   const { t } = useReactiveTranslation();
@@ -54,10 +58,17 @@ const FarmerVerification: React.FC = () => {
   const [adminNotes, setAdminNotes] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'verified' | 'rejected'>('pending');
 
+  // Helper function to generate file URL from key
+  const getFileUrl = (key: string) => {
+    const cdnUrl = process.env.NEXT_PUBLIC_DO_SPACES_CDN_URL || 'https://barn.sgp1.cdn.digitaloceanspaces.com';
+    return `${cdnUrl}/${key}`;
+  };
+
   const fetchFarmers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/farmers', {
+      const statusQuery = filterStatus !== 'all' ? `?status=${filterStatus}` : '';
+      const response = await fetch(`/api/admin/verification/applications${statusQuery}`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
@@ -65,13 +76,13 @@ const FarmerVerification: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch farmers');
+        throw new Error('Failed to fetch applications');
       }
 
       const data = await response.json();
-      setFarmers(data.farmers || []);
+      setFarmers(data.applications || []);
     } catch (error) {
-      console.error('Error fetching farmers:', error);
+      console.error('Error fetching applications:', error);
     } finally {
       setLoading(false);
     }
@@ -81,18 +92,19 @@ const FarmerVerification: React.FC = () => {
     fetchFarmers();
   }, []);
 
-  const handleReview = async (farmerId: string, action: 'approve' | 'reject') => {
+  const handleReview = async (applicationId: string, action: 'approve' | 'reject') => {
     try {
-      const response = await fetch(`/api/admin/farmers/${farmerId}/review`, {
+      const response = await fetch(`/api/admin/verification/review`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          applicationId,
           action,
           rejectionReason: action === 'reject' ? rejectionReason : undefined,
-          notes: adminNotes
+          adminNotes
         })
       });
 
@@ -116,19 +128,23 @@ const FarmerVerification: React.FC = () => {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       pending: "outline",
+      approved: "default",
       verified: "default",
       rejected: "destructive"
     };
     
     const colors: Record<string, string> = {
       pending: "text-yellow-600 border-yellow-600",
+      approved: "text-green-600 border-green-600 bg-green-50",
       verified: "text-green-600 border-green-600 bg-green-50",
       rejected: "text-red-600 border-red-600"
     };
 
+    const displayStatus = status === 'approved' ? 'verified' : status;
+
     return (
       <Badge variant={variants[status]} className={colors[status]}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
       </Badge>
     );
   };
@@ -143,7 +159,8 @@ const FarmerVerification: React.FC = () => {
 
   const filteredFarmers = farmers.filter(farmer => {
     if (filterStatus === 'all') return true;
-    return farmer.sellerStatus === filterStatus;
+    if (filterStatus === 'verified') return farmer.status === 'approved';
+    return farmer.status === filterStatus;
   });
 
   if (loading) {
@@ -199,11 +216,11 @@ const FarmerVerification: React.FC = () => {
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="text-lg">{farmer.name}</CardTitle>
-                    <CardDescription>{farmer.email}</CardDescription>
+                    <CardTitle className="text-lg">{farmer.userId.name}</CardTitle>
+                    <CardDescription>{farmer.userId.email}</CardDescription>
                   </div>
                   <div className="flex gap-2 items-center">
-                    {getStatusBadge(farmer.sellerStatus)}
+                    {getStatusBadge(farmer.status)}
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button 
@@ -216,9 +233,9 @@ const FarmerVerification: React.FC = () => {
                       </DialogTrigger>
                       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                         <DialogHeader>
-                          <DialogTitle>Farmer Application Details</DialogTitle>
+                          <DialogTitle>Seller Verification Application</DialogTitle>
                           <DialogDescription>
-                            Review {farmer.name}'s farmer verification application
+                            Review seller verification application
                           </DialogDescription>
                         </DialogHeader>
                         
@@ -228,73 +245,123 @@ const FarmerVerification: React.FC = () => {
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <Label className="font-semibold">Name</Label>
-                                <p>{selectedFarmer.name}</p>
+                                <p>{selectedFarmer.userId.name}</p>
                               </div>
                               <div>
                                 <Label className="font-semibold">Email</Label>
-                                <p>{selectedFarmer.email}</p>
+                                <p>{selectedFarmer.userId.email}</p>
+                              </div>
+                              <div>
+                                <Label className="font-semibold">Phone</Label>
+                                <p>{selectedFarmer.userId.phone || 'Not provided'}</p>
                               </div>
                               <div>
                                 <Label className="font-semibold">Status</Label>
-                                <div className="mt-1">{getStatusBadge(selectedFarmer.sellerStatus)}</div>
+                                <div className="mt-1">{getStatusBadge(selectedFarmer.status)}</div>
                               </div>
                               <div>
                                 <Label className="font-semibold">Applied On</Label>
-                                <p>{selectedFarmer.farmerVerification?.submittedAt ? 
-                                  new Date(selectedFarmer.farmerVerification.submittedAt).toLocaleDateString() : 
-                                  'Not submitted'
-                                }</p>
+                                <p>{new Date(selectedFarmer.submittedAt).toLocaleString()}</p>
                               </div>
+                              {selectedFarmer.reviewedAt && (
+                                <div>
+                                  <Label className="font-semibold">Reviewed On</Label>
+                                  <p>{new Date(selectedFarmer.reviewedAt).toLocaleString()}</p>
+                                </div>
+                              )}
                             </div>
 
-                            {/* Farm Details */}
-                            {selectedFarmer.farmerVerification?.farmDetails && (
+                            {/* Address */}
+                            {selectedFarmer.userId.address && (
                               <div>
-                                <h3 className="text-lg font-semibold mb-3">Farm Details</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <Label className="font-semibold">Farm Name</Label>
-                                    <p>{selectedFarmer.farmerVerification.farmDetails.farmName || 'Not provided'}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="font-semibold">Contact Number</Label>
-                                    <p>{selectedFarmer.farmerVerification.farmDetails.contactNumber || 'Not provided'}</p>
-                                  </div>
-                                  <div className="col-span-2">
-                                    <Label className="font-semibold">Farm Address</Label>
-                                    <p>{selectedFarmer.farmerVerification.farmDetails.farmAddress || 'Not provided'}</p>
-                                  </div>
-                                </div>
+                                <Label className="font-semibold">Address</Label>
+                                <p>{selectedFarmer.userId.address}</p>
                               </div>
                             )}
 
-                            {/* Government ID Document */}
-                            {selectedFarmer.farmerVerification?.governmentId && (
-                              <div>
-                                <h3 className="text-lg font-semibold mb-3">Government ID</h3>
-                                <div className="border rounded-lg p-4">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <p className="font-semibold">Government Identification</p>
-                                      <p className="text-sm text-gray-600">{selectedFarmer.farmerVerification.governmentId.originalName}</p>
-                                      <p className="text-xs text-gray-500">
-                                        {formatFileSize(selectedFarmer.farmerVerification.governmentId.fileSize)} • {new Date(selectedFarmer.farmerVerification.governmentId.uploadedAt).toLocaleDateString()}
-                                      </p>
-                                    </div>
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm"
-                                      onClick={() => window.open(selectedFarmer.farmerVerification?.governmentId?.fileUrl, '_blank')}
-                                    >
-                                      View ID
-                                    </Button>
+                            {/* Documents Section */}
+                            <div className="space-y-4">
+                              <h3 className="text-lg font-semibold">Submitted Documents</h3>
+                              
+                              {/* Government ID Front */}
+                              <div className="border rounded-lg p-4">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <p className="font-semibold">Government ID (Front)</p>
+                                    <p className="text-sm text-gray-600">{selectedFarmer.governmentIdFrontOriginalName}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {formatFileSize(selectedFarmer.governmentIdFrontSize)} • {selectedFarmer.governmentIdFrontMimeType}
+                                    </p>
                                   </div>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => window.open(getFileUrl(selectedFarmer.governmentIdFrontKey), '_blank')}
+                                  >
+                                    View Document
+                                  </Button>
                                 </div>
+                              </div>
+
+                              {/* Government ID Back */}
+                              <div className="border rounded-lg p-4">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <p className="font-semibold">Government ID (Back)</p>
+                                    <p className="text-sm text-gray-600">{selectedFarmer.governmentIdBackOriginalName}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {formatFileSize(selectedFarmer.governmentIdBackSize)} • {selectedFarmer.governmentIdBackMimeType}
+                                    </p>
+                                  </div>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => window.open(getFileUrl(selectedFarmer.governmentIdBackKey), '_blank')}
+                                  >
+                                    View Document
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* BIR Document */}
+                              <div className="border rounded-lg p-4">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <p className="font-semibold">BIR Certificate</p>
+                                    <p className="text-sm text-gray-600">{selectedFarmer.birDocumentOriginalName}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {formatFileSize(selectedFarmer.birDocumentSize)} • {selectedFarmer.birDocumentMimeType}
+                                    </p>
+                                  </div>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => window.open(getFileUrl(selectedFarmer.birDocumentKey), '_blank')}
+                                  >
+                                    View Document
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Review Notes */}
+                            {selectedFarmer.adminNotes && (
+                              <div>
+                                <Label className="font-semibold">Admin Notes</Label>
+                                <p className="text-sm mt-1 p-3 bg-gray-50 rounded">{selectedFarmer.adminNotes}</p>
+                              </div>
+                            )}
+
+                            {/* Rejection Reason */}
+                            {selectedFarmer.rejectionReason && (
+                              <div>
+                                <Label className="font-semibold text-red-600">Rejection Reason</Label>
+                                <p className="text-sm mt-1 p-3 bg-red-50 rounded text-red-900">{selectedFarmer.rejectionReason}</p>
                               </div>
                             )}
 
                             {/* Review Actions */}
-                            {selectedFarmer.sellerStatus === 'pending' && (
+                            {selectedFarmer.status === 'pending' && (
                               <div className="border-t pt-6">
                                 <h3 className="text-lg font-semibold mb-3">Review Application</h3>
                                 <div className="space-y-4">
@@ -358,19 +425,16 @@ const FarmerVerification: React.FC = () => {
                             )}
 
                             {/* Previous Review Info */}
-                            {selectedFarmer.sellerStatus !== 'pending' && (
+                            {selectedFarmer.status !== 'pending' && (
                               <div className="border-t pt-6">
                                 <h3 className="text-lg font-semibold mb-3">Review Information</h3>
                                 <div className="space-y-2">
-                                  <p><span className="font-semibold">Status:</span> {getStatusBadge(selectedFarmer.sellerStatus)}</p>
-                                  {selectedFarmer.farmerVerification?.reviewedAt && (
-                                    <p><span className="font-semibold">Reviewed On:</span> {new Date(selectedFarmer.farmerVerification.reviewedAt).toLocaleDateString()}</p>
+                                  <p><span className="font-semibold">Status:</span> {getStatusBadge(selectedFarmer.status)}</p>
+                                  {selectedFarmer.reviewedAt && (
+                                    <p><span className="font-semibold">Reviewed On:</span> {new Date(selectedFarmer.reviewedAt).toLocaleString()}</p>
                                   )}
-                                  {selectedFarmer.farmerVerification?.rejectionReason && (
-                                    <p><span className="font-semibold">Rejection Reason:</span> {selectedFarmer.farmerVerification.rejectionReason}</p>
-                                  )}
-                                  {selectedFarmer.farmerVerification?.notes && (
-                                    <p><span className="font-semibold">Admin Notes:</span> {selectedFarmer.farmerVerification.notes}</p>
+                                  {selectedFarmer.reviewedBy && (
+                                    <p><span className="font-semibold">Reviewed By:</span> {selectedFarmer.reviewedBy.name} ({selectedFarmer.reviewedBy.email})</p>
                                   )}
                                 </div>
                               </div>
@@ -387,18 +451,15 @@ const FarmerVerification: React.FC = () => {
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
                     <span className="font-semibold">Applied:</span>
-                    <p>{farmer.farmerVerification?.submittedAt ? 
-                      new Date(farmer.farmerVerification.submittedAt).toLocaleDateString() : 
-                      'Not submitted'
-                    }</p>
+                    <p>{new Date(farmer.submittedAt).toLocaleDateString()}</p>
                   </div>
                   <div>
                     <span className="font-semibold">Documents:</span>
-                    <p>{farmer.farmerVerification?.governmentId ? '1 file' : '0 files'}</p>
+                    <p>3 files (ID Front, ID Back, BIR)</p>
                   </div>
                   <div>
-                    <span className="font-semibold">Farm:</span>
-                    <p>{farmer.farmerVerification?.farmDetails?.farmName || 'Not provided'}</p>
+                    <span className="font-semibold">Email:</span>
+                    <p>{farmer.userId.email}</p>
                   </div>
                 </div>
               </CardContent>

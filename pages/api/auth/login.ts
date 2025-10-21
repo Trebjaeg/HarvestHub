@@ -63,6 +63,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
+    // Check if account is suspended or deleted
+    if (user.status === 'suspended') {
+      console.log('Login attempt for suspended account:', user.email);
+      return res.status(403).json({ 
+        message: 'Your account has been suspended. Please contact our help center for assistance.',
+        accountStatus: 'suspended',
+        contactEmail: 'support@harvesthubph.app' 
+      });
+    }
+
+    if (user.status === 'deleted') {
+      console.log('Login attempt for deleted account:', user.email);
+      return res.status(403).json({ 
+        message: 'This account has been deactivated and can no longer be accessed. Please contact our help center if you believe this is an error.',
+        accountStatus: 'deleted',
+        contactEmail: 'support@harvesthubph.app'
+      });
+
     console.log('Login attempt for user:', user.email);
     console.log('Input password length:', password.length);
     console.log('Stored password hash:', user.password);

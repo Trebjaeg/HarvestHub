@@ -23,10 +23,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Fallback to cookies (check all possible cookie names)
     if (!token) {
-      token = req.cookies['auth-token'] || req.cookies.token || req.cookies.userToken;
+      token = req.cookies['auth-token'] || 
+              req.cookies['userToken'] || 
+              req.cookies['hh_token'] ||
+              req.cookies.token;
     }
 
     if (!token) {
+      console.log('❌ /api/seller/profile: No token found in cookies:', Object.keys(req.cookies));
       return res.status(401).json({ message: 'No token provided' });
     }
 
