@@ -45,39 +45,39 @@ const TrmsNConAndPP: FC<TrmsNConAndPPProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-white/30 p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-auto max-h-[90vh] flex flex-col border border-gray-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-white/30 p-2 sm:p-4">
+      <div className="bg-white rounded-lg sm:rounded-2xl shadow-xl max-w-full sm:max-w-2xl w-full mx-auto max-h-[95vh] sm:max-h-[90vh] flex flex-col border border-gray-100">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+        <div className="flex justify-between items-center p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 pr-2">{title}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            className="text-gray-400 hover:text-gray-600 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
           >
             ×
           </button>
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6" onScroll={handleScroll}>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6" onScroll={handleScroll}>
           {children}
         </div>
 
         {/* Scroll indicator */}
         {!hasScrolledToBottom && (
-          <div className="px-6 py-3 bg-green-50 border-t border-green-200">
-            <p className="text-sm text-green-700 text-center font-medium">
+          <div className="px-4 sm:px-6 py-2 sm:py-3 bg-green-50 border-t border-green-200 flex-shrink-0">
+            <p className="text-xs sm:text-sm text-green-700 text-center font-medium">
               ▼ {t("modal.scrollMessage")}
             </p>
           </div>
         )}
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50/50">
+        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 p-4 sm:p-6 border-t border-gray-200 bg-gray-50/50 flex-shrink-0">
           <Button
             variant="outline"
             onClick={onClose}
-            className="px-6 py-2 border-gray-300 hover:bg-gray-50"
+            className="w-full sm:w-auto px-4 sm:px-6 py-2 border-gray-300 hover:bg-gray-50 order-2 sm:order-1"
           >
             {t("modal.cancel")}
           </Button>
@@ -85,7 +85,7 @@ const TrmsNConAndPP: FC<TrmsNConAndPPProps> = ({
             variant="default"
             onClick={onAccept}
             disabled={!hasScrolledToBottom}
-            className={`px-6 py-2 font-semibold rounded-lg transition ${
+            className={`w-full sm:w-auto px-4 sm:px-6 py-2 font-semibold rounded-lg transition order-1 sm:order-2 ${
               !hasScrolledToBottom
                 ? "opacity-50 cursor-not-allowed bg-gray-400"
                 : "bg-green-600 hover:bg-green-700 text-white"

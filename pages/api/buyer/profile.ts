@@ -46,12 +46,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(403).json({ error: 'Access denied. Buyer role required.' });
     }
 
+    // Split name into firstName and lastName for frontend compatibility
+    const nameParts = (buyer.name || '').trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
     return res.status(200).json({
       success: true,
       buyer: {
         _id: buyer._id,
-        firstName: buyer.firstName || null,
-        lastName: buyer.lastName || null,
+        firstName: firstName,
+        lastName: lastName,
+        name: buyer.name, // Also include full name
         email: buyer.email,
         phone: buyer.phone || null,
         address: buyer.address || null,

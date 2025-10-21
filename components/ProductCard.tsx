@@ -16,10 +16,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
     : 0;
 
   // Get image URL - check multiple possible fields
-  const imageUrl = (product as any).image || 
-                   (product as any).images?.[0] || 
-                   product.imageUrl || 
-                   '/images/products/default.png';
+  const rawImageUrl = (product as any).image || 
+                      (product as any).images?.[0] || 
+                      product.imageUrl;
+  
+  // Filter out invalid URLs (blob, data, empty strings)
+  const imageUrl = rawImageUrl && 
+                   !rawImageUrl.startsWith('blob:') && 
+                   !rawImageUrl.startsWith('data:') &&
+                   rawImageUrl.trim() !== ''
+    ? rawImageUrl
+    : '/images/products/default.png';
 
   console.log('ProductCard image URL:', imageUrl, 'for product:', product.name);
 

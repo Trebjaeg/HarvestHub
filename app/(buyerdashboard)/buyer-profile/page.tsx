@@ -149,8 +149,11 @@ function BuyerProfile() {
   };
 
   const getDefaultAvatar = (firstName: string, lastName: string) => {
+    // Handle null/undefined values
+    const first = firstName || '';
+    const last = lastName || '';
     // Generate initials from first and last name
-    const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+    const initials = `${first.charAt(0) || '?'}${last.charAt(0) || '?'}`.toUpperCase();
     
     // Generate a color based on the name (like Facebook)
     const colors = [
@@ -164,7 +167,7 @@ function BuyerProfile() {
       'bg-teal-500'
     ];
     
-    const colorIndex = (firstName.length + lastName.length) % colors.length;
+    const colorIndex = (first.length + last.length) % colors.length;
     const bgColor = colors[colorIndex];
     
     return { initials, bgColor };
@@ -220,54 +223,27 @@ function BuyerProfile() {
   const fullName = profile ? `${profile.firstName} ${profile.lastName}` : '';
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Navigation Bar */}
-        <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center gap-6">
-            <Link 
-              href="/home" 
-              className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded-lg transition-colors font-medium"
-              style={{ fontFamily: 'Poppins, sans-serif' }}
-            >
-              <Home className="w-5 h-5" />
-              Home
-            </Link>
-            <Link 
-              href="/buyer-messages" 
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-800 rounded-lg transition-colors font-medium"
-              style={{ fontFamily: 'Poppins, sans-serif' }}
-            >
-              <MessageSquare className="w-5 h-5" />
-              Messages
-            </Link>
-            <Link 
-              href="/buyer-help" 
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-800 rounded-lg transition-colors font-medium"
-              style={{ fontFamily: 'Poppins, sans-serif' }}
-            >
-              <HelpCircle className="w-5 h-5" />
-              Help Center
-            </Link>
-          </div>
+    <div className="max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+        <div className="flex items-center gap-3">
+          <User className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Buyer Profile
+          </h1>
         </div>
+        <Button 
+          className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto" 
+          style={{ fontFamily: 'Poppins, sans-serif' }} 
+          onClick={() => setShowEditModal(true)}
+        >
+          <Edit className="w-4 h-4 mr-2" />
+          Edit Profile
+        </Button>
+      </div>
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <User className="w-8 h-8 text-green-600" />
-            <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Buyer Profile
-            </h1>
-          </div>
-          <Button className="bg-green-600 hover:bg-green-700 text-white" style={{ fontFamily: 'Poppins, sans-serif' }} onClick={() => setShowEditModal(true)}>
-            <Edit className="w-4 h-4 mr-2" />
-            Edit Profile
-          </Button>
-        </div>
-
-        {/* Profile Header with Avatar */}
-        <Card className="p-6 bg-white border border-gray-200 mb-6">
+      {/* Profile Header with Avatar */}
+      <Card className="p-4 sm:p-6 bg-white border border-gray-200 mb-6">
           <div className="flex items-center gap-6">
             {/* Profile Avatar */}
             <div className="relative">
@@ -459,7 +435,6 @@ function BuyerProfile() {
           profile={profile}
           onSave={handleProfileUpdate}
         />
-      </div>
     </div>
   );
 }

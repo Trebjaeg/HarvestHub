@@ -4,16 +4,12 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  BarChart3,
-  Star,
+  User,
+  ShoppingBag,
+  Heart,
   MessageSquare,
   HelpCircle,
-  User,
   Home,
-  ArrowLeft,
   Menu,
   X,
 } from "lucide-react";
@@ -21,7 +17,8 @@ import Image from "next/image";
 
 interface ProfileData {
   _id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   profileImage?: string;
 }
@@ -34,38 +31,33 @@ const menuItems = [
     isExternal: true,
   },
   {
-    icon: LayoutDashboard,
+    icon: User,
     label: "Profile",
-    href: "/profile",
+    href: "/buyer-profile",
   },
   {
-    icon: Package,
-    label: "Products",
-    href: "/products",
+    icon: ShoppingBag,
+    label: "My Orders",
+    href: "/buyer-orders",
   },
   {
-    icon: ShoppingCart,
-    label: "Manage Orders",
-    href: "/orders",
-  },
-  {
-    icon: BarChart3,
-    label: "Reports",
-    href: "/reports",
-  },
-  {
-    icon: Star,
-    label: "Reviews & Ratings",
-    href: "/reviews",
+    icon: Heart,
+    label: "Favorites",
+    href: "/buyer-favorites",
   },
   {
     icon: MessageSquare,
-    label: "Message",
-    href: "/message",
+    label: "Messages",
+    href: "/buyer-messages",
+  },
+  {
+    icon: HelpCircle,
+    label: "Help Center",
+    href: "/buyer-help",
   },
 ];
 
-export default function Sidebar() {
+export default function BuyerSidebar() {
   const pathname = usePathname();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,13 +75,14 @@ export default function Sidebar() {
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
-      const response = await fetch('/api/seller/profile', {
+      const response = await fetch('/api/buyer/profile', {
+        credentials: 'include',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
       if (response.ok) {
         const data = await response.json();
-        setProfile(data.seller);
+        setProfile(data.buyer);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -98,13 +91,11 @@ export default function Sidebar() {
     }
   };
 
-  const getDefaultAvatar = (name: string) => {
-    const initials = name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+  const getDefaultAvatar = (firstName: string, lastName: string) => {
+    // Handle null/undefined values
+    const first = firstName || '';
+    const last = lastName || '';
+    const initials = `${first.charAt(0) || '?'}${last.charAt(0) || '?'}`.toUpperCase();
     
     const colors = [
       'bg-blue-500',
@@ -117,16 +108,15 @@ export default function Sidebar() {
       'bg-teal-500'
     ];
     
-    const colorIndex = name.length % colors.length;
+    const colorIndex = (first.length + last.length) % colors.length;
     const bgColor = colors[colorIndex];
     
     return { initials, bgColor };
   };
 
   const handleLogout = async () => {
-    console.log('🚪 Starting logout process...');
+    console.log('🚪 [BUYER] Starting logout process...');
     try {
-      // Call logout API to clear server-side session
       const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
@@ -135,40 +125,36 @@ export default function Sidebar() {
         },
       });
       
-      console.log('🚪 Logout API response:', response.status);
+      console.log('🚪 [BUYER] Logout API response:', response.status);
       
-      // Clear ALL possible storage
       if (typeof window !== 'undefined') {
-        // Clear localStorage
         localStorage.removeItem('hh_token');
         localStorage.removeItem('auth-token');
         localStorage.removeItem('userToken');
         localStorage.removeItem('user');
         localStorage.removeItem('auth_user');
         
-        // Clear sessionStorage
         sessionStorage.clear();
         
-        // Trigger logout event for other tabs
         localStorage.setItem('logout-event', Date.now().toString());
         localStorage.removeItem('logout-event');
         
-        console.log('🚪 Cleared all storage');
+        console.log('🚪 [BUYER] Cleared all storage');
       }
       
     } catch (error) {
-      console.error('🚪 Logout error:', error);
+      console.error('🚪 [BUYER] Logout error:', error);
     } finally {
-      console.log('🚪 Redirecting to auth page...');
-      
-      // Force a complete page reload to clear any cached state
+      console.log('🚪 [BUYER] Redirecting to auth page...');
       window.location.href = '/auth';
     }
   };
 
+  const fullName = profile ? `${profile.firstName} ${profile.lastName}` : '';
+
   return (
     <>
-      {/* Mobile Header - matches admin layout */}
+      {/* Mobile Header - matches seller layout */}
       <div className="lg:hidden bg-white shadow-sm border-b px-4 py-3 flex items-center justify-between fixed top-0 left-0 right-0 z-30">
         <div className="flex items-center space-x-3">
           <button
@@ -183,10 +169,10 @@ export default function Sidebar() {
           </button>
           <div>
             <h1 className="text-lg font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Seller Dashboard
+              Buyer Dashboard
             </h1>
             <p className="text-xs text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              HarvestHub Seller
+              HarvestHub Buyer
             </p>
           </div>
         </div>
@@ -194,7 +180,7 @@ export default function Sidebar() {
         <div className="flex items-center space-x-2">
           {/* Mobile Profile Icon */}
           <Link
-            href="/profile"
+            href="/buyer-profile"
             className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
             title="Profile"
           >
@@ -212,7 +198,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Mobile Overlay - with blur effect like admin */}
+      {/* Mobile Overlay - with blur effect like seller */}
       {isMobileMenuOpen && (
         <div
           className="lg:hidden fixed inset-0 backdrop-blur-sm bg-white/20 z-40 top-0 left-0 w-full h-full"
@@ -226,15 +212,15 @@ export default function Sidebar() {
         inset-y-0 left-0 lg:min-h-screen
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        {/* Mobile Sidebar Header - matches admin */}
+        {/* Mobile Sidebar Header - matches seller */}
         <div className="lg:hidden p-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-lg font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                Seller Dashboard
+                Buyer Dashboard
               </h1>
               <p className="text-xs text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                HarvestHub Seller
+                HarvestHub Buyer
               </p>
             </div>
             
@@ -256,21 +242,21 @@ export default function Sidebar() {
           </h1>
 
           {/* User Profile */}
-          <Link href="/profile" className="flex flex-col items-center mb-4 hover:bg-gray-50 rounded-lg p-3 transition-colors cursor-pointer">
+          <Link href="/buyer-profile" className="flex flex-col items-center mb-4 hover:bg-gray-50 rounded-lg p-3 transition-colors cursor-pointer">
             <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200">
               {loading ? (
                 <div className="w-full h-full bg-gray-200 animate-pulse"></div>
               ) : profile?.profileImage ? (
                 <Image
                   src={profile.profileImage}
-                  alt={profile.name}
+                  alt={fullName}
                   width={80}
                   height={80}
                   className="w-full h-full object-cover"
                 />
               ) : profile ? (
-                <div className={`w-full h-full flex items-center justify-center text-white text-xl font-bold ${getDefaultAvatar(profile.name).bgColor}`}>
-                  {getDefaultAvatar(profile.name).initials}
+                <div className={`w-full h-full flex items-center justify-center text-white text-xl font-bold ${getDefaultAvatar(profile.firstName, profile.lastName).bgColor}`}>
+                  {getDefaultAvatar(profile.firstName, profile.lastName).initials}
                 </div>
               ) : (
                 <div className="w-full h-full bg-gray-300 flex items-center justify-center">
@@ -279,10 +265,10 @@ export default function Sidebar() {
               )}
             </div>
             <h3 className="font-semibold text-gray-800 mt-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              {loading ? 'Loading...' : profile?.name || 'Unknown User'}
+              {loading ? 'Loading...' : fullName || 'Unknown User'}
             </h3>
             <p className="text-gray-600 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Seller
+              Buyer
             </p>
           </Link>
         </div>
@@ -311,9 +297,6 @@ export default function Sidebar() {
                 >
                   <Icon size={20} strokeWidth={isActive || isHomeButton ? 2.5 : 2}/>
                   <span>{item.label}</span>
-                  {isHomeButton && (
-                    <ArrowLeft size={16} className="ml-auto" />
-                  )}
                 </Link>
               </li>
             );
