@@ -236,7 +236,21 @@ const ShopPageContent = () => {
 
       <nav className="bg-gray-100 py-3 border-b border-gray-200 sticky top-0 z-50">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-center text-sm">
+          {/* Mobile Navigation */}
+          <div className="md:hidden">
+            <div className="flex items-center justify-center text-sm">
+              <div className="flex items-center space-x-3 text-xs overflow-x-auto">
+                <Link href="/home" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Home</Link>
+                <Link href="/shop" className="font-medium py-2 border-b-2 whitespace-nowrap" style={{ color: '#614124', borderColor: '#614124' }}>Shop</Link>
+                <Link href="/deals" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Deals</Link>
+                <Link href="/new-arrivals" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>New Arrivals</Link>
+                <Link href="/best-seller" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Best Seller</Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center justify-center text-sm">
             <div className="flex items-center space-x-16">
               <Link href="/home" className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Home</Link>
               <Link href="/shop" className="font-medium py-2 border-b-2" style={{ color: '#614124', borderColor: '#614124' }}>Shop</Link>
@@ -249,7 +263,7 @@ const ShopPageContent = () => {
       </nav>
 
       {/* Main Shop Content */}
-      <div className="px-12 py-6"> {/* Changed from container mx-auto px-4 to px-12 for 50px equivalent padding */}
+      <div className="px-4 md:px-12 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
           
           {/* Mobile Filter Toggle */}
@@ -387,26 +401,26 @@ const ShopPageContent = () => {
             
             {/* Header with Sort Options */}
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <div className="mb-4 md:mb-0">
+                <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   All Fresh Produce
                 </h1>
-                <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <p className="text-sm md:text-base text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   {loading ? 'Loading...' : `${products.length} products found`}
                 </p>
               </div>
               
               {/* Dual Sort Dropdowns */}
-              <div className="flex items-center gap-4 mt-4 md:mt-0">
-                <div className="flex items-center gap-2">
-                  <label className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="hidden sm:flex items-center gap-2">
+                  <label className="text-sm text-gray-600 whitespace-nowrap" style={{ fontFamily: 'Poppins, sans-serif' }}>
                     Sort by:
                   </label>
                 </div>
                 
                 {/* Price Sort Dropdown using Radix UI */}
                 <Select value={priceSortBy} onValueChange={handlePriceSortChange}>
-                  <SelectTrigger className="w-full md:w-48">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="Price sorting" />
                   </SelectTrigger>
                   <SelectContent>
@@ -417,7 +431,7 @@ const ShopPageContent = () => {
 
                 {/* General Sort Dropdown using Radix UI */}
                 <Select value={generalSortBy} onValueChange={handleGeneralSortChange}>
-                  <SelectTrigger className="w-full md:w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue placeholder="General sorting" />
                   </SelectTrigger>
                   <SelectContent>
@@ -512,24 +526,25 @@ const ShopPageContent = () => {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex justify-center items-center space-x-4 mt-12">
+              <div className="flex justify-center items-center space-x-2 md:space-x-4 mt-12">
                 <button
                   onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 transition-colors"
+                  className="px-3 md:px-4 py-2 text-sm md:text-base bg-gray-200 text-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 transition-colors"
                   style={{ fontFamily: 'Poppins, sans-serif' }}
                 >
-                  Previous
+                  <span className="hidden sm:inline">Previous</span>
+                  <span className="sm:hidden">Prev</span>
                 </button>
                 
-                <div className="flex space-x-2">
+                <div className="flex space-x-1 md:space-x-2">
                   {[...Array(Math.min(5, totalPages))].map((_, index) => {
                     const page = index + 1;
                     return (
                       <button
                         key={page}
                         onClick={() => handlePageChange(page)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        className={`px-2 md:px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${
                           currentPage === page
                             ? 'bg-green-600 text-white'
                             : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
@@ -545,7 +560,7 @@ const ShopPageContent = () => {
                 <button
                   onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 transition-colors"
+                  className="px-3 md:px-4 py-2 text-sm md:text-base bg-gray-200 text-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 transition-colors"
                   style={{ fontFamily: 'Poppins, sans-serif' }}
                 >
                   Next

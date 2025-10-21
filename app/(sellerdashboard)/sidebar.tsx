@@ -14,6 +14,8 @@ import {
   User,
   Home,
   ArrowLeft,
+  Menu,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -67,10 +69,16 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   const fetchProfile = async () => {
     try {
@@ -159,13 +167,41 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="w-64 bg-white shadow-lg border-r min-h-screen flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b">
-        <h1 className="text-xl font-bold text-gray-800 mb-6 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
-          <span className="text-green-600">Harvest</span>
-          <span className="text-gray-800"> Hub</span>
-        </h1>
+    <>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200"
+        aria-label="Toggle menu"
+      >
+        {isMobileMenuOpen ? (
+          <X className="w-6 h-6 text-gray-700" />
+        ) : (
+          <Menu className="w-6 h-6 text-gray-700" />
+        )}
+      </button>
+
+      {/* Overlay for mobile */}
+      {isMobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={`
+        fixed lg:static inset-y-0 left-0 z-40
+        w-64 bg-white shadow-lg border-r min-h-screen flex flex-col
+        transform transition-transform duration-300 ease-in-out
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        {/* Header */}
+        <div className="p-6 border-b">
+          <h1 className="text-xl font-bold text-gray-800 mb-6 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <span className="text-green-600">Harvest</span>
+            <span className="text-gray-800"> Hub</span>
+          </h1>
 
         {/* User Profile */}
         <Link href="/profile" className="flex flex-col items-center mb-4 hover:bg-gray-50 rounded-lg p-3 transition-colors cursor-pointer">
@@ -248,6 +284,7 @@ export default function Sidebar() {
           <span>Logout</span>
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

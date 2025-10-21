@@ -43,6 +43,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -63,9 +64,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         
         if (!authResult) {
           console.log('🛡️ ProtectedRoute: User not authenticated after check, redirecting to auth');
+          setRedirecting(true);
           const currentPath = window.location.pathname;
           router.replace(`/auth?returnUrl=${encodeURIComponent(currentPath)}`);
-          setIsChecking(false);
           return;
         }
         
@@ -77,28 +78,33 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       // Only redirect if we're done loading AND definitely not authenticated
       if (!isAuthenticated && hasInitialized) {
         console.log('🛡️ ProtectedRoute: User not authenticated after initialization, redirecting to auth');
+        setRedirecting(true);
         const currentPath = window.location.pathname;
         router.replace(`/auth?returnUrl=${encodeURIComponent(currentPath)}`);
-        setIsChecking(false);
         return;
       }
 
-      if (isAuthenticated) {
+      if (isAuthenticated && user) {
         console.log('🛡️ ProtectedRoute: User authenticated, allowing access');
         setIsChecking(false);
+      } else if (!isAuthenticated) {
+        console.log('🛡️ ProtectedRoute: No auth after init - redirecting');
+        setRedirecting(true);
+        router.replace('/auth');
       }
     };
 
     checkAccess();
   }, [isAuthenticated, isLoading, router, user, checkAuth, hasInitialized]);
 
-  // Show loading while checking authentication
-  if (isLoading || isChecking) {
+  // Show loading while checking authentication or redirecting
+  if (isLoading || isChecking || redirecting) {
     return fallback || <LoadingSpinner />;
   }
 
-  // User is not authenticated
+  // User is not authenticated - prevent any render
   if (!isAuthenticated || !user) {
+    console.log('🛡️ ProtectedRoute: Blocking render - no auth');
     return null; // Will redirect in useEffect
   }
 

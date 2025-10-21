@@ -264,22 +264,22 @@ export default function Products() {
         </div>
 
         {/* Filters and Search */}
-        <Card className="p-6 mb-6 bg-white border border-gray-200">
-          <div className="flex items-center gap-4">
+        <Card className="p-4 lg:p-6 mb-6 bg-white border border-gray-200">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 lg:gap-4">
             {/* Search Bar */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Search products by name or description..."
+                placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 font-poppins"
+                className="pl-10 font-poppins w-full"
               />
             </div>
 
             {/* Category Filter */}
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-48 font-poppins">
+              <SelectTrigger className="w-full lg:w-48 font-poppins">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent className="font-poppins">
@@ -292,7 +292,7 @@ export default function Products() {
 
             {/* Status Filter */}
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-48 font-poppins">
+              <SelectTrigger className="w-full lg:w-48 font-poppins">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent className="font-poppins">
