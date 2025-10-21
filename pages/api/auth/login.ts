@@ -80,6 +80,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         accountStatus: 'deleted',
         contactEmail: 'support@harvesthubph.app'
       });
+    }
 
     console.log('Login attempt for user:', user.email);
     console.log('Input password length:', password.length);
