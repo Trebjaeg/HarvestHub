@@ -92,17 +92,21 @@ export async function middleware(request: NextRequest) {
   let token = request.cookies.get('auth-token')?.value || 
               request.cookies.get('userToken')?.value ||
               request.cookies.get('hh_token')?.value;
+  
+  let tokenSource = 'cookie';
 
   if (!token) {
     const authHeader = request.headers.get('authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.substring(7);
+      tokenSource = 'authorization-header';
+      console.log(`🔐 Middleware: Token found in Authorization header (mobile fallback)`);
     }
   }
   
   console.log(`🔐 Middleware: Checking ${pathname}`);
   console.log(`🔐 Middleware: All cookies:`, request.cookies.getAll());
-  console.log(`🔐 Middleware: Token found: ${!!token}`);
+  console.log(`🔐 Middleware: Token found: ${!!token} (source: ${token ? tokenSource : 'none'})`);
 
   // No token found - redirect to auth or return 401 for API
   if (!token) {

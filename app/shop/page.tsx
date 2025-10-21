@@ -446,11 +446,11 @@ const ShopPageContent = () => {
             {/* Products Grid */}
             <div className="min-h-[600px]">
               {loading ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4 justify-items-center">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 lg:gap-10 justify-items-center">
                   {[...Array(12)].map((_, index) => (
-                    <div key={index} className="border-2 border-gray-200 rounded-3xl bg-white shadow-sm overflow-hidden animate-pulse" style={{ width: '218px', height: '275px' }}>
+                    <div key={index} className="border-2 border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden animate-pulse" style={{ width: '218px', height: '275px' }}>
                       <div className="bg-gray-200" style={{ height: '186px' }}></div>
-                      <div className="p-4 space-y-2 bg-[#F5ECDE]" style={{ height: '89px' }}>
+                      <div className="p-4 space-y-2" style={{ height: '89px' }}>
                         <div className="h-2 bg-gray-200 rounded w-1/2"></div>
                         <div className="h-3 bg-gray-200 rounded w-3/4"></div>
                         <div className="h-3 bg-gray-200 rounded w-1/2"></div>
@@ -510,7 +510,7 @@ const ShopPageContent = () => {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4 justify-items-center">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 lg:gap-10 justify-items-center">
                     {products.map((product) => (
                       <ProductCard key={product._id} product={product} />
                     ))}

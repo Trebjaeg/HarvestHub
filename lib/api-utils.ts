@@ -41,10 +41,26 @@ export const createApiUrl = (endpoint: string): string => {
 export const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const url = createApiUrl(endpoint);
   
+  // Get token from localStorage as fallback for mobile browsers
+  let authHeaders: HeadersInit = {};
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('hh_token') || 
+                  localStorage.getItem('auth-token') || 
+                  localStorage.getItem('userToken');
+    
+    if (token) {
+      authHeaders = {
+        'Authorization': `Bearer ${token}`
+      };
+      console.log('🔑 API Request: Adding Authorization header from localStorage');
+    }
+  }
+  
   const defaultOptions: RequestInit = {
-    credentials: 'include',
+    credentials: 'include', // Always send cookies
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders, // Add auth header if token exists
       ...options.headers,
     },
   };

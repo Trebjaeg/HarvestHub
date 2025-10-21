@@ -163,19 +163,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     );
 
-    // Set HTTP-only cookie with flexible settings for IP access
+    // Set HTTP-only cookie with production-friendly settings
     const isProduction = process.env.NODE_ENV === 'production';
-    const cookieOptions = isProduction 
-      ? `auth-token=${token}; HttpOnly; Secure; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}; Path=/`
-      : `auth-token=${token}; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}; Path=/`;
+    const maxAge = 7 * 24 * 60 * 60; // 7 days
     
-    console.log('🍪 Setting cookie:', cookieOptions);
-    res.setHeader('Set-Cookie', cookieOptions);
+    // Build cookie string with proper settings
+    let cookieString = `auth-token=${token}; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; Path=/`;
+    
+    // Add Secure flag in production (requires HTTPS)
+    if (isProduction) {
+      cookieString += '; Secure';
+    }
+    
+    console.log('🍪 Setting cookie:', cookieString);
+    console.log('🍪 Is Production:', isProduction);
+    console.log('🍪 Request Host:', req.headers.host);
+    
+    res.setHeader('Set-Cookie', cookieString);
 
-    // Return success response
+    // Return success response with token in body
+    // Client will store in localStorage as fallback for mobile browsers
     return res.status(200).json({ 
       success: true,
-      token, 
+      token, // Send token in response for localStorage fallback
       user: { 
         id: user._id, 
         name: user.name, 

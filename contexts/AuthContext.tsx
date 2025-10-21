@@ -115,8 +115,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('🔐 AuthContext: Login successful, setting user');
         setUser(data.user);
         
+        // Store token in localStorage as fallback for mobile browsers where cookies may not work
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('auth_user', JSON.stringify(data.user));
+          
+          // Store token for Authorization header fallback (important for mobile)
+          if (data.token) {
+            localStorage.setItem('hh_token', data.token);
+            console.log('🔐 AuthContext: Token stored in localStorage for mobile fallback');
+          }
         }
         
         return { success: true };
