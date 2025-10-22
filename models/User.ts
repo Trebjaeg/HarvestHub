@@ -2,6 +2,9 @@ import mongoose, { Schema, models } from 'mongoose';
 
 const UserSchema = new Schema({
   name: { type: String, required: true, trim: true, maxlength: 100 },
+  // For farmer names - split into first and last
+  firstName: { type: String, trim: true, maxlength: 50 },
+  lastName: { type: String, trim: true, maxlength: 50 },
   email: { 
     type: String, 
     required: true, 
@@ -26,7 +29,7 @@ const UserSchema = new Schema({
   // User role and moderation fields
   role: {
     type: String,
-    enum: ['buyer', 'seller', 'admin', 'superadmin'],
+    enum: ['buyer', 'seller', 'farmer', 'admin', 'superadmin'],
     default: 'buyer'
   },
   status: {
@@ -69,12 +72,22 @@ const UserSchema = new Schema({
   
   // Profile image
   profileImage: { type: String, default: null },
+  profilePicture: { type: String, default: null }, // Alternative field name for consistency
   
   // Farm information
   farmName: { type: String, maxlength: 200, default: null },
   farmDescription: { type: String, maxlength: 1000, default: null },
   phone: { type: String, maxlength: 20, default: null },
   address: { type: String, maxlength: 500, default: null },
+  
+  // Farmer specialties/categories
+  specialties: [{ type: String }],
+  
+  // Farmer statistics for Top Farmers ranking
+  averageRating: { type: Number, default: 0, min: 0, max: 5 },
+  totalSales: { type: Number, default: 0, min: 0 },
+  productCount: { type: Number, default: 0, min: 0 },
+  reviewCount: { type: Number, default: 0, min: 0 },
   
   // For password reset flow
   resetPasswordToken: { type: String, default: null },

@@ -186,5 +186,66 @@
       "shopNow": "Mamili Ngayon",
       "learnMore": "Matuto Pa"
     }
+  },
+  "topFarmers": {
+    "title": "Nangungunang Magsasaka",
+    "subtitle": "Kilalanin ang aming pinakamataas na rating at pinakaproduktibong magsasaka",
+    "searchPlaceholder": "Maghanap ng magsasaka...",
+    "filterOptions": "Mga Opsyon ng Filter",
+    "performance": "Pagganap",
+    "category": "Kategorya",
+    "farmerRatings": "Rating ng Magsasaka",
+    "clearAllFilters": "Linisin ang Lahat ng Filter",
+    "sortBy": "Ayusin ayon sa:",
+    "farmersFound": "magsasakang nahanap",
+    "loading": "Naglo-load...",
+    "noFarmersFound": "Walang Nahanap na Magsasaka",
+    "noFarmersAvailable": "Walang available na magsasaka sa ngayon.",
+    "noFarmersFiltered": "Walang nahanap na magsasaka na tumugma sa inyong filter.",
+    "clearFilters": "Linisin ang mga Filter",
+    "tryAgain": "Subukan Ulit",
+    "errorLoadingFarmers": "Error sa Paglo-load ng mga Magsasaka",
+    "rank": "Ranggo",
+    "farmer": "Magsasaka",
+    "categories": "Kategorya",
+    "feedbackRating": "Feedback at Rating",
+    "actions": "Mga Aksyon",
+    "products": "produkto",
+    "reviews": "review",
+    "viewShop": "Tingnan ang Tindahan",
+    "message": "Mensahe",
+    "various": "Iba-iba",
+    "previous": "Nauna",
+    "prev": "Nauna",
+    "next": "Susunod",
+    "andUp": "Pataas",
+    "allPerformance": "Lahat ng Pagganap",
+    "allCategories": "Lahat ng Kategorya",
+    "allRatings": "Lahat ng Rating",
+    "minimumRating": "Pinakamababang Rating",
+    "stars": "bituin",
+    "performance": {
+      "all": "Lahat",
+      "topRated": "Pinakamataas na Rating",
+      "topSellers": "Nangungunang Nagbebenta",
+      "mostProductive": "Pinakaproduktibo",
+      "trending": "Uso",
+      "mostReviewed": "Pinakamadaming Review"
+    },
+    "categories": {
+      "all": "Lahat",
+      "leafyGreens": "Dahong Gulay",
+      "rootCrops": "Ugat na Pananim",
+      "fruits": "Prutas",
+      "spicesAromatics": "Pampalasa at Aromatics",
+      "eggplantGourds": "Talong at Upo",
+      "grainsRice": "Butil at Bigas"
+    },
+    "sorting": {
+      "topRated": "Pinakamataas na Rating",
+      "mostReviewed": "Pinakamadaming Review",
+      "newest": "Pinakabago",
+      "name": "Pangalan"
+    }
   }
 }

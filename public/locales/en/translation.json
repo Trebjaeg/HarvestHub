@@ -190,5 +190,66 @@
       "shopNow": "Shop Now",
       "learnMore": "Learn More"
     }
+  },
+  "topFarmers": {
+    "title": "Top Farmers",
+    "subtitle": "Meet our highest-rated and most productive farmers",
+    "searchPlaceholder": "Search farmers...",
+    "filterOptions": "Filter Options",
+    "performance": "Performance",
+    "category": "Category",
+    "farmerRatings": "Farmer Ratings",
+    "clearAllFilters": "Clear All Filters",
+    "sortBy": "Sort by:",
+    "farmersFound": "farmers found",
+    "loading": "Loading...",
+    "noFarmersFound": "No Farmers Found",
+    "noFarmersAvailable": "No farmers available at the moment.",
+    "noFarmersFiltered": "No farmers found matching your filters.",
+    "clearFilters": "Clear Filters",
+    "tryAgain": "Try Again",
+    "errorLoadingFarmers": "Error Loading Farmers",
+    "rank": "Rank",
+    "farmer": "Farmer",
+    "categories": "Category",
+    "feedbackRating": "Feedback & Rating",
+    "actions": "Actions",
+    "products": "products",
+    "reviews": "reviews",
+    "viewShop": "View Shop",
+    "message": "Message",
+    "various": "Various",
+    "previous": "Previous",
+    "prev": "Prev",
+    "next": "Next",
+    "andUp": "& Up",
+    "allPerformance": "All Performance",
+    "allCategories": "All Categories",
+    "allRatings": "All Ratings",
+    "minimumRating": "Minimum Rating",
+    "stars": "stars",
+    "performance": {
+      "all": "All",
+      "topRated": "Top Rated",
+      "topSellers": "Top Sellers", 
+      "mostProductive": "Most Productive",
+      "trending": "Trending",
+      "mostReviewed": "Most Reviewed"
+    },
+    "categories": {
+      "all": "All",
+      "leafyGreens": "Leafy Greens",
+      "rootCrops": "Root Crops",
+      "fruits": "Fruits",
+      "spicesAromatics": "Spices & Aromatics",
+      "eggplantGourds": "Eggplants & Gourds",
+      "grainsRice": "Grains & Rice"
+    },
+    "sorting": {
+      "topRated": "Top Rated",
+      "mostReviewed": "Most Reviewed",
+      "newest": "Newest",
+      "name": "Name"
+    }
   }
 }

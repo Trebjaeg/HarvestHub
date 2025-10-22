@@ -67,7 +67,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check if route is public (doesn't need auth)
-  if (isPublicPath(pathname)) {
+  console.log(`🔐 Middleware: Checking if ${pathname} is public...`);
+  const isPublic = isPublicPath(pathname);
+  console.log(`🔐 Middleware: isPublicPath(${pathname}) returned: ${isPublic}`);
+  
+  if (isPublic) {
     console.log(`🔐 Middleware: ${pathname} is public, allowing access`);
     return response;
   }

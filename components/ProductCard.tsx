@@ -1,24 +1,58 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { IProduct } from '../types/product';
 
+// Extended interface to handle both IProduct and DealProduct types
+interface FlexibleProduct {
+  _id: string;
+  name: string;
+  category: string;
+  currentPrice: number;
+  basePrice?: number;
+  unit: string;
+  stock: number;
+  // Optional fields that may not exist in all product types
+  description?: string;
+  imageUrl?: string;
+  image?: string; // Alternative image field name
+  images?: string[]; // Array of images
+  farmer?: {
+    name: string;
+    location: string;
+    contact: string;
+  };
+  isOrganic?: boolean;
+  isFeatured?: boolean;
+  tags?: string[];
+  rating?: number;
+  reviews?: number;
+  dealId?: string;
+  dealTitle?: string;
+  discountPercentage?: number;
+  nutritionalInfo?: {
+    calories: number;
+    protein: number;
+    carbohydrates: number;
+    fiber: number;
+  };
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 interface ProductCardProps {
-  product: IProduct;
+  product: IProduct | FlexibleProduct;
   className?: string;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) => {
   const hasDiscount = product.basePrice && product.basePrice > product.currentPrice;
-  const discountPercentage = hasDiscount 
-    ? Math.round(((product.basePrice - product.currentPrice) / product.basePrice) * 100)
-    : 0;
 
-  // Get image URL - check multiple possible fields
-  const rawImageUrl = (product as any).image || 
-                      (product as any).images?.[0] || 
-                      product.imageUrl;
+  // Get image URL - check multiple possible fields with proper typing
+  const flexProduct = product as FlexibleProduct;
+  const rawImageUrl = flexProduct.image || 
+                      flexProduct.images?.[0] || 
+                      flexProduct.imageUrl;
   
   // Filter out invalid URLs (blob, data, empty strings)
   const imageUrl = rawImageUrl && 

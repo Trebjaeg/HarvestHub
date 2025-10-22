@@ -149,7 +149,10 @@ export function isPublicPath(pathname: string): boolean {
     '/api/auth/post-login-redirect',
     '/api/auth/roles',
     '/api/products',
-    '/api/promo-banners'
+    '/api/promo-banners',
+    '/api/best-sellers',
+    '/api/deals',
+    '/api/deals/banner'
   ];
   
   return publicRoutes.includes(pathname) || 
