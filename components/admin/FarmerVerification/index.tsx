@@ -21,6 +21,8 @@ interface SellerApplication {
     phone?: string;
     address?: string;
     createdAt: string;
+    status?: 'active' | 'suspended' | 'deleted';
+    isActive?: boolean;
   };
   status: 'pending' | 'approved' | 'rejected';
   governmentIdFrontKey: string;
@@ -57,6 +59,7 @@ const FarmerVerification: React.FC = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [adminNotes, setAdminNotes] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'verified' | 'rejected'>('pending');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Helper function to generate file URL from key
   const getFileUrl = (key: string) => {
@@ -149,6 +152,34 @@ const FarmerVerification: React.FC = () => {
     );
   };
 
+  const getAccountStatusBadge = (userStatus?: 'active' | 'suspended' | 'deleted') => {
+    if (!userStatus || userStatus === 'active') {
+      return (
+        <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
+          Active
+        </Badge>
+      );
+    }
+    
+    if (userStatus === 'suspended') {
+      return (
+        <Badge variant="outline" className="text-orange-600 border-orange-600 bg-orange-50">
+          Suspended
+        </Badge>
+      );
+    }
+    
+    if (userStatus === 'deleted') {
+      return (
+        <Badge variant="outline" className="text-red-600 border-red-600 bg-red-50">
+          Deactivated
+        </Badge>
+      );
+    }
+    
+    return null;
+  };
+
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return 'Unknown size';
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -158,9 +189,20 @@ const FarmerVerification: React.FC = () => {
   };
 
   const filteredFarmers = farmers.filter(farmer => {
-    if (filterStatus === 'all') return true;
-    if (filterStatus === 'verified') return farmer.status === 'approved';
-    return farmer.status === filterStatus;
+    // Status filter
+    let matchesStatus = true;
+    if (filterStatus === 'verified') {
+      matchesStatus = farmer.status === 'approved';
+    } else if (filterStatus !== 'all') {
+      matchesStatus = farmer.status === filterStatus;
+    }
+
+    // Search filter
+    const matchesSearch = searchTerm === '' ||
+      (farmer.userId?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (farmer.userId?.email?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+
+    return matchesStatus && matchesSearch;
   });
 
   if (loading) {
@@ -178,18 +220,18 @@ const FarmerVerification: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Farmer Verification</h2>
-          <p className="text-gray-600">Review and verify farmer applications</p>
+          <h2 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>Farmer Verification</h2>
+          <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Review and verify farmer applications</p>
         </div>
         
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <Select value={filterStatus} onValueChange={(value: any) => setFilterStatus(value)}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-full sm:w-40" style={{ fontFamily: 'Poppins, sans-serif' }}>
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent style={{ fontFamily: 'Poppins, sans-serif' }}>
               <SelectItem value="all">All Farmers</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="verified">Verified</SelectItem>
@@ -197,10 +239,30 @@ const FarmerVerification: React.FC = () => {
             </SelectContent>
           </Select>
           
-          <Button onClick={fetchFarmers} variant="outline">
+          <Button onClick={fetchFarmers} variant="outline" className="w-full sm:w-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
             Refresh
           </Button>
         </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Search by name or email..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          style={{ fontFamily: 'Poppins, sans-serif' }}
+        />
+        <svg
+          className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
       </div>
 
       {filteredFarmers.length === 0 ? (
@@ -214,27 +276,30 @@ const FarmerVerification: React.FC = () => {
           {filteredFarmers.map((farmer) => (
             <Card key={farmer._id} className="hover:shadow-md transition-shadow">
               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">{farmer.userId.name}</CardTitle>
-                    <CardDescription>{farmer.userId.email}</CardDescription>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg" style={{ fontFamily: 'Poppins, sans-serif' }}>{farmer.userId.name}</CardTitle>
+                    <CardDescription style={{ fontFamily: 'Poppins, sans-serif' }}>{farmer.userId.email}</CardDescription>
                   </div>
-                  <div className="flex gap-2 items-center">
+                  <div className="flex gap-2 items-center flex-wrap">
                     {getStatusBadge(farmer.status)}
+                    {getAccountStatusBadge(farmer.userId.status)}
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button 
                           variant="outline" 
                           size="sm"
                           onClick={() => setSelectedFarmer(farmer)}
+                          className="w-full sm:w-auto"
+                          style={{ fontFamily: 'Poppins, sans-serif' }}
                         >
                           View Details
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         <DialogHeader>
-                          <DialogTitle>Seller Verification Application</DialogTitle>
-                          <DialogDescription>
+                          <DialogTitle style={{ fontFamily: 'Poppins, sans-serif' }}>Seller Verification Application</DialogTitle>
+                          <DialogDescription style={{ fontFamily: 'Poppins, sans-serif' }}>
                             Review seller verification application
                           </DialogDescription>
                         </DialogHeader>
@@ -242,31 +307,35 @@ const FarmerVerification: React.FC = () => {
                         {selectedFarmer && (
                           <div className="space-y-6">
                             {/* Basic Info */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div>
-                                <Label className="font-semibold">Name</Label>
-                                <p>{selectedFarmer.userId.name}</p>
+                                <Label className="font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>Name</Label>
+                                <p style={{ fontFamily: 'Poppins, sans-serif' }}>{selectedFarmer.userId.name}</p>
                               </div>
                               <div>
-                                <Label className="font-semibold">Email</Label>
-                                <p>{selectedFarmer.userId.email}</p>
+                                <Label className="font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>Email</Label>
+                                <p style={{ fontFamily: 'Poppins, sans-serif' }}>{selectedFarmer.userId.email}</p>
                               </div>
                               <div>
-                                <Label className="font-semibold">Phone</Label>
-                                <p>{selectedFarmer.userId.phone || 'Not provided'}</p>
+                                <Label className="font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>Phone</Label>
+                                <p style={{ fontFamily: 'Poppins, sans-serif' }}>{selectedFarmer.userId.phone || 'Not provided'}</p>
                               </div>
                               <div>
-                                <Label className="font-semibold">Status</Label>
+                                <Label className="font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>Account Status</Label>
+                                <div className="mt-1">{getAccountStatusBadge(selectedFarmer.userId.status)}</div>
+                              </div>
+                              <div>
+                                <Label className="font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>Verification Status</Label>
                                 <div className="mt-1">{getStatusBadge(selectedFarmer.status)}</div>
                               </div>
                               <div>
-                                <Label className="font-semibold">Applied On</Label>
-                                <p>{new Date(selectedFarmer.submittedAt).toLocaleString()}</p>
+                                <Label className="font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>Applied On</Label>
+                                <p style={{ fontFamily: 'Poppins, sans-serif' }}>{new Date(selectedFarmer.submittedAt).toLocaleString()}</p>
                               </div>
                               {selectedFarmer.reviewedAt && (
                                 <div>
-                                  <Label className="font-semibold">Reviewed On</Label>
-                                  <p>{new Date(selectedFarmer.reviewedAt).toLocaleString()}</p>
+                                  <Label className="font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>Reviewed On</Label>
+                                  <p style={{ fontFamily: 'Poppins, sans-serif' }}>{new Date(selectedFarmer.reviewedAt).toLocaleString()}</p>
                                 </div>
                               )}
                             </div>
@@ -274,22 +343,22 @@ const FarmerVerification: React.FC = () => {
                             {/* Address */}
                             {selectedFarmer.userId.address && (
                               <div>
-                                <Label className="font-semibold">Address</Label>
-                                <p>{selectedFarmer.userId.address}</p>
+                                <Label className="font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>Address</Label>
+                                <p style={{ fontFamily: 'Poppins, sans-serif' }}>{selectedFarmer.userId.address}</p>
                               </div>
                             )}
 
                             {/* Documents Section */}
                             <div className="space-y-4">
-                              <h3 className="text-lg font-semibold">Submitted Documents</h3>
+                              <h3 className="text-lg font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>Submitted Documents</h3>
                               
                               {/* Government ID Front */}
                               <div className="border rounded-lg p-4">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <p className="font-semibold">Government ID (Front)</p>
-                                    <p className="text-sm text-gray-600">{selectedFarmer.governmentIdFrontOriginalName}</p>
-                                    <p className="text-xs text-gray-500">
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                                  <div className="flex-1">
+                                    <p className="font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>Government ID (Front)</p>
+                                    <p className="text-sm text-gray-600 break-all" style={{ fontFamily: 'Poppins, sans-serif' }}>{selectedFarmer.governmentIdFrontOriginalName}</p>
+                                    <p className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
                                       {formatFileSize(selectedFarmer.governmentIdFrontSize)} • {selectedFarmer.governmentIdFrontMimeType}
                                     </p>
                                   </div>
@@ -297,6 +366,8 @@ const FarmerVerification: React.FC = () => {
                                     variant="outline" 
                                     size="sm"
                                     onClick={() => window.open(getFileUrl(selectedFarmer.governmentIdFrontKey), '_blank')}
+                                    className="w-full sm:w-auto"
+                                    style={{ fontFamily: 'Poppins, sans-serif' }}
                                   >
                                     View Document
                                   </Button>

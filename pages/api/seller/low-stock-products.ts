@@ -38,10 +38,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }).select('name stock lowStockAlert unit category createdAt').lean();
 
     // Map to the expected format
-    const formattedProducts = lowStockProducts.map(product => ({
-      _id: product._id.toString(),
+    const formattedProducts = lowStockProducts.map((product: any) => ({
+      _id: product._id?.toString() || '',
       name: product.name,
-      sku: `${product.category?.slice(0, 3).toUpperCase()}-${product._id.toString().slice(-4)}`,
+      sku: `${product.category?.slice(0, 3).toUpperCase()}-${product._id?.toString().slice(-4) || '0000'}`,
       currentStock: product.stock,
       stock: product.stock,
       lowStockAlert: product.lowStockAlert || 5,

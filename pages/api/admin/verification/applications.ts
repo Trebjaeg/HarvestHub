@@ -73,7 +73,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       .sort({ submittedAt: -1 })
       .skip(skip)
       .limit(limitNum)
-      .populate('userId', 'name email phone address createdAt')
+      .populate('userId', 'name email phone address createdAt status isActive')
       .populate('reviewedBy', 'name email')
       .lean();
 

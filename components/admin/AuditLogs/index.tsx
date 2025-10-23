@@ -109,6 +109,17 @@ const AuditLogs: React.FC = () => {
   };
 
   const filteredLogs = logs.filter(log => {
+    // Only show specific actions: password changes, email changes, suspend account, deactivate account
+    const allowedActions = ['change_password', 'change_email', 'suspend', 'deactivate', 'password_change', 'email_change', 'suspend_account', 'deactivate_account'];
+    const logAction = log.action.toLowerCase();
+    
+    // Check if the action matches any of the allowed actions
+    const isAllowedAction = allowedActions.some(action => logAction.includes(action));
+    
+    if (!isAllowedAction) {
+      return false;
+    }
+
     if (filter !== 'all' && !log.action.toLowerCase().includes(filter.toLowerCase())) {
       return false;
     }
@@ -164,33 +175,32 @@ const AuditLogs: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Audit Logs</h2>
-        <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full sm:w-auto"
+            style={{ fontFamily: 'Poppins, sans-serif' }}
           >
             <option value="all">All Actions</option>
-            <option value="create">Create</option>
-            <option value="update">Update</option>
-            <option value="delete">Delete</option>
-            <option value="login">Login</option>
-            <option value="approve">Approve</option>
-            <option value="reject">Reject</option>
+            <option value="password">Password Changes</option>
+            <option value="email">Email Changes</option>
+            <option value="suspend">Suspend Account</option>
+            <option value="deactivate">Deactivate Account</option>
           </select>
           <select
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full sm:w-auto"
+            style={{ fontFamily: 'Poppins, sans-serif' }}
           >
             <option value="all">All Time</option>
             <option value="today">Today</option>
             <option value="week">This Week</option>
             <option value="month">This Month</option>
           </select>
-          <Button onClick={fetchLogs} variant="outline">
+          <Button onClick={fetchLogs} variant="outline" className="w-full sm:w-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
@@ -201,74 +211,104 @@ const AuditLogs: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Audit Logs ({filteredLogs.length})</CardTitle>
+          <CardTitle style={{ fontFamily: 'Poppins, sans-serif' }}>Audit Logs ({filteredLogs.length})</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full table-fixed">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full">
               <thead className="bg-gray-50">
                 <tr className="border-b border-gray-200">
-                  <th className="w-48 text-left py-4 px-6 font-semibold text-gray-700 text-sm">Admin</th>
-                  <th className="w-32 text-left py-4 px-6 font-semibold text-gray-700 text-sm">Action</th>
-                  <th className="w-48 text-left py-4 px-6 font-semibold text-gray-700 text-sm">Target</th>
-                  <th className="w-40 text-left py-4 px-6 font-semibold text-gray-700 text-sm">Reason</th>
-                  <th className="w-60 text-left py-4 px-6 font-semibold text-gray-700 text-sm">Details</th>
-                  <th className="w-32 text-left py-4 px-6 font-semibold text-gray-700 text-sm">IP Address</th>
-                  <th className="w-36 text-left py-4 px-6 font-semibold text-gray-700 text-sm">Date</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>Admin</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>Action</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>Target</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>Date</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
                 {filteredLogs.map((log) => (
                   <tr key={log._id} className="hover:bg-gray-50 transition-colors">
                     <td className="py-4 px-6">
-                      <div className="font-medium text-gray-900 text-sm truncate">
+                      <div className="font-medium text-gray-900 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         {log.performedBy ? 
                           `${log.performedBy.firstName || ''} ${log.performedBy.lastName || ''}`.trim() || log.performedBy.email
                           : 'Unknown Admin'
                         }
                       </div>
-                      {log.performedBy?.email && (
-                        <div className="text-xs text-gray-500 truncate mt-1">{log.performedBy.email}</div>
+                      {log.performedBy?.email && log.performedBy.firstName && (
+                        <div className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>{log.performedBy.email}</div>
                       )}
                     </td>
                     <td className="py-4 px-6">
                       {getActionBadge(log.action)}
                     </td>
                     <td className="py-4 px-6">
-                      <div className="font-medium text-gray-900 text-sm truncate">
+                      <div className="font-medium text-gray-900 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         {log.targetUser ? 
                           `${log.targetUser.firstName || ''} ${log.targetUser.lastName || ''}`.trim() || log.targetUser.email
-                          : log.targetResource || 'System'
+                          : 'N/A'
                         }
                       </div>
-                      {log.targetUser?.email && (
-                        <div className="text-xs text-gray-500 truncate mt-1">{log.targetUser.email}</div>
-                      )}
-                      {log.targetResourceId && (
-                        <div className="text-xs text-gray-500 truncate mt-1">ID: {log.targetResourceId}</div>
+                      {log.targetUser?.email && log.targetUser.firstName && (
+                        <div className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>{log.targetUser.email}</div>
                       )}
                     </td>
                     <td className="py-4 px-6">
-                      <div className="text-sm text-gray-600 break-words">
-                        {log.reason}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="text-sm text-gray-600 break-words">
-                        {formatDetails(log.details)}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600">
-                      {log.ipAddress || 'N/A'}
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="text-sm text-gray-900">{new Date(log.createdAt).toLocaleDateString()}</div>
-                      <div className="text-xs text-gray-500">{new Date(log.createdAt).toLocaleTimeString()}</div>
+                      <div className="text-sm text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{new Date(log.createdAt).toLocaleDateString()}</div>
+                      <div className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>{new Date(log.createdAt).toLocaleTimeString()}</div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-4 p-4">
+            {filteredLogs.map((log) => (
+              <div key={log._id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                {/* Admin Info */}
+                <div>
+                  <div className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Admin</div>
+                  <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    {log.performedBy ? 
+                      `${log.performedBy.firstName || ''} ${log.performedBy.lastName || ''}`.trim() || log.performedBy.email
+                      : 'Unknown Admin'
+                    }
+                  </div>
+                  {log.performedBy?.email && log.performedBy.firstName && (
+                    <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>{log.performedBy.email}</div>
+                  )}
+                </div>
+
+                {/* Action Badge */}
+                <div>
+                  <div className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Action</div>
+                  {getActionBadge(log.action)}
+                </div>
+
+                {/* Target Info */}
+                <div>
+                  <div className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Target</div>
+                  <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    {log.targetUser ? 
+                      `${log.targetUser.firstName || ''} ${log.targetUser.lastName || ''}`.trim() || log.targetUser.email
+                      : 'N/A'
+                    }
+                  </div>
+                  {log.targetUser?.email && log.targetUser.firstName && (
+                    <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>{log.targetUser.email}</div>
+                  )}
+                </div>
+
+                {/* Date */}
+                <div>
+                  <div className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Date</div>
+                  <div className="text-sm text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{new Date(log.createdAt).toLocaleDateString()}</div>
+                  <div className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>{new Date(log.createdAt).toLocaleTimeString()}</div>
+                </div>
+              </div>
+            ))}
           </div>
           
           {filteredLogs.length === 0 && (

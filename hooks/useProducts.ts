@@ -49,14 +49,18 @@ export const useProducts = (initialOptions: UseProductsOptions = {}): UseProduct
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
       const url = `${baseUrl}/api/products?${params.toString()}`;
       
-      console.log('🛒 Fetching products from:', url);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🛒 Fetching products from:', url);
+      }
       
       const response = await fetch(url, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
-      });
+        // Add caching for better performance
+        next: { revalidate: 60 } // Revalidate every 60 seconds
+      } as any);
       
       if (!response.ok) {
         throw new Error('Failed to fetch products');

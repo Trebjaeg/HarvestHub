@@ -138,9 +138,9 @@ const Appeals: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Appeals Management</h2>
-        <Button onClick={fetchAppeals} variant="outline">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <h2 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>Appeals Management</h2>
+        <Button onClick={fetchAppeals} variant="outline" className="w-full sm:w-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
@@ -150,40 +150,41 @@ const Appeals: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Appeals ({appeals.length})</CardTitle>
+          <CardTitle style={{ fontFamily: 'Poppins, sans-serif' }}>Appeals ({appeals.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">User</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Subject</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>User</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Type</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Subject</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Status</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Date</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {appeals.map((appeal) => (
                   <tr key={appeal._id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4">
-                      <div className="font-medium text-gray-900">{appeal.userName}</div>
-                      <div className="text-sm text-gray-600">{appeal.userEmail}</div>
+                      <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{appeal.userName}</div>
+                      <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>{appeal.userEmail}</div>
                     </td>
                     <td className="py-3 px-4">
                       {getAppealTypeBadge(appeal.appealType)}
                     </td>
                     <td className="py-3 px-4">
-                      <div className="font-medium text-gray-900 max-w-xs truncate">
+                      <div className="font-medium text-gray-900 max-w-xs truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         {appeal.subject}
                       </div>
                     </td>
                     <td className="py-3 px-4">
                       {getStatusBadge(appeal.status)}
                     </td>
-                    <td className="py-3 px-4 text-gray-600">
+                    <td className="py-3 px-4 text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       {new Date(appeal.createdAt).toLocaleDateString()}
                     </td>
                     <td className="py-3 px-4">
@@ -193,6 +194,7 @@ const Appeals: React.FC = () => {
                           variant="outline"
                           size="sm"
                           className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                          style={{ fontFamily: 'Poppins, sans-serif' }}
                         >
                           View
                         </Button>
@@ -203,6 +205,7 @@ const Appeals: React.FC = () => {
                               variant="outline"
                               size="sm"
                               className="border-green-200 text-green-600 hover:bg-green-50"
+                              style={{ fontFamily: 'Poppins, sans-serif' }}
                             >
                               Approve
                             </Button>
@@ -211,6 +214,7 @@ const Appeals: React.FC = () => {
                               variant="outline"
                               size="sm"
                               className="border-red-200 text-red-600 hover:bg-red-50"
+                              style={{ fontFamily: 'Poppins, sans-serif' }}
                             >
                               Reject
                             </Button>
@@ -223,6 +227,83 @@ const Appeals: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-4">
+            {appeals.map((appeal) => (
+              <div key={appeal._id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                {/* User Info */}
+                <div>
+                  <div className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>User</div>
+                  <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{appeal.userName}</div>
+                  <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>{appeal.userEmail}</div>
+                </div>
+
+                {/* Type and Status */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Type</div>
+                    {getAppealTypeBadge(appeal.appealType)}
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Status</div>
+                    {getStatusBadge(appeal.status)}
+                  </div>
+                </div>
+
+                {/* Subject */}
+                <div>
+                  <div className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Subject</div>
+                  <div className="font-medium text-gray-900 break-words" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    {appeal.subject}
+                  </div>
+                </div>
+
+                {/* Date */}
+                <div>
+                  <div className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Date</div>
+                  <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    {new Date(appeal.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-2 pt-2">
+                  <Button
+                    onClick={() => setSelectedAppeal(appeal)}
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-blue-200 text-blue-600 hover:bg-blue-50"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                  >
+                    View
+                  </Button>
+                  {(appeal.status === 'pending' || appeal.status === 'under_review') && (
+                    <>
+                      <Button
+                        onClick={() => updateAppealStatus(appeal._id, 'approved')}
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-green-200 text-green-600 hover:bg-green-50"
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        onClick={() => updateAppealStatus(appeal._id, 'rejected')}
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        Reject
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
           
           {appeals.length === 0 && (
             <div className="text-center py-12">
@@ -231,8 +312,8 @@ const Appeals: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No appeals found</h3>
-              <p className="text-gray-600">There are no appeals to display.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>No appeals found</h3>
+              <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>There are no appeals to display.</p>
             </div>
           )}
         </CardContent>

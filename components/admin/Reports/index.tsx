@@ -125,13 +125,14 @@ const Reports: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Reports Management</h2>
-        <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <h2 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>Reports Management</h2>
+        <div className="flex flex-col sm:flex-row gap-2">
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+            className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full sm:w-auto"
+            style={{ fontFamily: 'Poppins, sans-serif' }}
           >
             <option value="all">All Reports</option>
             <option value="pending">Pending</option>
@@ -139,7 +140,7 @@ const Reports: React.FC = () => {
             <option value="resolved">Resolved</option>
             <option value="dismissed">Dismissed</option>
           </select>
-          <Button onClick={fetchReports} variant="outline">
+          <Button onClick={fetchReports} variant="outline" className="w-full sm:w-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
@@ -150,36 +151,37 @@ const Reports: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Reports ({filteredReports.length})</CardTitle>
+          <CardTitle style={{ fontFamily: 'Poppins, sans-serif' }}>Reports ({filteredReports.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Reporter</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Target</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Reason</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Reporter</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Target</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Reason</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Status</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Date</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredReports.map((report) => (
                   <tr key={report._id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4">
-                      <div className="font-medium text-gray-900">{report.reporterName}</div>
-                      <div className="text-sm text-gray-600">{report.reporterEmail}</div>
+                      <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{report.reporterName}</div>
+                      <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>{report.reporterEmail}</div>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="font-medium text-gray-900">{report.targetName}</div>
-                      <div className="text-sm text-gray-600">Type: {report.targetType}</div>
+                      <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{report.targetName}</div>
+                      <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Type: {report.targetType}</div>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="font-medium text-gray-900">{report.reason}</div>
+                      <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{report.reason}</div>
                       {report.description && (
-                        <div className="text-sm text-gray-600 max-w-xs truncate">
+                        <div className="text-sm text-gray-600 max-w-xs truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>
                           {report.description}
                         </div>
                       )}
@@ -187,7 +189,7 @@ const Reports: React.FC = () => {
                     <td className="py-3 px-4">
                       {getStatusBadge(report.status)}
                     </td>
-                    <td className="py-3 px-4 text-gray-600">
+                    <td className="py-3 px-4 text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       {new Date(report.createdAt).toLocaleDateString()}
                     </td>
                     <td className="py-3 px-4">
@@ -199,6 +201,7 @@ const Reports: React.FC = () => {
                               variant="outline"
                               size="sm"
                               className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                              style={{ fontFamily: 'Poppins, sans-serif' }}
                             >
                               Review
                             </Button>
@@ -207,6 +210,7 @@ const Reports: React.FC = () => {
                               variant="outline"
                               size="sm"
                               className="border-gray-200 text-gray-600 hover:bg-gray-50"
+                              style={{ fontFamily: 'Poppins, sans-serif' }}
                             >
                               Dismiss
                             </Button>
@@ -219,6 +223,7 @@ const Reports: React.FC = () => {
                               variant="outline"
                               size="sm"
                               className="border-green-200 text-green-600 hover:bg-green-50"
+                              style={{ fontFamily: 'Poppins, sans-serif' }}
                             >
                               Resolve
                             </Button>
@@ -227,6 +232,7 @@ const Reports: React.FC = () => {
                               variant="outline"
                               size="sm"
                               className="border-gray-200 text-gray-600 hover:bg-gray-50"
+                              style={{ fontFamily: 'Poppins, sans-serif' }}
                             >
                               Dismiss
                             </Button>
@@ -239,6 +245,102 @@ const Reports: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-4">
+            {filteredReports.map((report) => (
+              <div key={report._id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                {/* Reporter Info */}
+                <div>
+                  <div className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Reporter</div>
+                  <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{report.reporterName}</div>
+                  <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>{report.reporterEmail}</div>
+                </div>
+
+                {/* Target Info */}
+                <div>
+                  <div className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Target</div>
+                  <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{report.targetName}</div>
+                  <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Type: {report.targetType}</div>
+                </div>
+
+                {/* Reason */}
+                <div>
+                  <div className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Reason</div>
+                  <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{report.reason}</div>
+                  {report.description && (
+                    <div className="text-sm text-gray-600 break-words" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      {report.description}
+                    </div>
+                  )}
+                </div>
+
+                {/* Status and Date */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Status</div>
+                    {getStatusBadge(report.status)}
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Date</div>
+                    <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      {new Date(report.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                {(report.status === 'pending' || report.status === 'under_review') && (
+                  <div className="flex flex-col gap-2 pt-2">
+                    {report.status === 'pending' && (
+                      <>
+                        <Button
+                          onClick={() => updateReportStatus(report._id, 'under_review')}
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-blue-200 text-blue-600 hover:bg-blue-50"
+                          style={{ fontFamily: 'Poppins, sans-serif' }}
+                        >
+                          Review
+                        </Button>
+                        <Button
+                          onClick={() => updateReportStatus(report._id, 'dismissed')}
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-gray-200 text-gray-600 hover:bg-gray-50"
+                          style={{ fontFamily: 'Poppins, sans-serif' }}
+                        >
+                          Dismiss
+                        </Button>
+                      </>
+                    )}
+                    {report.status === 'under_review' && (
+                      <>
+                        <Button
+                          onClick={() => updateReportStatus(report._id, 'resolved')}
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-green-200 text-green-600 hover:bg-green-50"
+                          style={{ fontFamily: 'Poppins, sans-serif' }}
+                        >
+                          Resolve
+                        </Button>
+                        <Button
+                          onClick={() => updateReportStatus(report._id, 'dismissed')}
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-gray-200 text-gray-600 hover:bg-gray-50"
+                          style={{ fontFamily: 'Poppins, sans-serif' }}
+                        >
+                          Dismiss
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
           
           {filteredReports.length === 0 && (
             <div className="text-center py-12">
@@ -247,8 +349,8 @@ const Reports: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No reports found</h3>
-              <p className="text-gray-600">There are no reports to display.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>No reports found</h3>
+              <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>There are no reports to display.</p>
             </div>
           )}
         </CardContent>

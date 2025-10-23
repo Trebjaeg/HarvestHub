@@ -92,6 +92,14 @@ const UserSchema = new Schema({
   // For password reset flow
   resetPasswordToken: { type: String, default: null },
   resetPasswordExpires: { type: Date, default: null },
+  
+  // For email change verification
+  emailChangeVerification: {
+    code: { type: String },
+    newEmail: { type: String },
+    expiresAt: { type: Date }
+  },
+  
   // Security tracking
   lastLogin: { type: Date, default: null },
   failedLoginAttempts: { type: Number, default: 0, max: 10 },

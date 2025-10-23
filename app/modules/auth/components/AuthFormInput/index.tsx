@@ -1250,9 +1250,9 @@ const AuthFormInput: FC = () => {
           </div>
           {getFieldError('loginPassword') && (
             <div className={`mt-2 p-4 rounded-lg border-2 ${
-              getFieldError('loginPassword').toLowerCase().includes('suspended') || 
-              getFieldError('loginPassword').toLowerCase().includes('deactivated') ||
-              getFieldError('loginPassword').toLowerCase().includes('contact')
+              getFieldError('loginPassword')?.toLowerCase().includes('suspended') || 
+              getFieldError('loginPassword')?.toLowerCase().includes('deactivated') ||
+              getFieldError('loginPassword')?.toLowerCase().includes('contact')
                 ? 'bg-red-100 border-red-400'
                 : 'bg-red-50 border-red-200'
             }`}>
@@ -1264,11 +1264,11 @@ const AuthFormInput: FC = () => {
                   <p className="text-sm text-red-700 font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>
                     {getFieldError('loginPassword')}
                   </p>
-                  {(getFieldError('loginPassword').toLowerCase().includes('suspended') || 
-                    getFieldError('loginPassword').toLowerCase().includes('deactivated') ||
-                    getFieldError('loginPassword').toLowerCase().includes('contact')) && (
+                  {(getFieldError('loginPassword')?.toLowerCase().includes('suspended') || 
+                    getFieldError('loginPassword')?.toLowerCase().includes('deactivated') ||
+                    getFieldError('loginPassword')?.toLowerCase().includes('contact')) && (
                     <p className="text-xs text-red-600 mt-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      For assistance, contact: <a href="mailto:support@harvesthub.com" className="underline font-semibold">support@harvesthub.com</a>
+                      For assistance, contact: <a href="mailto:support@harvesthubph.app" className="underline font-semibold">support@harvesthubph.app</a>
                     </p>
                   )}
                 </div>

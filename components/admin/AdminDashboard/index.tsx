@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +17,7 @@ import Reports from '../Reports';
 import Appeals from '../Appeals';
 import AuditLogs from '../AuditLogs';
 import AdsManagement from '../AdsManagement';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface AdminStats {
   totalUsers: number;
@@ -74,6 +75,24 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     fetchStats();
   }, []);
+
+  // Process activity data for chart
+  const chartData = useMemo(() => {
+    if (!activities || activities.length === 0) return [];
+    
+    // Group activities by date
+    const grouped: { [key: string]: number } = {};
+    activities.forEach(activity => {
+      const date = new Date(activity.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      grouped[date] = (grouped[date] || 0) + 1;
+    });
+    
+    // Convert to array and sort by date
+    return Object.entries(grouped).map(([date, count]) => ({
+      date,
+      activities: count
+    })).reverse().slice(0, 7); // Show last 7 days
+  }, [activities]);
 
   // Unified refresh function for all dashboard data
   const refreshDashboard = async () => {
@@ -176,12 +195,12 @@ const AdminDashboard: React.FC = () => {
   // Helper function to format audit log actions for display
   const formatActivityAction = (action: string, targetUser?: any, targetResource?: string): string => {
     const actionMap: { [key: string]: string } = {
-      'user_suspended': targetUser ? `Suspended user: ${targetUser.email}` : 'User suspended',
-      'user_unsuspended': targetUser ? `Unsuspended user: ${targetUser.email}` : 'User unsuspended',
-      'user_deleted': targetUser ? `Deleted user: ${targetUser.email}` : 'User deleted',
-      'user_warned': targetUser ? `Warned user: ${targetUser.email}` : 'User warned',
-      'user_role_changed': targetUser ? `Changed role for: ${targetUser.email}` : 'User role changed',
-      'user_token_invalidated': targetUser ? `Invalidated token for: ${targetUser.email}` : 'User token invalidated',
+      'user_suspended': 'User suspended',
+      'user_unsuspended': 'User unsuspended',
+      'user_deleted': 'User deleted',
+      'user_warned': 'User warned',
+      'user_role_changed': 'User role changed',
+      'user_token_invalidated': 'User token invalidated',
       'appeal_submitted': 'New appeal submitted',
       'appeal_approved': 'Appeal approved',
       'appeal_rejected': 'Appeal rejected',
@@ -262,7 +281,7 @@ const AdminDashboard: React.FC = () => {
           {/* Mobile Profile Icon */}
           <button
             onClick={() => router.push('/admin-profile')}
-            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC] transition-colors"
             title="Profile"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -282,7 +301,7 @@ const AdminDashboard: React.FC = () => {
             }}
             variant="outline"
             size="sm"
-            className="relative z-50 border-gray-200 hover:border-green-300 hover:bg-green-50 text-gray-600 hover:text-green-600 transition-colors font-medium min-h-[40px] px-3"
+            className="relative z-50 border-gray-200 hover:border-[#D2B48C] hover:bg-[#F5F5DC] text-gray-600 hover:text-[#8B7355] transition-colors font-medium min-h-[40px] px-3"
             style={{ fontFamily: 'Poppins, sans-serif' }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
@@ -319,7 +338,7 @@ const AdminDashboard: React.FC = () => {
             {/* Desktop Profile Icon */}
             <button
               onClick={() => router.push('/admin-profile')}
-              className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC] transition-colors"
               title="Profile"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -333,7 +352,7 @@ const AdminDashboard: React.FC = () => {
             <Button
               onClick={() => router.push('/home')}
               variant="outline"
-              className="border-gray-200 hover:border-green-300 hover:bg-green-50 text-gray-600 hover:text-green-600 transition-colors font-medium"
+              className="border-gray-200 hover:border-[#D2B48C] hover:bg-[#F5F5DC] text-gray-600 hover:text-[#8B7355] transition-colors font-medium"
               style={{ fontFamily: 'Poppins, sans-serif' }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
@@ -369,7 +388,7 @@ const AdminDashboard: React.FC = () => {
               {/* Close button for mobile */}
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+                className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC]"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -501,8 +520,8 @@ const AdminDashboard: React.FC = () => {
                   }}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors font-medium ${
                     activeTab === item.id
-                      ? 'bg-green-50 text-green-700 border border-green-200'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? 'bg-[#F5F5DC] text-[#8B7355] border border-[#D2B48C]'
+                      : 'text-gray-600 hover:bg-[#F5F5DC] hover:text-[#8B7355]'
                   }`}
                   style={{ fontFamily: 'Poppins, sans-serif' }}
                 >
@@ -534,19 +553,14 @@ const AdminDashboard: React.FC = () => {
 
         {/* Main Content */}
         <div className="flex-1 lg:ml-0 p-4 lg:p-6">
-          {/* Desktop Page Header */}
-          <div className="hidden lg:block mb-6">
-            <h2 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              {activeTab === 'overview' && 'Dashboard Overview'}
-              {activeTab === 'users' && 'User Management'}
-              {activeTab === 'farmers' && 'Farmer Management'}
-              {activeTab === 'farmers-verification' && 'Farmer Verification'}
-              {activeTab === 'reports' && 'Reports'}
-              {activeTab === 'ads' && 'Ads Management'}
-              {activeTab === 'appeals' && 'Appeals'}
-              {activeTab === 'audit' && 'Audit Logs'}
-            </h2>
-          </div>
+          {/* Desktop Page Header - Only for Overview */}
+          {activeTab === 'overview' && (
+            <div className="hidden lg:block mb-6">
+              <h2 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Dashboard Overview
+              </h2>
+            </div>
+          )}
 
           {activeTab === 'overview' && (
             <div className="space-y-6">
@@ -657,7 +671,7 @@ const AdminDashboard: React.FC = () => {
               <Card className="bg-white rounded-xl shadow-sm border">
                 <CardHeader className="pb-3 lg:pb-4">
                   <div className="flex items-center justify-between flex-col lg:flex-row space-y-2 lg:space-y-0">
-                    <CardTitle className="text-base lg:text-lg font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>Recent Activity</CardTitle>
+                    <CardTitle className="text-base lg:text-lg font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>Activity Trend</CardTitle>
                     <Button
                       onClick={refreshDashboard}
                       variant="outline"
@@ -680,14 +694,54 @@ const AdminDashboard: React.FC = () => {
                 <CardContent>
                   {refreshing ? (
                     <ChartSkeleton />
-                  ) : (
+                  ) : chartData.length === 0 ? (
                     <div className="h-48 lg:h-64 flex items-center justify-center text-gray-500">
                       <div className="text-center">
                         <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M23 8c0 1.1-.9 2-2 2-.18 0-.35-.02-.51-.07l-3.56 3.55c.05.16.07.34.07.52 0 1.1-.9 2-2 2s-2-.9-2-2c0-.18.02-.36.07-.52l-2.55-2.55c-.16.05-.34.07-.52.07s-.36-.02-.52-.07l-4.55 4.56c.05.16.07.33.07.51 0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2c.18 0 .35.02.51.07l4.56-4.55C8.02 9.36 8 9.18 8 9c0-1.1.9-2 2-2s2 .9 2 2c0 .18-.02.36-.07.52l2.55 2.55c.16-.05.34-.07.52-.07s.36.02.52.07l3.55-3.56C19.02 8.35 19 8.18 19 8c0-1.1.9-2 2-2s2 .9 2 2z"/>
                         </svg>
-                        <p style={{ fontFamily: 'Poppins, sans-serif' }}>Activity chart will be displayed here</p>
+                        <p style={{ fontFamily: 'Poppins, sans-serif' }}>No activity data available yet</p>
                       </div>
+                    </div>
+                  ) : (
+                    <div className="h-48 lg:h-64 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="colorActivities" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#103C2E" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#103C2E" stopOpacity={0.1}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis 
+                            dataKey="date" 
+                            style={{ fontFamily: 'Poppins, sans-serif', fontSize: '12px' }}
+                            stroke="#888"
+                          />
+                          <YAxis 
+                            style={{ fontFamily: 'Poppins, sans-serif', fontSize: '12px' }}
+                            stroke="#888"
+                          />
+                          <Tooltip 
+                            contentStyle={{ 
+                              fontFamily: 'Poppins, sans-serif',
+                              backgroundColor: 'white',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            }}
+                          />
+                          <Area 
+                            type="monotone" 
+                            dataKey="activities" 
+                            stroke="#103C2E" 
+                            strokeWidth={2}
+                            fillOpacity={1} 
+                            fill="url(#colorActivities)" 
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
                     </div>
                   )}
                 </CardContent>
@@ -724,24 +778,50 @@ const AdminDashboard: React.FC = () => {
                   ) : (
                     <div className="space-y-3 lg:space-y-4">
                       {activities.map((activity) => (
-                        <div key={activity._id} className="flex items-start lg:items-center justify-between py-3 border-b last:border-b-0 flex-col lg:flex-row space-y-2 lg:space-y-0">
-                          <div className="flex items-center space-x-3 w-full lg:w-auto">
-                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getActivityStatusColor(activity.severity)}`}></div>
+                        <div key={activity._id} className="flex items-start justify-between py-3 border-b last:border-b-0 flex-col space-y-2">
+                          <div className="flex items-start space-x-3 w-full">
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${getActivityStatusColor(activity.severity)}`}></div>
                             <div className="min-w-0 flex-1">
                               <p className="font-medium text-gray-800 text-sm lg:text-base break-words" style={{ fontFamily: 'Poppins, sans-serif' }}>
                                 {formatActivityAction(activity.action, activity.targetUser, activity.targetResource)}
                               </p>
-                              <p className="text-xs lg:text-sm text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                {formatTimeAgo(activity.createdAt)}
-                              </p>
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 text-xs lg:text-sm text-gray-600 mt-1">
+                                <span style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                  By: <span className="font-medium text-gray-800">
+                                    {activity.performedBy?.firstName && activity.performedBy?.lastName
+                                      ? `${activity.performedBy.firstName} ${activity.performedBy.lastName}`
+                                      : activity.performedBy?.email || 'System'}
+                                  </span>
+                                </span>
+                                <span className="hidden sm:inline text-gray-400">•</span>
+                                <span style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                  {new Date(activity.createdAt).toLocaleString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                  })}
+                                </span>
+                              </div>
+                              {activity.targetUser && (
+                                <p className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                  Target: <span className="font-medium">
+                                    {activity.targetUser.firstName && activity.targetUser.lastName
+                                      ? `${activity.targetUser.firstName} ${activity.targetUser.lastName} (${activity.targetUser.email})`
+                                      : activity.targetUser.email}
+                                  </span>
+                                </p>
+                              )}
                               {activity.reason && (
-                                <p className="text-xs text-gray-400 mt-1 break-words" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                  {activity.reason}
+                                <p className="text-xs text-gray-400 mt-1 break-words italic" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                  Reason: {activity.reason}
                                 </p>
                               )}
                             </div>
                           </div>
-                          <Badge variant="outline" className="text-xs flex-shrink-0 self-start lg:self-center">
+                          <Badge variant="outline" className="text-xs flex-shrink-0 self-end">
                             {getActivityType(activity.action)}
                           </Badge>
                         </div>

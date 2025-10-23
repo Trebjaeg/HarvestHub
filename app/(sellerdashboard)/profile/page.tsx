@@ -168,48 +168,25 @@ export default function Profile() {
     }
   };
 
-  const getDefaultAvatar = (name: string) => {
-    // Generate initials from name
-    const initials = name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-    
-    // Generate a color based on the name (like Facebook)
-    const colors = [
-      'bg-blue-500',
-      'bg-green-500', 
-      'bg-purple-500',
-      'bg-red-500',
-      'bg-yellow-500',
-      'bg-indigo-500',
-      'bg-pink-500',
-      'bg-teal-500'
-    ];
-    
-    const colorIndex = name.length % colors.length;
-    const bgColor = colors[colorIndex];
-    
-    return { initials, bgColor };
-  };
-
   const handleProfileUpdate = (updatedProfile: ProfileData) => {
     setProfile(updatedProfile);
     // Also update localStorage or trigger a refresh if needed
   };
+
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
         <div className="flex items-center gap-3">
-          <User className="w-8 h-8 text-green-600" />
-          <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <User className="w-6 h-6 sm:w-8 sm:h-8 text-[#103C2E]" />
+          <h1 className="text-xl sm:text-2xl font-bold text-[#103C2E]">
             Seller Profile
           </h1>
         </div>
-        <Button className="bg-green-600 hover:bg-green-700 text-white" style={{ fontFamily: 'Poppins, sans-serif' }} onClick={() => setShowEditModal(true)}>
+        <Button 
+          className="bg-[#103C2E] hover:bg-[#0d2e23] text-white w-full sm:w-auto" 
+          onClick={() => setShowEditModal(true)}
+        >
           <Edit className="w-4 h-4 mr-2" />
           Edit Profile
         </Button>
@@ -220,7 +197,7 @@ export default function Profile() {
           <div className="flex items-center gap-6">
             {/* Profile Avatar */}
             <div className="relative">
-              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 flex items-center justify-center">
                 {loading ? (
                   <div className="w-full h-full bg-gray-200 animate-pulse"></div>
                 ) : profile?.profileImage ? (
@@ -231,14 +208,13 @@ export default function Profile() {
                     height={96}
                     className="w-full h-full object-cover"
                   />
-                ) : profile ? (
-                  <div className={`w-full h-full flex items-center justify-center text-white text-xl font-bold ${getDefaultAvatar(profile.name).bgColor}`}>
-                    {getDefaultAvatar(profile.name).initials}
-                  </div>
                 ) : (
-                  <div className="w-full h-full bg-gray-300 flex items-center justify-center">
-                    <User className="w-8 h-8 text-gray-500" />
-                  </div>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                    <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                    <path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" />
+                  </svg>
                 )}
               </div>
               
@@ -246,7 +222,7 @@ export default function Profile() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingImage}
-                className="absolute bottom-0 right-0 w-8 h-8 bg-green-600 hover:bg-green-700 rounded-full flex items-center justify-center text-white shadow-lg disabled:opacity-50"
+                className="absolute bottom-0 right-0 w-8 h-8 bg-[#103C2E] hover:bg-[#0d2e23] rounded-full flex items-center justify-center text-white shadow-lg disabled:opacity-50"
               >
                 {uploadingImage ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -267,13 +243,12 @@ export default function Profile() {
             
             {/* Profile Info */}
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 mb-1 font-poppins">
+              <h2 className="text-2xl font-bold text-[#103C2E] mb-1">
                 {loading ? 'Loading...' : profile?.name || 'Unknown User'}
               </h2>
-              <p className="text-gray-600 mb-2 font-poppins">
+              <p className="text-gray-600">
                 {loading ? 'Loading...' : profile?.email || 'No email provided'}
               </p>
-              <Badge className="bg-green-100 text-green-800">Active Seller</Badge>
             </div>
           </div>
         </Card>
@@ -283,48 +258,48 @@ export default function Profile() {
           <Card className="p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Total Revenue</p>
-                <p className="text-2xl font-bold text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <p className="text-sm text-gray-600">Total Revenue</p>
+                <p className="text-2xl font-bold text-[#103C2E]">
                   {loadingStats ? '...' : `₱${stats?.totalRevenue?.toLocaleString() || '0'}`}
                 </p>
               </div>
-              <TrendingUp className="w-8 h-8 text-green-600" />
+              <TrendingUp className="w-8 h-8 text-[#103C2E]" />
             </div>
           </Card>
           
           <Card className="p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Total Orders</p>
-                <p className="text-2xl font-bold text-blue-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <p className="text-sm text-gray-600">Products Sold</p>
+                <p className="text-2xl font-bold text-[#103C2E]">
+                  {loadingStats ? '...' : (stats?.productsSold || 0)}
+                </p>
+              </div>
+              <Package className="w-8 h-8 text-[#103C2E]" />
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-white border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total Orders</p>
+                <p className="text-2xl font-bold text-[#103C2E]">
                   {loadingStats ? '...' : (stats?.totalOrders || 0)}
                 </p>
               </div>
-              <Package className="w-8 h-8 text-blue-600" />
+              <Package className="w-8 h-8 text-[#103C2E]" />
             </div>
           </Card>
-          
+
           <Card className="p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Products Listed</p>
-                <p className="text-2xl font-bold text-purple-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  {loadingStats ? '...' : (stats?.totalProducts || 0)}
+                <p className="text-sm text-gray-600">Average Rating</p>
+                <p className="text-2xl font-bold text-[#103C2E]">
+                  {loadingStats ? '...' : (stats?.averageRating?.toFixed(1) || '0.0')}
                 </p>
               </div>
-              <Package className="w-8 h-8 text-purple-600" />
-            </div>
-          </Card>
-          
-          <Card className="p-6 bg-white border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Average Rating</p>
-                <p className="text-2xl font-bold text-yellow-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  {loadingStats ? '...' : (stats?.averageRating || 0)}
-                </p>
-              </div>
-              <Star className="w-8 h-8 text-yellow-600" />
+              <Star className="w-8 h-8 text-[#103C2E]" />
             </div>
           </Card>
         </div>
@@ -336,43 +311,39 @@ export default function Profile() {
 
         {/* Profile Information */}
         <Card className="p-6 bg-white border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <h2 className="text-lg font-semibold text-[#103C2E] mb-4">
             Profile Information
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Name</label>
-              <p className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <label className="text-sm text-gray-600">Name</label>
+              <p className="font-medium text-gray-900">
                 {loading ? 'Loading...' : profile?.name || 'Not provided'}
               </p>
             </div>
             <div>
-              <label className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Email</label>
-              <p className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <label className="text-sm text-gray-600">Email</label>
+              <p className="font-medium text-gray-900">
                 {loading ? 'Loading...' : profile?.email || 'Not provided'}
               </p>
             </div>
             <div>
-              <label className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Phone</label>
-              <p className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <label className="text-sm text-gray-600">Phone</label>
+              <p className="font-medium text-gray-900">
                 {loading ? 'Loading...' : profile?.phone || 'Not provided'}
               </p>
             </div>
             <div>
-              <label className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Address</label>
-              <p className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <label className="text-sm text-gray-600">Address</label>
+              <p className="font-medium text-gray-900">
                 {loading ? 'Loading...' : profile?.address || 'Not provided'}
               </p>
             </div>
             <div>
-              <label className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Member Since</label>
-              <p className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <label className="text-sm text-gray-600">Member Since</label>
+              <p className="font-medium text-gray-900">
                 {loading ? 'Loading...' : formatDate(profile?.createdAt)}
               </p>
-            </div>
-            <div>
-              <label className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Status</label>
-              <Badge className="bg-green-100 text-green-800">Active Seller</Badge>
             </div>
           </div>
         </Card>
@@ -381,7 +352,7 @@ export default function Profile() {
         <Card className="p-6 bg-white border border-gray-200">
           <div className="flex items-center gap-3 mb-4">
             <AlertTriangle className="w-5 h-5 text-orange-500" />
-            <h2 className="text-lg font-semibold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <h2 className="text-lg font-semibold text-[#103C2E]">
               Low Stock Alert
             </h2>
             {lowStockProducts.length > 0 && (
@@ -430,8 +401,7 @@ export default function Profile() {
               ))}
               <div className="pt-3 border-t border-gray-200">
                 <Button 
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white" 
-                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                  className="w-full bg-[#103C2E] hover:bg-[#0d2e23] text-white" 
                   onClick={() => window.location.href = '/products'}
                 >
                   <Package className="w-4 h-4 mr-2" />
@@ -444,16 +414,15 @@ export default function Profile() {
               <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />
               {stats?.totalProducts === 0 ? (
                 <>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
                     No Products Listed Yet
                   </h3>
-                  <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  <p className="text-gray-600">
                     You haven't added any products yet. Start by adding your first product!
                   </p>
                   <div className="mt-4">
                     <Button 
-                      className="bg-green-600 hover:bg-green-700 text-white" 
-                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                      className="bg-[#103C2E] hover:bg-[#0d2e23] text-white" 
                       onClick={() => window.location.href = '/products'}
                     >
                       <Package className="w-4 h-4 mr-2" />
@@ -463,10 +432,10 @@ export default function Profile() {
                 </>
               ) : (
                 <>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
                     All Products Well Stocked
                   </h3>
-                  <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  <p className="text-gray-600">
                     No products are currently running low on stock. Great job!
                   </p>
                 </>

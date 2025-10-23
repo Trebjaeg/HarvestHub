@@ -171,31 +171,6 @@ export default function EditProfileModal({ isOpen, onClose, profile, onSave }: E
     }
   };
 
-  const getDefaultAvatar = (name: string) => {
-    const initials = name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-    
-    const colors = [
-      'bg-blue-500',
-      'bg-green-500', 
-      'bg-purple-500',
-      'bg-red-500',
-      'bg-yellow-500',
-      'bg-indigo-500',
-      'bg-pink-500',
-      'bg-teal-500'
-    ];
-    
-    const colorIndex = name.length % colors.length;
-    const bgColor = colors[colorIndex];
-    
-    return { initials, bgColor };
-  };
-
   const handleSave = async () => {
     if (!validateForm()) {
       return;
@@ -258,7 +233,7 @@ export default function EditProfileModal({ isOpen, onClose, profile, onSave }: E
             <div className="flex items-center gap-6">
               {/* Profile Avatar */}
               <div className="relative group">
-                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 transition-all duration-300 ease-in-out group-hover:border-green-300">
+                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 transition-all duration-300 ease-in-out group-hover:border-green-300 flex items-center justify-center">
                   {previewImage ? (
                     <Image
                       src={previewImage}
@@ -267,14 +242,13 @@ export default function EditProfileModal({ isOpen, onClose, profile, onSave }: E
                       height={96}
                       className="w-full h-full object-cover"
                     />
-                  ) : formData.name ? (
-                    <div className={`w-full h-full flex items-center justify-center text-white text-xl font-bold ${getDefaultAvatar(formData.name).bgColor}`}>
-                      {getDefaultAvatar(formData.name).initials}
-                    </div>
                   ) : (
-                    <div className="w-full h-full bg-gray-300 flex items-center justify-center">
-                      <User className="w-8 h-8 text-gray-500" />
-                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                      <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                      <path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" />
+                    </svg>
                   )}
                 </div>
                 

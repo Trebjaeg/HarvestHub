@@ -148,31 +148,6 @@ function BuyerProfile() {
     }
   };
 
-  const getDefaultAvatar = (firstName: string, lastName: string) => {
-    // Handle null/undefined values
-    const first = firstName || '';
-    const last = lastName || '';
-    // Generate initials from first and last name
-    const initials = `${first.charAt(0) || '?'}${last.charAt(0) || '?'}`.toUpperCase();
-    
-    // Generate a color based on the name (like Facebook)
-    const colors = [
-      'bg-blue-500',
-      'bg-green-500', 
-      'bg-purple-500',
-      'bg-red-500',
-      'bg-yellow-500',
-      'bg-indigo-500',
-      'bg-pink-500',
-      'bg-teal-500'
-    ];
-    
-    const colorIndex = (first.length + last.length) % colors.length;
-    const bgColor = colors[colorIndex];
-    
-    return { initials, bgColor };
-  };
-
   const handleProfileUpdate = (updatedProfile: BuyerProfileData) => {
     setProfile(updatedProfile);
   };
@@ -223,18 +198,17 @@ function BuyerProfile() {
   const fullName = profile ? `${profile.firstName} ${profile.lastName}` : '';
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
         <div className="flex items-center gap-3">
-          <User className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <User className="w-6 h-6 sm:w-8 sm:h-8 text-[#103C2E]" />
+          <h1 className="text-xl sm:text-2xl font-bold text-[#103C2E]">
             Buyer Profile
           </h1>
         </div>
         <Button 
-          className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto" 
-          style={{ fontFamily: 'Poppins, sans-serif' }} 
+          className="bg-[#103C2E] hover:bg-[#0d2e23] text-white w-full sm:w-auto" 
           onClick={() => setShowEditModal(true)}
         >
           <Edit className="w-4 h-4 mr-2" />
@@ -247,7 +221,7 @@ function BuyerProfile() {
           <div className="flex items-center gap-6">
             {/* Profile Avatar */}
             <div className="relative">
-              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 flex items-center justify-center">
                 {loading ? (
                   <div className="w-full h-full bg-gray-200 animate-pulse"></div>
                 ) : profile?.profileImage ? (
@@ -258,14 +232,13 @@ function BuyerProfile() {
                     height={96}
                     className="w-full h-full object-cover"
                   />
-                ) : profile ? (
-                  <div className={`w-full h-full flex items-center justify-center text-white text-xl font-bold ${getDefaultAvatar(profile.firstName, profile.lastName).bgColor}`}>
-                    {getDefaultAvatar(profile.firstName, profile.lastName).initials}
-                  </div>
                 ) : (
-                  <div className="w-full h-full bg-gray-300 flex items-center justify-center">
-                    <User className="w-8 h-8 text-gray-500" />
-                  </div>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                    <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                    <path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" />
+                  </svg>
                 )}
               </div>
               
@@ -273,7 +246,7 @@ function BuyerProfile() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingImage}
-                className="absolute bottom-0 right-0 w-8 h-8 bg-green-600 hover:bg-green-700 rounded-full flex items-center justify-center text-white shadow-lg disabled:opacity-50"
+                className="absolute bottom-0 right-0 w-8 h-8 bg-[#103C2E] hover:bg-[#0d2e23] rounded-full flex items-center justify-center text-white shadow-lg disabled:opacity-50"
               >
                 {uploadingImage ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -294,13 +267,12 @@ function BuyerProfile() {
             
             {/* Profile Info */}
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <h2 className="text-2xl font-bold text-[#103C2E] mb-1">
                 {loading ? 'Loading...' : fullName || 'Unknown User'}
               </h2>
-              <p className="text-gray-600 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <p className="text-gray-600">
                 {loading ? 'Loading...' : profile?.email || 'No email provided'}
               </p>
-              <Badge className="bg-blue-100 text-blue-800">Verified Buyer</Badge>
             </div>
           </div>
         </Card>
@@ -310,61 +282,61 @@ function BuyerProfile() {
           <Card className="p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Total Spent</p>
-                <p className="text-2xl font-bold text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <p className="text-sm text-gray-600">Total Spent</p>
+                <p className="text-2xl font-bold text-[#103C2E]">
                   {loadingStats ? '...' : `₱${stats?.totalSpent?.toLocaleString() || '0'}`}
                 </p>
               </div>
-              <ShoppingBag className="w-8 h-8 text-green-600" />
+              <ShoppingBag className="w-8 h-8 text-[#103C2E]" />
             </div>
           </Card>
           
           <Card className="p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Total Orders</p>
-                <p className="text-2xl font-bold text-blue-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <p className="text-sm text-gray-600">Total Orders</p>
+                <p className="text-2xl font-bold text-[#103C2E]">
                   {loadingStats ? '...' : (stats?.totalOrders || 0)}
                 </p>
               </div>
-              <ShoppingBag className="w-8 h-8 text-blue-600" />
+              <ShoppingBag className="w-8 h-8 text-[#103C2E]" />
             </div>
           </Card>
           
           <Card className="p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Favorite Products</p>
-                <p className="text-2xl font-bold text-purple-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <p className="text-sm text-gray-600">Favorite Products</p>
+                <p className="text-2xl font-bold text-[#103C2E]">
                   {loadingStats ? '...' : (stats?.favoriteProducts || 0)}
                 </p>
               </div>
-              <Heart className="w-8 h-8 text-purple-600" />
+              <Heart className="w-8 h-8 text-[#103C2E]" />
             </div>
           </Card>
           
           <Card className="p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Average Rating</p>
-                <p className="text-2xl font-bold text-yellow-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <p className="text-sm text-gray-600">Average Rating</p>
+                <p className="text-2xl font-bold text-[#103C2E]">
                   {loadingStats ? '...' : (stats?.averageRating || 0)}
                 </p>
               </div>
-              <Star className="w-8 h-8 text-yellow-600" />
+              <Star className="w-8 h-8 text-[#103C2E]" />
             </div>
           </Card>
         </div>
 
         {/* Profile Information */}
         <Card className="p-6 bg-white border border-gray-200 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <h2 className="text-lg font-semibold text-[#103C2E] mb-4">
             Profile Information
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>First Name</label>
-              <p className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <label className="text-sm text-gray-600">First Name</label>
+              <p className="font-medium text-gray-900">
                 {loading ? 'Loading...' : profile?.firstName || 'Not provided'}
               </p>
             </div>
@@ -408,25 +380,8 @@ function BuyerProfile() {
                 {loading ? 'Loading...' : formatDate(profile?.createdAt)}
               </p>
             </div>
-            <div>
-              <label className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Status</label>
-              <Badge className="bg-green-100 text-green-800">Active Buyer</Badge>
-            </div>
           </div>
         </Card>
-
-        {/* Logout Button */}
-        <div className="flex justify-center">
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors font-medium"
-            style={{ fontFamily: 'Poppins, sans-serif' }}
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Logout</span>
-          </Button>
-        </div>
 
         {/* Edit Profile Modal */}
         <EditBuyerProfileModal

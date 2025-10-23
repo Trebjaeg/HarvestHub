@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Search, Plus, Package, Edit, Trash2, Filter } from "lucide-react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -45,6 +46,10 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [verificationMessage, setVerificationMessage] = useState<string>("");
   const [isVerified, setIsVerified] = useState<boolean>(true); // Assume verified until checked
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string>("");
 
   const categories = [
     "Leafy Greens",
@@ -132,6 +137,9 @@ export default function Products() {
         // Refresh the products list
         fetchProducts();
         setShowAddModal(false);
+        // Show success message
+        setSuccessMessage('Product added successfully!');
+        setShowSuccessModal(true);
       } else {
         const error = await response.json();
         console.error('Server error response:', error);
@@ -145,7 +153,7 @@ export default function Products() {
       }
     } catch (error) {
       console.error('Error creating product:', error);
-      alert('Failed to create product: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      // Silently log - don't show alert
     }
   };
 
@@ -154,6 +162,7 @@ export default function Products() {
       const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
       const response = await fetch(`/api/seller/products/${product._id}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -166,51 +175,67 @@ export default function Products() {
         // Refresh the products list
         fetchProducts();
         setEditingProduct(null);
+        // Show success message
+        setSuccessMessage('Product updated successfully!');
+        setShowSuccessModal(true);
       } else {
         const error = await response.json();
-        // Check if it's a verification error
-        if (response.status === 403 && (error.error === 'Insufficient permissions' || error.message?.includes('verification'))) {
-          // Keep modal open and show error inline
-          setVerificationMessage(error.message || 'You must be a verified seller to edit products');
-        } else {
-          alert(error.error || 'Failed to update product');
-        }
+        console.error('Failed to update product:', error);
+        // Silently fail and close modal
+        setEditingProduct(null);
+        fetchProducts();
       }
     } catch (error) {
       console.error('Error updating product:', error);
-      alert('Failed to update product');
+      // Silently fail and close modal
+      setEditingProduct(null);
+      fetchProducts();
     }
   };
 
   const handleDeleteProduct = async (productId: string | undefined) => {
     if (!productId) return;
     
-    if (confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-      try {
-        const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
-        const response = await fetch(`/api/seller/products/${productId}`, {
-          method: 'DELETE',
-          headers: {
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-          }
-        });
+    // Open confirmation modal
+    setProductToDelete(productId);
+    setShowDeleteModal(true);
+  };
 
-        if (response.ok) {
-          // Refresh the products list
-          fetchProducts();
-        } else {
-          const error = await response.json();
-          // Check if it's a verification error
-          if (response.status === 403 && (error.error === 'Insufficient permissions' || error.message?.includes('verification'))) {
-            alert(error.message || 'You must be a verified seller to delete products. Please complete verification in your profile.');
-          } else {
-            alert(error.error || 'Failed to delete product');
-          }
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+
+    try {
+      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
+      const response = await fetch(`/api/seller/products/${productToDelete}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
-      } catch (error) {
-        console.error('Error deleting product:', error);
-        alert('Failed to delete product');
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Refresh the products list silently
+        fetchProducts();
+        // Show success message
+        setSuccessMessage('Product deleted successfully!');
+        setShowSuccessModal(true);
+      } else {
+        console.error('Failed to delete product:', data.error || data.message);
+        // Silently fail - just refresh the list
+        fetchProducts();
       }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      // Silently fail - just refresh the list
+      fetchProducts();
+    } finally {
+      // Close modal and reset
+      setShowDeleteModal(false);
+      setProductToDelete(null);
     }
   };
 
@@ -236,13 +261,13 @@ export default function Products() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen p-6">
+    <div className="bg-gray-50 min-h-screen p-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Package className="w-8 h-8 text-green-600" />
-            <h1 className="text-2xl font-bold text-gray-900 font-poppins">
+            <Package className="w-8 h-8 text-[#103C2E]" />
+            <h1 className="text-2xl font-bold text-[#103C2E]">
               Products
             </h1>
           </div>
@@ -256,7 +281,7 @@ export default function Products() {
               }
               setShowAddModal(true);
             }}
-            className="bg-green-600 hover:bg-green-700 text-white font-poppins" 
+            className="bg-[#103C2E] hover:bg-[#0d2e23] text-white" 
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Product
@@ -305,130 +330,172 @@ export default function Products() {
           </div>
         </Card>
 
-        {/* Products Grid */}
+        {/* Products Table/Cards */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {Array(8).fill(0).map((_, i) => (
-              <Card key={i} className="p-4 bg-white border border-gray-200">
-                <div className="w-full h-48 bg-gray-200 rounded-lg animate-pulse mb-4"></div>
-                <div className="space-y-2">
-                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4"></div>
-                  <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2"></div>
-                </div>
-              </Card>
-            ))}
-          </div>
+          <Card className="p-6 bg-white border border-gray-200">
+            <div className="animate-pulse space-y-4">
+              <div className="h-12 bg-gray-200 rounded"></div>
+              <div className="h-12 bg-gray-200 rounded"></div>
+              <div className="h-12 bg-gray-200 rounded"></div>
+              <div className="h-12 bg-gray-200 rounded"></div>
+            </div>
+          </Card>
         ) : filteredProducts.length === 0 ? (
           <Card className="p-12 text-center bg-white border border-gray-200">
             <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2 font-poppins">
-              No Products Found
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No products found
             </h3>
-            <p className="text-gray-600 mb-4 font-poppins">
-              {searchTerm || selectedCategory !== "all" || selectedStatus !== "all" 
-                ? "No products match your current filters." 
-                : "You haven't added any products yet."}
+            <p className="text-gray-600 mb-4">
+              {searchTerm || selectedCategory !== "all" || selectedStatus !== "all"
+                ? "Try adjusting your filters"
+                : "Get started by adding your first product"}
             </p>
-            <Button
-              onClick={() => {
-                console.log('Add Your First Product clicked, isVerified:', isVerified);
-                if (!isVerified) {
-                  setVerificationMessage('You must complete seller verification to add products. Please verify your account in the Profile section.');
-                } else {
-                  setVerificationMessage('');
-                }
-                setShowAddModal(true);
-              }}
-              className="bg-green-600 hover:bg-green-700 text-white font-poppins"
+            <Button 
+              onClick={() => setShowAddModal(true)}
+              className="bg-[#103C2E] hover:bg-[#0d2e23] text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add Your First Product
+              Add Product
             </Button>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => {
-              const stockStatus = getStockStatus(product.stock, product.lowStockAlert);
-              
-              return (
-                <Card key={product._id} className="bg-white border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                  {/* Product Image */}
-                  <div className="relative w-full h-48 bg-gray-100">
-                    {product.images.length > 0 ? (
-                      <Image
-                        src={product.images[0]}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-12 h-12 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
+          <>
+            {/* Desktop Table View (hidden on mobile) */}
+            <Card className="hidden md:block bg-white border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Image</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Name</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Price</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Stock</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredProducts.map((product) => (
+                      <tr key={product._id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
+                            {product.images && product.images.length > 0 ? (
+                              <Image
+                                src={product.images[0]}
+                                alt={product.name}
+                                width={48}
+                                height={48}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package className="w-6 h-6 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="font-medium text-gray-900">{product.name}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-gray-900">₱{product.price}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-gray-900">{product.stock}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Badge className={getStatusColor(product.status || 'Available')}>
+                            {product.status || 'Available'}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => setEditingProduct(product)}
+                              className="p-2 text-[#103C2E] hover:bg-green-50 rounded-lg transition-colors"
+                              title="Edit"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(product._id!)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
 
-                  {/* Product Info */}
+            {/* Mobile Card View (hidden on desktop) */}
+            <div className="md:hidden space-y-4">
+              {filteredProducts.map((product) => (
+                <Card key={product._id} className="bg-white border border-gray-200 overflow-hidden">
                   <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 font-poppins">
-                        {product.name}
-                      </h3>
-                      <div className="flex gap-1 ml-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            if (!isVerified) {
-                              setVerificationMessage('Verified seller access required');
-                            }
-                            setEditingProduct(product);
-                          }}
-                          className="w-8 h-8 p-0"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDeleteProduct(product._id)}
-                          className="w-8 h-8 p-0 text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                    <div className="flex gap-4">
+                      {/* Product Image */}
+                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                        {product.images && product.images.length > 0 ? (
+                          <Image
+                            src={product.images[0]}
+                            alt={product.name}
+                            width={80}
+                            height={80}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-8 h-8 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Product Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 mb-1 truncate">
+                          {product.name}
+                        </h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-lg font-bold text-[#103C2E]">₱{product.price}</span>
+                          <Badge className={getStatusColor(product.status || 'Available')}>
+                            {product.status || 'Available'}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          Stock: <span className="font-medium">{product.stock}</span>
+                        </p>
                       </div>
                     </div>
-                    
-                    <p className="text-xs text-gray-600 mb-2 font-poppins">
-                      SKU: {product.category?.slice(0, 3).toUpperCase()}-{product._id?.slice(-4)} • {product.category}
-                    </p>
-                    
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <span className="text-lg font-bold text-green-600 font-poppins">
-                          ₱{product.price}
-                        </span>
-                        <span className="text-xs text-gray-500 font-poppins">/{product.unit}</span>
-                      </div>
-                      <Badge className={`${getStatusColor(product.status)} font-poppins`}>
-                        {product.status}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-600 font-poppins">
-                        Stock: {product.stock} {product.unit}
-                      </span>
-                      <Badge className={`${stockStatus.color} font-poppins`} variant="secondary">
-                        {stockStatus.label}
-                      </Badge>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => setEditingProduct(product)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-[#103C2E] bg-green-50 hover:bg-green-100 rounded-lg transition-colors font-medium"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProduct(product._id!)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors font-medium"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
                     </div>
                   </div>
                 </Card>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          </>
         )}
 
         {/* Add/Edit Product Modal */}
@@ -453,6 +520,59 @@ export default function Products() {
           onSave={handleEditProduct}
           verificationError={verificationMessage}
         />
+
+        {/* Delete Confirmation Modal */}
+        <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-[#103C2E]">Delete Product</DialogTitle>
+              <DialogDescription className="text-gray-600 pt-2">
+                Are you sure you want to delete this product? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setProductToDelete(null);
+                }}
+                className="border-gray-300"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={confirmDelete}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Success Modal */}
+        <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-[#103C2E]">Success!</DialogTitle>
+              <DialogDescription className="text-gray-600 pt-2">
+                {successMessage}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                type="button"
+                onClick={() => setShowSuccessModal(false)}
+                className="bg-[#103C2E] hover:bg-[#0d2e23] text-white w-full"
+              >
+                OK
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

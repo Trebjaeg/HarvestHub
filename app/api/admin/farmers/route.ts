@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import User from '../../../../models/User';
+import SellerApplication from '../../../../models/SellerApplication';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -28,27 +29,44 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    // Get query parameters
-    const { searchParams } = new URL(req.url);
-    const status = searchParams.get('status');
-    
-    // Build query
-    const query: any = {
-      sellerStatus: { $in: ['pending', 'verified', 'rejected'] }
-    };
-    
-    if (status && status !== 'all') {
-      query.sellerStatus = status;
-    }
+    // Get all farmers (users with role 'farmer' or 'seller')
+    const farmers = await User.find({
+      role: { $in: ['farmer', 'seller'] }
+    })
+      .select('firstName lastName name email role status isActive createdAt sellerStatus')
+      .sort({ createdAt: -1 })
+      .lean();
 
-    const farmers = await User.find(query)
-      .select('name email sellerStatus farmerVerification createdAt')
-      .populate('farmerVerification.reviewedBy', 'name email')
-      .sort({ 'farmerVerification.submittedAt': -1, createdAt: -1 });
+    // Get all seller applications to merge verification status
+    const farmerIds = farmers.map(f => f._id);
+    const applications = await SellerApplication.find({
+      userId: { $in: farmerIds }
+    })
+      .select('userId status submittedAt reviewedAt')
+      .lean();
+
+    // Create a map of userId to application
+    const applicationMap = new Map();
+    applications.forEach(app => {
+      applicationMap.set(app.userId.toString(), app);
+    });
+
+    // Merge application data with farmer data
+    const farmersWithVerification = farmers.map(farmer => {
+      const application = applicationMap.get(farmer._id.toString());
+      return {
+        ...farmer,
+        farmerVerification: application ? {
+          status: application.status,
+          appliedAt: application.submittedAt,
+          reviewedAt: application.reviewedAt
+        } : undefined
+      };
+    });
 
     return NextResponse.json({
-      farmers,
-      total: farmers.length
+      farmers: farmersWithVerification,
+      total: farmersWithVerification.length
     });
 
   } catch (error) {

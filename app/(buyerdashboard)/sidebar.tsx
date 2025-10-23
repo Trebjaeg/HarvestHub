@@ -91,29 +91,6 @@ export default function BuyerSidebar() {
     }
   };
 
-  const getDefaultAvatar = (firstName: string, lastName: string) => {
-    // Handle null/undefined values
-    const first = firstName || '';
-    const last = lastName || '';
-    const initials = `${first.charAt(0) || '?'}${last.charAt(0) || '?'}`.toUpperCase();
-    
-    const colors = [
-      'bg-blue-500',
-      'bg-green-500', 
-      'bg-purple-500',
-      'bg-red-500',
-      'bg-yellow-500',
-      'bg-indigo-500',
-      'bg-pink-500',
-      'bg-teal-500'
-    ];
-    
-    const colorIndex = (first.length + last.length) % colors.length;
-    const bgColor = colors[colorIndex];
-    
-    return { initials, bgColor };
-  };
-
   const handleLogout = async () => {
     console.log('🚪 [BUYER] Starting logout process...');
     try {
@@ -159,7 +136,7 @@ export default function BuyerSidebar() {
         <div className="flex items-center space-x-3">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+            className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC]"
           >
             {isMobileMenuOpen ? (
               <X className="w-6 h-6" />
@@ -181,7 +158,7 @@ export default function BuyerSidebar() {
           {/* Mobile Profile Icon */}
           <Link
             href="/buyer-profile"
-            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC] transition-colors"
             title="Profile"
           >
             <User className="w-5 h-5" />
@@ -190,7 +167,7 @@ export default function BuyerSidebar() {
           {/* Mobile Home Button */}
           <Link
             href="/home"
-            className="flex items-center space-x-1 px-3 py-2 rounded-lg border border-gray-200 hover:border-green-300 hover:bg-green-50 text-gray-600 hover:text-green-600 transition-colors"
+            className="flex items-center space-x-1 px-3 py-2 rounded-lg border border-gray-200 hover:border-[#D2B48C] hover:bg-[#F5F5DC] text-gray-600 hover:text-[#8B7355] transition-colors"
           >
             <Home className="w-4 h-4" />
             <span className="text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Home</span>
@@ -227,7 +204,7 @@ export default function BuyerSidebar() {
             {/* Close button for mobile */}
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+              className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC]"
             >
               <X className="w-5 h-5" />
             </button>
@@ -242,8 +219,8 @@ export default function BuyerSidebar() {
           </h1>
 
           {/* User Profile */}
-          <Link href="/buyer-profile" className="flex flex-col items-center mb-4 hover:bg-gray-50 rounded-lg p-3 transition-colors cursor-pointer">
-            <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200">
+          <Link href="/buyer-profile" className="flex flex-col items-center mb-4 hover:bg-[#F5F5DC] rounded-lg p-3 transition-colors cursor-pointer">
+            <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
               {loading ? (
                 <div className="w-full h-full bg-gray-200 animate-pulse"></div>
               ) : profile?.profileImage ? (
@@ -254,14 +231,13 @@ export default function BuyerSidebar() {
                   height={80}
                   className="w-full h-full object-cover"
                 />
-              ) : profile ? (
-                <div className={`w-full h-full flex items-center justify-center text-white text-xl font-bold ${getDefaultAvatar(profile.firstName, profile.lastName).bgColor}`}>
-                  {getDefaultAvatar(profile.firstName, profile.lastName).initials}
-                </div>
               ) : (
-                <div className="w-full h-full bg-gray-300 flex items-center justify-center">
-                  <User className="w-8 h-8 text-gray-500" />
-                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                  <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                  <path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" />
+                </svg>
               )}
             </div>
             <h3 className="font-semibold text-gray-800 mt-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -282,20 +258,18 @@ export default function BuyerSidebar() {
             const isHomeButton = item.label === "Home";
 
             return (
-              <li key={item.href}>
+              <li key={item.href} className={isHomeButton ? "hidden lg:block" : ""}>
                 <Link
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors font-medium ${
-                    isHomeButton
-                      ? "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
-                      : isActive
-                      ? "bg-green-50 text-green-700 border border-green-200"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-800"
+                    isActive
+                      ? "bg-[#F5F5DC] text-[#8B7355] border border-[#D2B48C]"
+                      : "text-gray-600 hover:bg-[#F5F5DC] hover:text-[#8B7355]"
                   }`}
                   style={{ fontFamily: 'Poppins, sans-serif' }}
                 >
-                  <Icon size={20} strokeWidth={isActive || isHomeButton ? 2.5 : 2}/>
+                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2}/>
                   <span>{item.label}</span>
                 </Link>
               </li>

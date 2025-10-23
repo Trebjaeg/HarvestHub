@@ -41,7 +41,8 @@ export const useRecentActivities = (limit: number = 5) => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`/api/admin/audit?limit=${limit}&page=1`, {
+      // Fetch more logs to account for filtering
+      const response = await fetch(`/api/admin/audit?limit=${limit * 5}&page=1`, {
         method: 'GET',
         credentials: 'include',
         headers: getAuthHeaders(),
@@ -53,7 +54,31 @@ export const useRecentActivities = (limit: number = 5) => {
       }
       
       const data: RecentActivitiesResponse = await response.json();
-      setActivities(data.logs);
+      
+      // Filter for only important actions: suspend, deactivate, reject, approve
+      const importantActions = [
+        'suspend',
+        'suspend_account',
+        'deactivate',
+        'deactivate_account',
+        'reject',
+        'reject_farmer',
+        'reject_application',
+        'approve',
+        'approve_farmer',
+        'approve_application',
+        'verify_farmer',
+        'verification_approved',
+        'verification_rejected'
+      ];
+      
+      const filteredActivities = data.logs.filter(log => 
+        importantActions.some(action => 
+          log.action.toLowerCase().includes(action.toLowerCase())
+        )
+      ).slice(0, limit); // Only take the requested number after filtering
+      
+      setActivities(filteredActivities);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
       setError(errorMessage);

@@ -235,9 +235,9 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-xl max-h-[90vh] overflow-y-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
         <DialogHeader className="pb-6 border-b border-gray-200">
-          <DialogTitle className="text-2xl font-bold text-[#103C2E] text-center font-poppins">
+          <DialogTitle className="text-2xl font-bold text-[#103C2E] text-center">
             {product ? 'Edit Product' : 'Add New Product'}
           </DialogTitle>
         </DialogHeader>
@@ -621,13 +621,13 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
           <Button 
             variant="outline" 
             onClick={handleCancel}
-            className="px-8 py-2 border-gray-300 text-gray-700 hover:bg-gray-50 transition-all duration-200 font-poppins"
+            className="px-8 py-2 border-gray-300 text-gray-700 hover:bg-gray-50 transition-all duration-200"
           >
             Cancel
           </Button>
           <Button 
             onClick={handleSave}
-            className="px-8 py-2 bg-green-600 hover:bg-green-700 text-white transition-all duration-200 font-poppins"
+            className="px-8 py-2 bg-[#103C2E] hover:bg-[#0d2e23] text-white transition-all duration-200"
             disabled={uploading || !!verificationError}
           >
             {product ? 'Update Product' : 'Save Product'}

@@ -123,10 +123,13 @@ const ProductSchema = new mongoose.Schema<IProduct>({
   timestamps: true
 });
 
-// Index for better performance
-ProductSchema.index({ category: 1, isActive: 1 });
-ProductSchema.index({ farmerId: 1 });
-ProductSchema.index({ featured: 1, isActive: 1 });
-ProductSchema.index({ name: 'text', description: 'text' });
+// Indexes for better query performance
+ProductSchema.index({ category: 1, isActive: 1 }); // Category filtering
+ProductSchema.index({ farmerId: 1, isActive: 1 }); // Farmer's products
+ProductSchema.index({ featured: 1, isActive: 1 }); // Featured products
+ProductSchema.index({ name: 'text', description: 'text' }); // Text search
+ProductSchema.index({ createdAt: -1 }); // Sort by newest
+ProductSchema.index({ price: 1 }); // Sort by price
+ProductSchema.index({ stock: 1, lowStockAlert: 1 }); // Low stock alerts
 
 export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);

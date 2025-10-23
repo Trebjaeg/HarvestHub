@@ -143,10 +143,9 @@ const UserManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
-        <div className="flex items-center space-x-4">
-          <div className="relative">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
+          <div className="relative flex-1">
             <svg className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -155,10 +154,11 @@ const UserManagement: React.FC = () => {
               placeholder="Search users..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
             />
           </div>
-          <Button onClick={fetchUsers} variant="outline">
+          <Button onClick={fetchUsers} variant="outline" className="w-full sm:w-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
@@ -169,33 +169,34 @@ const UserManagement: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>
-            All Users ({filteredUsers.length}
+          <CardTitle style={{ fontFamily: 'Poppins, sans-serif' }}>
+            User Management ({filteredUsers.length}
             {searchTerm && ` of ${users.length}`})
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Email</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Role</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Joined</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Name</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Email</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Role</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Status</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Joined</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredUsers.map((user) => (
                   <tr key={user._id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4">
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         {user.name}
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-gray-600">
+                    <td className="py-3 px-4 text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       {user.email}
                     </td>
                     <td className="py-3 px-4">
@@ -205,7 +206,7 @@ const UserManagement: React.FC = () => {
                           : user.role === 'admin'
                           ? 'bg-orange-100 text-orange-800'
                           : 'bg-blue-100 text-blue-800'
-                      }`}>
+                      }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
                         {user.role}
                       </span>
                     </td>
@@ -214,11 +215,11 @@ const UserManagement: React.FC = () => {
                         user.status === 'active' 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-red-100 text-red-800'
-                      }`}>
+                      }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
                         {user.status === 'active' ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-gray-600">
+                    <td className="py-3 px-4 text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
                     <td className="py-3 px-4">
@@ -227,6 +228,7 @@ const UserManagement: React.FC = () => {
                         variant="outline"
                         size="sm"
                         className={user.status === 'active' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
                       >
                         {user.status === 'active' ? 'Deactivate' : 'Activate'}
                       </Button>
@@ -236,6 +238,56 @@ const UserManagement: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {filteredUsers.map((user) => (
+              <Card key={user._id} className="border border-gray-200">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{user.name}</h3>
+                        <p className="text-sm text-gray-600 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>{user.email}</p>
+                      </div>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        user.status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {user.status === 'active' ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex gap-2 flex-wrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        user.role === 'superadmin' 
+                          ? 'bg-purple-100 text-purple-800' 
+                          : user.role === 'admin'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {user.role}
+                      </span>
+                      <span className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        Joined: {new Date(user.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <Button
+                      onClick={() => toggleUserStatus(user._id, user.status === 'active')}
+                      variant="outline"
+                      size="sm"
+                      className={`w-full ${user.status === 'active' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}`}
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                    >
+                      {user.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
           
           {filteredUsers.length === 0 && users.length > 0 && (
             <div className="text-center py-12">
@@ -244,8 +296,8 @@ const UserManagement: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <p className="text-gray-500 text-lg font-medium">No users found</p>
-              <p className="text-gray-400 text-sm">Try adjusting your search terms</p>
+              <p className="text-gray-500 text-lg font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>No users found</p>
+              <p className="text-gray-400 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>Try adjusting your search terms</p>
             </div>
           )}
 
@@ -256,8 +308,8 @@ const UserManagement: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-              <p className="text-gray-600">There are no users in the system yet.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>No users found</h3>
+              <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>There are no users in the system yet.</p>
             </div>
           )}
         </CardContent>

@@ -23,7 +23,7 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
       featured,
       farmerId,
       search,
-      limit = '20',
+      limit = '12', // Reduced from 20 for better performance
       page = '1',
       sort = 'createdAt',
       sortBy
@@ -39,7 +39,7 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
       query.$text = { $search: search as string };
     }
 
-    const limitNum = parseInt(limit as string);
+    const limitNum = Math.min(parseInt(limit as string), 50); // Max 50 items per page
     const pageNum = parseInt(page as string);
     const skip = (pageNum - 1) * limitNum;
 
@@ -83,7 +83,9 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
       .sort(sortOption)
       .limit(limitNum)
       .skip(skip)
-      .lean();
+      .select('-__v') // Exclude version field
+      .lean() // Return plain JS objects for better performance
+      .exec();
 
     const total = await Product.countDocuments(query);
 

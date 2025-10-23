@@ -54,32 +54,53 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
                       flexProduct.images?.[0] || 
                       flexProduct.imageUrl;
   
-  // Filter out invalid URLs (blob, data, empty strings)
+  // Filter out invalid URLs (blob, data, empty strings) and ensure it's from Spaces
   const imageUrl = rawImageUrl && 
                    !rawImageUrl.startsWith('blob:') && 
                    !rawImageUrl.startsWith('data:') &&
-                   rawImageUrl.trim() !== ''
+                   rawImageUrl.trim() !== '' &&
+                   rawImageUrl !== '/images/products/default.png' // Don't use local default if Spaces URL exists
     ? rawImageUrl
-    : '/images/products/default.png';
+    : null;
 
-  console.log('ProductCard image URL:', imageUrl, 'for product:', product.name);
+  // Debug logging only in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('ProductCard image URL:', imageUrl, 'for product:', product.name);
+  }
 
   return (
     <div className={`bg-white rounded-3xl border-2 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${className}`} style={{ width: '218px', height: '275px', borderColor: '#40613D' }}>
       {/* Product Image - Takes remaining space after info section (275px - 89px = 186px) */}
       <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6" style={{ height: '186px' }}>
-        <Image
-          src={imageUrl}
-          alt={product.name}
-          fill
-          className="object-contain p-3"
-          sizes="218px"
-          unoptimized={imageUrl.includes('digitaloceanspaces.com')}
-          onError={(e) => {
-            console.error('Image failed to load:', imageUrl);
-            (e.target as HTMLImageElement).src = '/images/products/default.png';
-          }}
-        />
+        {imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt={product.name}
+            fill
+            className="object-contain p-3"
+            sizes="218px"
+            unoptimized={imageUrl.includes('digitaloceanspaces.com')}
+            onError={(e) => {
+              if (process.env.NODE_ENV === 'development') {
+                console.error('Image failed to load from Spaces:', imageUrl);
+              }
+              // Hide broken image - show placeholder SVG instead
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+            priority={false}
+            loading="lazy"
+          />
+        ) : (
+          // SVG placeholder when no image available
+          <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="120" height="120" fill="#F5ECDE" opacity="0.3"/>
+            <path d="M 32 56 L 40 96 L 80 96 L 88 56 Z" fill="#40613D" opacity="0.2"/>
+            <ellipse cx="60" cy="48" rx="18" ry="20" fill="#8FB78E"/>
+            <ellipse cx="58" cy="46" rx="16" ry="18" fill="#A8D5A8"/>
+            <path d="M 60 32 Q 66 34 64 40" fill="#40613D" opacity="0.7"/>
+            <text x="60" y="108" fontFamily="Arial" fontSize="8" fill="#40613D" textAnchor="middle" opacity="0.5">No Image</text>
+          </svg>
+        )}
       </div>
 
       {/* Product Info - Beige/Cream Background - Fixed height 89px */}
