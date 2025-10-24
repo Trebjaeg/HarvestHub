@@ -48,12 +48,12 @@ const menuItems = [
   {
     icon: MessageSquare,
     label: "Messages",
-    href: "/buyer-messages",
+    href: "/messages",
   },
   {
     icon: HelpCircle,
     label: "Help Center",
-    href: "/buyer-help",
+    href: "/help",
   },
 ];
 
