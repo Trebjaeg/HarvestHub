@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import LoadingDots from '@/components/ui/LoadingDots';
 
 interface ProfileData {
   user: {
@@ -85,10 +86,17 @@ export default function ProfileRouter() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#4CAF50] mx-auto"></div>
-          <p className="mt-4 text-gray-600 font-medium">Loading your profile...</p>
+          <div className="flex justify-center mb-4">
+            <LoadingDots size="lg" color="#103C2E" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Loading your profile
+          </h3>
+          <p className="text-gray-500 font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Please wait
+          </p>
         </div>
       </div>
     );

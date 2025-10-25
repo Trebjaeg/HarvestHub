@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import LoadingDots from '@/components/ui/LoadingDots';
 import { 
   Mail, 
   Search, 
@@ -586,9 +587,9 @@ export default function MessagesPage() {
 
         {/* Content */}
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-            <span className="ml-3 text-gray-600">Loading messages...</span>
+          <div className="flex flex-col items-center justify-center py-12">
+            <LoadingDots size="lg" color="#103C2E" />
+            <span className="mt-4 text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Loading messages...</span>
           </div>
         ) : error ? (
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">

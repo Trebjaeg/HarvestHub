@@ -43,10 +43,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
-    // Verify buyer exists and has buyer role
+    // Verify buyer exists and can access buyer features
     const buyer = await User.findById(decoded.userId);
-    if (!buyer || buyer.role !== 'buyer') {
-      return res.status(403).json({ error: 'Access denied. Buyer role required.' });
+    if (!buyer) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Block admin/superadmin from buyer endpoints
+    if (buyer.role === 'admin' || buyer.role === 'superadmin') {
+      return res.status(403).json({ error: 'Access denied. Admins should use admin endpoints.' });
     }
 
     // Parse form data

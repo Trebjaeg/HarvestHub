@@ -9,6 +9,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import EditBuyerProfileModal from '@/components/ui/EditBuyerProfileModal';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import LoadingDots from '@/components/ui/LoadingDots';
 
 // Helper function to safely format dates on client-side only
 const formatDate = (dateString: string | null | undefined): string => {
@@ -46,12 +47,14 @@ function BuyerProfile() {
   const [profile, setProfile] = useState<BuyerProfileData | null>(null);
   const [stats, setStats] = useState<BuyerStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [loadingStats, setLoadingStats] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    setMounted(true);
     fetchProfile();
     fetchStats();
   }, []);
@@ -197,6 +200,25 @@ function BuyerProfile() {
 
   const fullName = profile ? `${profile.firstName} ${profile.lastName}` : '';
 
+  // Prevent hydration mismatch - only show loading on client
+  if (!mounted || loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <LoadingDots size="lg" color="#103C2E" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Loading your profile
+          </h3>
+          <p className="text-gray-500 font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Please wait
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
       {/* Header */}
@@ -249,7 +271,20 @@ function BuyerProfile() {
                 className="absolute bottom-0 right-0 w-8 h-8 bg-[#103C2E] hover:bg-[#0d2e23] rounded-full flex items-center justify-center text-white shadow-lg disabled:opacity-50"
               >
                 {uploadingImage ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <svg viewBox="0 0 60 15" className="w-6 h-3" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx={7.5} cy={7.5} r={3} fill="white">
+                      <animate attributeName="cy" dur="0.8s" begin="0s" repeatCount="indefinite" values="7.5;3.75;7.5" keyTimes="0;0.5;1" />
+                      <animate attributeName="opacity" dur="0.8s" begin="0s" repeatCount="indefinite" values="0.4;1;0.4" keyTimes="0;0.5;1" />
+                    </circle>
+                    <circle cx={22.5} cy={7.5} r={3} fill="white">
+                      <animate attributeName="cy" dur="0.8s" begin="0.15s" repeatCount="indefinite" values="7.5;3.75;7.5" keyTimes="0;0.5;1" />
+                      <animate attributeName="opacity" dur="0.8s" begin="0.15s" repeatCount="indefinite" values="0.4;1;0.4" keyTimes="0;0.5;1" />
+                    </circle>
+                    <circle cx={37.5} cy={7.5} r={3} fill="white">
+                      <animate attributeName="cy" dur="0.8s" begin="0.3s" repeatCount="indefinite" values="7.5;3.75;7.5" keyTimes="0;0.5;1" />
+                      <animate attributeName="opacity" dur="0.8s" begin="0.3s" repeatCount="indefinite" values="0.4;1;0.4" keyTimes="0;0.5;1" />
+                    </circle>
+                  </svg>
                 ) : (
                   <Camera className="w-4 h-4" />
                 )}

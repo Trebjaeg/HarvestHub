@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import LoadingDots from '@/components/ui/LoadingDots';
 import { 
   Heart, 
   Search, 
@@ -88,6 +89,7 @@ export default function FavoritesPage() {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -105,6 +107,11 @@ export default function FavoritesPage() {
 
   // Debounce search
   const [searchDebounce, setSearchDebounce] = useState<NodeJS.Timeout | null>(null);
+
+  // Ensure client-side only rendering
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const fetchFavorites = useCallback(async (showLoader = true) => {
     try {
@@ -270,14 +277,20 @@ export default function FavoritesPage() {
     });
   };
 
-  if (loading) {
+  // Prevent hydration mismatch - only show loading on client
+  if (!mounted || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Loading your favorites...</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <LoadingDots size="lg" color="#103C2E" />
           </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Loading your favorites
+          </h3>
+          <p className="text-gray-500 font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Please wait
+          </p>
         </div>
       </div>
     );
