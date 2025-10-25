@@ -13,6 +13,18 @@ interface DecodedToken {
   exp: number;
 }
 
+interface AuthResult {
+  success: boolean;
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+    iat: number;
+    exp: number;
+  };
+  error?: string;
+}
+
 export async function withAuth(req: NextRequest, requiredRole?: string) {
   try {
     const authHeader = req.headers.get('authorization');
@@ -139,5 +151,35 @@ export async function logAdminAction(
     });
   } catch (error) {
     console.error('Failed to log admin action:', error);
+  }
+}
+
+export async function verifyToken(request: NextRequest): Promise<AuthResult> {
+  try {
+    const token = request.cookies.get('auth-token')?.value;
+    
+    if (!token) {
+      return { success: false, error: 'No token provided' };
+    }
+
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return { success: false, error: 'JWT secret not configured' };
+    }
+
+    const decoded = jwt.verify(token, secret) as DecodedToken;
+    
+    return { 
+      success: true, 
+      user: {
+        id: decoded.userId,
+        email: decoded.email,
+        role: decoded.role,
+        iat: decoded.iat,
+        exp: decoded.exp
+      }
+    };
+  } catch (error) {
+    return { success: false, error: 'Invalid token' };
   }
 }
