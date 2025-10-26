@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'next/navigation';
 import I18nProvider from '../../components/I18nProvider';
 import ProductCard from '../../components/ProductCard';
 import TopProducts from '../../components/TopProducts';
@@ -16,10 +17,68 @@ import { IProduct } from '../../types/product';
 
 const HomePageContent = () => {
   const { t } = useTranslation();
-  const { isAuthenticated, cartCount, notificationCount } = useAuthUserData();
+  const router = useRouter();
+  const { isAuthenticated, cartCount: initialCartCount, notificationCount } = useAuthUserData();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [cartShake, setCartShake] = useState(false);
+  const [cartCount, setCartCount] = useState(initialCartCount);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState<Array<{type: 'product' | 'seller', name: string, id?: string}>>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Fetch cart count on initial load
+  useEffect(() => {
+    const fetchCartCount = async () => {
+      try {
+        const response = await fetch('/api/cart', { credentials: 'include' });
+        const data = await response.json();
+        if (data.success) {
+          setCartCount(data.count || 0);
+        }
+      } catch (error) {
+        console.error('Failed to fetch cart count:', error);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchCartCount();
+    }
+  }, [isAuthenticated]);
+  
+  // Update cart count when initial value changes
+  useEffect(() => {
+    setCartCount(initialCartCount);
+  }, [initialCartCount]);
+  
+  // Listen for cart update events
+  useEffect(() => {
+    const handleCartUpdate = (event: any) => {
+      setCartShake(true);
+      setTimeout(() => setCartShake(false), 600);
+      
+      // Update cart count if provided in event
+      if (event.detail?.count !== undefined) {
+        setCartCount(event.detail.count);
+      } else {
+        // Fetch updated cart count if not provided
+        fetch('/api/cart', { credentials: 'include' })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              setCartCount(data.count || 0);
+            }
+          })
+          .catch(err => console.error('Failed to fetch cart count:', err));
+      }
+    };
+    
+    window.addEventListener('cart-updated', handleCartUpdate);
+    return () => window.removeEventListener('cart-updated', handleCartUpdate);
+  }, []);
   
   // Use real API data via useProducts hook
   const { 
@@ -40,10 +99,27 @@ const HomePageContent = () => {
   // Use products directly from API - all mock data removed
   const filteredProducts = products;
 
-  // Handle category filter change
+  // Handle category filter change  
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
-    setFilters({ category: category === 'all' ? undefined : category });
+    // Map display categories to API categories
+    let apiCategory: string | undefined;
+    if (category === 'all') {
+      apiCategory = undefined;
+    } else if (category === 'vegetables') {
+      // API will handle showing all vegetable categories
+      apiCategory = 'vegetables';
+    } else if (category === 'fruits') {
+      apiCategory = 'Fruits';
+    } else if (category === 'spices') {
+      apiCategory = 'Spices & Aromatics';
+    } else if (category === 'grains') {
+      apiCategory = 'Grains & Rice';
+    } else {
+      apiCategory = category;
+    }
+    
+    setFilters({ category: apiCategory });
     setCurrentPage(1);
     setApiCurrentPage(1);
   };
@@ -113,6 +189,46 @@ const HomePageContent = () => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [heroSlides.length]);
+
+  // Search handlers
+  const handleSearchInputChange = (value: string) => {
+    setSearchInput(value);
+    if (value.trim().length > 1) {
+      fetchSearchSuggestions(value);
+    } else {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const fetchSearchSuggestions = async (query: string) => {
+    try {
+      const response = await fetch(`/api/products/suggestions?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+      if (data.success && data.suggestions) {
+        setSearchSuggestions(data.suggestions);
+        setShowSuggestions(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch suggestions:', error);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: {type: 'product' | 'seller', name: string, id?: string}) => {
+    setSearchInput(suggestion.name);
+    setShowSuggestions(false);
+    // Navigate to shop with search query
+    router.push(`/shop?search=${encodeURIComponent(suggestion.name)}`);
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchInput.trim()) {
+      setShowSuggestions(false);
+      router.push(`/shop?search=${encodeURIComponent(searchInput.trim())}`);
+    }
+  };
+
   const categories = [
     { 
       id: 1, 
@@ -196,16 +312,16 @@ const HomePageContent = () => {
                 </svg>
               </Link>
               
-              <button className="relative">
+              <Link href="/cart" data-cart-icon className={`relative transition-transform ${cartShake ? 'animate-shake' : ''}`}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                 </svg>
                 {isAuthenticated && cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
                 )}
-              </button>
+              </Link>
               
               <button className="relative">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -234,41 +350,49 @@ const HomePageContent = () => {
             </div>
             
             <div className="flex-1 max-w-2xl mx-6">
-              <div className="relative">
+              <form onSubmit={handleSearch} className="relative">
                 <svg className="absolute left-5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
+                  ref={searchInputRef}
                   type="text"
                   placeholder={t('home.searchPlaceholder')}
+                  value={searchInput}
+                  onChange={(e) => handleSearchInputChange(e.target.value)}
+                  onFocus={() => searchInput.length > 1 && searchSuggestions.length > 0 && setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                   className="w-full pl-14 pr-6 py-3 rounded-2xl text-gray-800 bg-white border-0 focus:outline-none focus:ring-2 focus:ring-green-400/50 placeholder-gray-500 shadow-sm"
                   style={{ fontFamily: 'Poppins, sans-serif' }}
                 />
-              </div>
+              </form>
             </div>
             
             <div className="flex items-center space-x-3">
-              <Link href="/my-profile" className="flex items-center space-x-1 hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105" title="Profile">
+              <Link href="/my-profile" className="flex items-center space-x-2 hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105" title="Profile">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-white">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                 </svg>
+                <span className="text-white text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Profile</span>
               </Link>
               
-              <button className="relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105">
+              <Link href="/cart" data-cart-icon className={`relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center space-x-2 ${cartShake ? 'animate-shake' : ''}`}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                 </svg>
+                <span className="text-white text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Cart</span>
                 {isAuthenticated && cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
                 )}
-              </button>
+              </Link>
               
-              <button className="relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105">
+              <button className="relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center space-x-2">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                 </svg>
+                <span className="text-white text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Notifications</span>
                 {isAuthenticated && notificationCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {notificationCount > 99 ? '99+' : notificationCount}
@@ -284,19 +408,98 @@ const HomePageContent = () => {
 
           {/* Mobile Search Bar */}
           <div className="md:hidden mt-3">
-            <div className="relative">
+            <form onSubmit={handleSearch} className="relative">
               <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
+                ref={mobileSearchInputRef}
                 type="text"
                 placeholder={t('home.searchPlaceholder')}
+                value={searchInput}
+                onChange={(e) => handleSearchInputChange(e.target.value)}
+                onFocus={() => searchInput.length > 1 && searchSuggestions.length > 0 && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-full text-gray-800 bg-white border-0 focus:outline-none focus:ring-2 focus:ring-white/30 placeholder-gray-400"
               />
-            </div>
+            </form>
           </div>
         </div>
       </header>
+
+      {/* Desktop Search Suggestions Dropdown - Fixed positioning */}
+      {showSuggestions && searchSuggestions.length > 0 && searchInput.trim().length > 1 && searchInputRef.current && (
+        <div 
+          className="hidden md:block fixed bg-white rounded-xl shadow-2xl border border-gray-200 max-h-80 overflow-y-auto z-[9999]"
+          style={{
+            top: `${searchInputRef.current.getBoundingClientRect().bottom + 8}px`,
+            left: `${searchInputRef.current.getBoundingClientRect().left}px`,
+            width: `${searchInputRef.current.getBoundingClientRect().width}px`
+          }}
+        >
+          {searchSuggestions.map((suggestion, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => handleSuggestionClick(suggestion)}
+              className="w-full px-5 py-3 text-left hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-0 transition-colors"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+            >
+              {suggestion.type === 'product' ? (
+                <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              )}
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-900">{suggestion.name}</div>
+                <div className="text-xs text-gray-500">
+                  {suggestion.type === 'product' ? 'Product' : 'Seller'}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Mobile Search Suggestions Dropdown - Fixed positioning */}
+      {showSuggestions && searchSuggestions.length > 0 && searchInput.trim().length > 1 && mobileSearchInputRef.current && (
+        <div 
+          className="md:hidden fixed bg-white rounded-lg shadow-2xl border border-gray-200 max-h-60 overflow-y-auto z-[9999]"
+          style={{
+            top: `${mobileSearchInputRef.current.getBoundingClientRect().bottom + 8}px`,
+            left: `${mobileSearchInputRef.current.getBoundingClientRect().left}px`,
+            width: `${mobileSearchInputRef.current.getBoundingClientRect().width}px`
+          }}
+        >
+          {searchSuggestions.map((suggestion, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => handleSuggestionClick(suggestion)}
+              className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100 last:border-0"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+            >
+              {suggestion.type === 'product' ? (
+                <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              )}
+              <div className="flex-1">
+                <div className="text-sm font-medium text-gray-900">{suggestion.name}</div>
+                <div className="text-xs text-gray-500">{suggestion.type === 'product' ? 'Product' : 'Seller'}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Navigation Bar */}
       <nav className="bg-gray-100 py-3 border-b border-gray-200 sticky top-0 z-50">
@@ -816,6 +1019,18 @@ const HomePageContent = () => {
           </div>
         </div>
       </section>
+      
+      {/* Cart Shake Animation */}
+      <style jsx global>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+          20%, 40%, 60%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+          animation: shake 0.6s ease-in-out !important;
+        }
+      `}</style>
     </div>
   );
 };

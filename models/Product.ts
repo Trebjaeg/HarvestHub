@@ -14,6 +14,7 @@ export interface IProduct {
   farmerName: string;
   location?: string;
   stock: number;
+  sku?: string; // Stock Keeping Unit - unique identifier
   status?: string; // 'Available', 'Out of Stock', 'Coming Soon'
   isOrganic: boolean;
   harvestDate?: Date;
@@ -80,6 +81,14 @@ const ProductSchema = new mongoose.Schema<IProduct>({
     required: [true, 'Stock quantity is required'],
     min: [0, 'Stock cannot be negative']
   },
+  sku: {
+    type: String,
+    unique: true,
+    sparse: true, // Allow multiple null values for backward compatibility
+    trim: true,
+    uppercase: true,
+    maxlength: [50, 'SKU cannot exceed 50 characters']
+  },
   status: {
     type: String,
     default: 'Available'
@@ -131,5 +140,6 @@ ProductSchema.index({ name: 'text', description: 'text' }); // Text search
 ProductSchema.index({ createdAt: -1 }); // Sort by newest
 ProductSchema.index({ price: 1 }); // Sort by price
 ProductSchema.index({ stock: 1, lowStockAlert: 1 }); // Low stock alerts
+ProductSchema.index({ sku: 1 }); // SKU lookup
 
 export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);

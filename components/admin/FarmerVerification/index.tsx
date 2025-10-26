@@ -95,6 +95,11 @@ const FarmerVerification: React.FC = () => {
     fetchFarmers();
   }, []);
 
+  // Auto-refresh when filter changes
+  useEffect(() => {
+    fetchFarmers();
+  }, [filterStatus]);
+
   const handleReview = async (applicationId: string, action: 'approve' | 'reject') => {
     try {
       const response = await fetch(`/api/admin/verification/review`, {
@@ -238,10 +243,6 @@ const FarmerVerification: React.FC = () => {
               <SelectItem value="rejected">Rejected</SelectItem>
             </SelectContent>
           </Select>
-          
-          <Button onClick={fetchFarmers} variant="outline" className="w-full sm:w-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            Refresh
-          </Button>
         </div>
       </div>
 
@@ -500,12 +501,12 @@ const FarmerVerification: React.FC = () => {
                               <div className="border-t pt-6">
                                 <h3 className="text-lg font-semibold mb-3">Review Information</h3>
                                 <div className="space-y-2">
-                                  <p><span className="font-semibold">Status:</span> {getStatusBadge(selectedFarmer.status)}</p>
+                                  <div><span className="font-semibold">Status:</span> {getStatusBadge(selectedFarmer.status)}</div>
                                   {selectedFarmer.reviewedAt && (
-                                    <p><span className="font-semibold">Reviewed On:</span> {new Date(selectedFarmer.reviewedAt).toLocaleString()}</p>
+                                    <div><span className="font-semibold">Reviewed On:</span> {new Date(selectedFarmer.reviewedAt).toLocaleString()}</div>
                                   )}
                                   {selectedFarmer.reviewedBy && (
-                                    <p><span className="font-semibold">Reviewed By:</span> {selectedFarmer.reviewedBy.name} ({selectedFarmer.reviewedBy.email})</p>
+                                    <div><span className="font-semibold">Reviewed By:</span> {selectedFarmer.reviewedBy.name} ({selectedFarmer.reviewedBy.email})</div>
                                   )}
                                 </div>
                               </div>

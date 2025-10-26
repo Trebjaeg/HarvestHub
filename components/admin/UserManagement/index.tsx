@@ -3,7 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import LoadingDots from '@/components/ui/LoadingDots';
+import { Ban, Unlock, Trash2, AlertCircle } from 'lucide-react';
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
 
 interface User {
   _id: string;
@@ -13,6 +19,9 @@ interface User {
   status: string;
   createdAt: string;
   lastLogin?: string;
+  suspendReason?: string;
+  suspendedAt?: string;
+  suspensionExpiresAt?: string;
 }
 
 const UserManagement: React.FC = () => {
@@ -21,13 +30,26 @@ const UserManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Suspend Modal State
+  const [suspendModalOpen, setSuspendModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [suspendReason, setSuspendReason] = useState('');
+  const [suspensionExpiry, setSuspensionExpiry] = useState('');
+  const [isSuspending, setIsSuspending] = useState(false);
+  
+  // Deactivate/Reactivate Confirmation Modal State
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [showReactivateModal, setShowReactivateModal] = useState(false);
+  const [userToDeactivate, setUserToDeactivate] = useState<{ id: string; name: string } | null>(null);
+  const [userToReactivate, setUserToReactivate] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
   useEffect(() => {
-    // Filter users based on search term
+    // Filter users based on search term and auto-refresh
     if (searchTerm.trim() === '') {
       setFilteredUsers(users);
     } else {
@@ -62,22 +84,23 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const toggleUserStatus = async (userId: string, isActive: boolean) => {
-    // Optimistic update - update UI immediately
-    const newStatus = isActive ? 'suspended' : 'active';
-    setUsers(prevUsers => 
-      prevUsers.map(user => 
-        user._id === userId ? { ...user, status: newStatus } : user
-      )
-    );
-    setFilteredUsers(prevUsers => 
-      prevUsers.map(user => 
-        user._id === userId ? { ...user, status: newStatus } : user
-      )
-    );
+  // Open suspend modal
+  const openSuspendModal = (user: User) => {
+    setSelectedUser(user);
+    setSuspendReason('');
+    setSuspensionExpiry('');
+    setSuspendModalOpen(true);
+  };
 
+  // Handle suspend user
+  const handleSuspendUser = async () => {
+    if (!selectedUser || !suspendReason.trim()) {
+      alert('Please provide a reason for suspension');
+      return;
+    }
+
+    setIsSuspending(true);
     try {
-      const action = isActive ? 'suspend' : 'activate';
       const response = await fetch('/api/admin/users', {
         method: 'POST',
         headers: {
@@ -85,31 +108,133 @@ const UserManagement: React.FC = () => {
         },
         credentials: 'include',
         body: JSON.stringify({ 
-          action: action,
-          userId: userId,
-          reason: `User ${action}d by admin`
+          action: 'suspend',
+          userId: selectedUser._id,
+          reason: suspendReason,
+          expiresAt: suspensionExpiry || null
         })
       });
 
       if (!response.ok) {
-        // Revert optimistic update on error
-        const originalStatus = isActive ? 'active' : 'suspended';
-        setUsers(prevUsers => 
-          prevUsers.map(user => 
-            user._id === userId ? { ...user, status: originalStatus } : user
-          )
-        );
-        setFilteredUsers(prevUsers => 
-          prevUsers.map(user => 
-            user._id === userId ? { ...user, status: originalStatus } : user
-          )
-        );
-        throw new Error('Failed to update user status');
+        throw new Error('Failed to suspend user');
       }
 
-      // Success - the optimistic update was correct, no need to change anything
+      // Refresh users list
+      await fetchUsers();
+      setSuspendModalOpen(false);
+      setSelectedUser(null);
+      setSuspendReason('');
+      setSuspensionExpiry('');
     } catch (error) {
-      console.error('Error updating user status:', error);
+      console.error('Error suspending user:', error);
+      alert('Failed to suspend user. Please try again.');
+    } finally {
+      setIsSuspending(false);
+    }
+  };
+
+  // Unsuspend user (reactivate)
+  const handleUnsuspendUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to unsuspend this user? They will regain full access.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          action: 'activate',
+          userId: userId,
+          reason: 'User unsuspended by admin'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to unsuspend user');
+      }
+
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error unsuspending user:', error);
+      alert('Failed to unsuspend user. Please try again.');
+    }
+  };
+
+  // Deactivate user (permanent - sets to deleted)
+  const handleDeactivateClick = (userId: string, userName: string) => {
+    setUserToDeactivate({ id: userId, name: userName });
+    setShowDeactivateModal(true);
+  };
+
+  const handleDeactivateUser = async () => {
+    if (!userToDeactivate) return;
+    
+    setShowDeactivateModal(false);
+
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          action: 'delete',
+          userId: userToDeactivate.id,
+          reason: 'Account deactivated by admin'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to deactivate user');
+      }
+
+      await fetchUsers();
+      setUserToDeactivate(null);
+    } catch (error) {
+      console.error('Error deactivating user:', error);
+      alert('Failed to deactivate user. Please try again.');
+    }
+  };
+
+  // Reactivate deactivated user
+  const handleReactivateClick = (userId: string) => {
+    setUserToReactivate(userId);
+    setShowReactivateModal(true);
+  };
+
+  const handleReactivateUser = async () => {
+    if (!userToReactivate) return;
+    
+    setShowReactivateModal(false);
+
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          action: 'activate',
+          userId: userToReactivate,
+          reason: 'Account reactivated by admin'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reactivate user');
+      }
+
+      await fetchUsers();
+      setUserToReactivate(null);
+    } catch (error) {
+      console.error('Error reactivating user:', error);
+      alert('Failed to reactivate user. Please try again.');
     }
   };
 
@@ -158,12 +283,6 @@ const UserManagement: React.FC = () => {
               style={{ fontFamily: 'Poppins, sans-serif' }}
             />
           </div>
-          <Button onClick={fetchUsers} variant="outline" className="w-full sm:w-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Refresh
-          </Button>
         </div>
       </div>
 
@@ -214,24 +333,83 @@ const UserManagement: React.FC = () => {
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         user.status === 'active' 
                           ? 'bg-green-100 text-green-800' 
+                          : user.status === 'suspended'
+                          ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-red-100 text-red-800'
                       }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        {user.status === 'active' ? 'Active' : 'Inactive'}
+                        {user.status === 'active' ? 'Active' : 
+                         user.status === 'suspended' ? 'Suspended' : 
+                         'Deactivated'}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
                     <td className="py-3 px-4">
-                      <Button
-                        onClick={() => toggleUserStatus(user._id, user.status === 'active')}
-                        variant="outline"
-                        size="sm"
-                        className={user.status === 'active' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}
-                        style={{ fontFamily: 'Poppins, sans-serif' }}
-                      >
-                        {user.status === 'active' ? 'Deactivate' : 'Activate'}
-                      </Button>
+                      <div className="flex gap-2">
+                        {user.status === 'active' && (
+                          <>
+                            <Button
+                              onClick={() => openSuspendModal(user)}
+                              variant="outline"
+                              size="sm"
+                              className="border-yellow-200 text-yellow-700 hover:bg-yellow-50"
+                              style={{ fontFamily: 'Poppins, sans-serif' }}
+                              title="Suspend (temporary, can still login)"
+                            >
+                              <Ban className="h-3 w-3 mr-1" />
+                              Suspend
+                            </Button>
+                            <Button
+                              onClick={() => handleDeactivateClick(user._id, user.name)}
+                              variant="outline"
+                              size="sm"
+                              className="border-red-200 text-red-600 hover:bg-red-50"
+                              style={{ fontFamily: 'Poppins, sans-serif' }}
+                              title="Deactivate (permanent, blocks login)"
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Deactivate
+                            </Button>
+                          </>
+                        )}
+                        {user.status === 'suspended' && (
+                          <>
+                            <Button
+                              onClick={() => handleUnsuspendUser(user._id)}
+                              variant="outline"
+                              size="sm"
+                              className="border-green-200 text-green-600 hover:bg-green-50"
+                              style={{ fontFamily: 'Poppins, sans-serif' }}
+                            >
+                              <Unlock className="h-3 w-3 mr-1" />
+                              Unsuspend
+                            </Button>
+                            <Button
+                              onClick={() => handleDeactivateClick(user._id, user.name)}
+                              variant="outline"
+                              size="sm"
+                              className="border-red-200 text-red-600 hover:bg-red-50"
+                              style={{ fontFamily: 'Poppins, sans-serif' }}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Deactivate
+                            </Button>
+                          </>
+                        )}
+                        {user.status === 'deleted' && (
+                          <Button
+                            onClick={() => handleReactivateClick(user._id)}
+                            variant="outline"
+                            size="sm"
+                            className="border-green-200 text-green-600 hover:bg-green-50"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                          >
+                            <Unlock className="h-3 w-3 mr-1" />
+                            Reactivate
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -253,9 +431,13 @@ const UserManagement: React.FC = () => {
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         user.status === 'active' 
                           ? 'bg-green-100 text-green-800' 
+                          : user.status === 'suspended'
+                          ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-red-100 text-red-800'
                       }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        {user.status === 'active' ? 'Active' : 'Inactive'}
+                        {user.status === 'active' ? 'Active' : 
+                         user.status === 'suspended' ? 'Suspended' : 
+                         'Deactivated'}
                       </span>
                     </div>
                     
@@ -274,15 +456,74 @@ const UserManagement: React.FC = () => {
                       </span>
                     </div>
 
-                    <Button
-                      onClick={() => toggleUserStatus(user._id, user.status === 'active')}
-                      variant="outline"
-                      size="sm"
-                      className={`w-full ${user.status === 'active' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}`}
-                      style={{ fontFamily: 'Poppins, sans-serif' }}
-                    >
-                      {user.status === 'active' ? 'Deactivate' : 'Activate'}
-                    </Button>
+                    {user.status === 'suspended' && user.suspendReason && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs">
+                        <p className="text-yellow-800"><strong>Reason:</strong> {user.suspendReason}</p>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-2">
+                      {user.status === 'active' && (
+                        <>
+                          <Button
+                            onClick={() => openSuspendModal(user)}
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-yellow-200 text-yellow-700 hover:bg-yellow-50"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                          >
+                            <Ban className="h-3 w-3 mr-1" />
+                            Suspend
+                          </Button>
+                          <Button
+                            onClick={() => handleDeactivateClick(user._id, user.name)}
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            Deactivate
+                          </Button>
+                        </>
+                      )}
+                      {user.status === 'suspended' && (
+                        <>
+                          <Button
+                            onClick={() => handleUnsuspendUser(user._id)}
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-green-200 text-green-600 hover:bg-green-50"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                          >
+                            <Unlock className="h-3 w-3 mr-1" />
+                            Unsuspend
+                          </Button>
+                          <Button
+                            onClick={() => handleDeactivateClick(user._id, user.name)}
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            Deactivate
+                          </Button>
+                        </>
+                      )}
+                      {user.status === 'deleted' && (
+                        <Button
+                          onClick={() => handleReactivateClick(user._id)}
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-green-200 text-green-600 hover:bg-green-50"
+                          style={{ fontFamily: 'Poppins, sans-serif' }}
+                        >
+                          <Unlock className="h-3 w-3 mr-1" />
+                          Reactivate
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -314,6 +555,130 @@ const UserManagement: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Suspend User Modal */}
+      <Dialog open={suspendModalOpen} onOpenChange={setSuspendModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <Ban className="h-5 w-5 text-yellow-600" />
+              Suspend User Account
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedUser && (
+            <div className="space-y-4 py-4">
+              {/* User Info */}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm font-medium text-gray-700">Suspending:</p>
+                <p className="text-sm text-gray-900 font-semibold">{selectedUser.name}</p>
+                <p className="text-xs text-gray-600">{selectedUser.email}</p>
+              </div>
+
+              {/* Warning */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex gap-2">
+                <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-yellow-800">
+                  <p className="font-medium mb-1">About Suspension:</p>
+                  <ul className="list-disc list-inside space-y-1 text-xs">
+                    <li>User CAN still login to view their account</li>
+                    <li>User CANNOT buy or sell products</li>
+                    <li>User can submit an appeal</li>
+                    <li>This is temporary - different from Deactivate</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Reason Field */}
+              <div>
+                <Label htmlFor="suspend-reason" className="text-gray-700 font-medium">
+                  Reason for Suspension <span className="text-red-500">*</span>
+                </Label>
+                <Textarea
+                  id="suspend-reason"
+                  value={suspendReason}
+                  onChange={(e) => setSuspendReason(e.target.value)}
+                  placeholder="e.g., Violation of terms of service, inappropriate behavior, fraudulent activity..."
+                  className="mt-2"
+                  rows={4}
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This reason will be shown to the user
+                </p>
+              </div>
+
+              {/* Expiry Date (Optional) */}
+              <div>
+                <Label htmlFor="suspension-expiry" className="text-gray-700 font-medium">
+                  Suspension Expiry (Optional)
+                </Label>
+                <Input
+                  id="suspension-expiry"
+                  type="date"
+                  value={suspensionExpiry}
+                  onChange={(e) => setSuspensionExpiry(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="mt-2"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Leave empty for indefinite suspension (requires manual unsuspend)
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={handleSuspendUser}
+                  disabled={!suspendReason.trim() || isSuspending}
+                  className="flex-1 bg-yellow-600 hover:bg-yellow-700"
+                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                >
+                  {isSuspending ? 'Suspending...' : 'Suspend User'}
+                </Button>
+                <Button
+                  onClick={() => setSuspendModalOpen(false)}
+                  variant="outline"
+                  disabled={isSuspending}
+                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Deactivate Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeactivateModal}
+        onClose={() => {
+          setShowDeactivateModal(false);
+          setUserToDeactivate(null);
+        }}
+        onConfirm={handleDeactivateUser}
+        title="Confirm Deactivation"
+        description={`Are you sure you want to DEACTIVATE ${userToDeactivate?.name}? This will permanently block their login access. This action is different from suspension.`}
+        confirmText="Deactivate"
+        cancelText="Cancel"
+        confirmVariant="destructive"
+      />
+
+      {/* Reactivate Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showReactivateModal}
+        onClose={() => {
+          setShowReactivateModal(false);
+          setUserToReactivate(null);
+        }}
+        onConfirm={handleReactivateUser}
+        title="Confirm Reactivation"
+        description="Are you sure you want to reactivate this deactivated account? The user will be able to login again."
+        confirmText="Reactivate"
+        cancelText="Cancel"
+        confirmVariant="default"
+      />
     </div>
   );
 };

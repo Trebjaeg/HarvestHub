@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
+import ConfirmationModal from "@/components/ui/ConfirmationModal";
 
 interface ProfileData {
   _id: string;
@@ -62,6 +63,7 @@ export default function BuyerSidebar() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -91,7 +93,12 @@ export default function BuyerSidebar() {
     }
   };
 
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
   const handleLogout = async () => {
+    setShowLogoutModal(false);
     console.log('🚪 [BUYER] Starting logout process...');
     try {
       const response = await fetch('/api/auth/logout', {
@@ -281,7 +288,7 @@ export default function BuyerSidebar() {
       {/* Logout Button - fixed at bottom, always visible */}
       <div className="p-4 border-t bg-white flex-shrink-0">
         <button
-          onClick={handleLogout}
+          onClick={handleLogoutClick}
           className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors font-medium"
           style={{ fontFamily: 'Poppins, sans-serif' }}
         >
@@ -295,6 +302,18 @@ export default function BuyerSidebar() {
         </button>
       </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+        title="Confirm Logout"
+        description="Are you sure you want to logout? You will need to sign in again to access your account."
+        confirmText="Logout"
+        cancelText="Cancel"
+        confirmVariant="destructive"
+      />
     </>
   );
 }

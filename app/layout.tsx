@@ -8,6 +8,8 @@ const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
+  fallback: ["system-ui", "arial"],
+  adjustFontFallback: false,
 });
 
 const poppins = Poppins({
@@ -15,6 +17,8 @@ const poppins = Poppins({
   weight: ["400", "500", "600", "700", "800", "900"],
   variable: "--font-poppins",
   display: "swap",
+  fallback: ["system-ui", "arial"],
+  adjustFontFallback: false,
 });
 
 const pacifico = Pacifico({
@@ -22,6 +26,8 @@ const pacifico = Pacifico({
   weight: ["400"],
   variable: "--font-pacifico",
   display: "swap",
+  fallback: ["cursive", "system-ui"],
+  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {
@@ -38,6 +44,9 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
       </head>
       <body className={`${inter.variable} ${poppins.variable} ${pacifico.variable} antialiased isolate`}>
         <I18nProvider>

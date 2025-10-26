@@ -40,6 +40,7 @@ const UserSchema = new Schema({
   suspendedAt: { type: Date, default: null },
   suspendedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   suspendReason: { type: String, default: null },
+  suspensionExpiresAt: { type: Date, default: null },
   tokenVersion: { type: Number, default: 0 },
   
   sellerStatus: {

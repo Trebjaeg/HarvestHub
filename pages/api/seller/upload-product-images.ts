@@ -30,7 +30,7 @@ export default async function handler(req: any, res: any) {
 
     const form = new IncomingForm({
       keepExtensions: true,
-      maxFileSize: 5 * 1024 * 1024, // 5MB
+      maxFileSize: 35 * 1024 * 1024, // 35MB (will be compressed and uploaded to Spaces in KB)
       maxFiles: 5,
     });
 

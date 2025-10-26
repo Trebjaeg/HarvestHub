@@ -19,6 +19,7 @@ interface AuthResult {
     id: string;
     email: string;
     role: string;
+    status?: 'active' | 'suspended' | 'deleted';
     iat: number;
     exp: number;
   };
@@ -47,31 +48,14 @@ export async function withAuth(req: NextRequest, requiredRole?: string) {
     }
 
     // Check if user account is suspended or deleted
-    if (user.status === 'suspended') {
-      await AuditLog.create({
-        performedBy: user._id,
-        action: 'admin_action_failed',
-        targetUser: user._id,
-        reason: 'Access attempt by suspended user',
-        details: {
-          requestPath: req.nextUrl.pathname,
-          userAgent: req.headers.get('user-agent'),
-          ip: getClientIP(req)
-        },
-        ipAddress: getClientIP(req),
-        userAgent: req.headers.get('user-agent'),
-        severity: 'medium'
-      });
-      
-      return { 
-        error: 'Account suspended. Please contact support or submit an appeal.', 
-        status: 403 
-      };
-    }
-
+    // SUSPENDED users can login/view but cannot perform transactional actions
+    // DELETED users are completely blocked
     if (user.status === 'deleted') {
       return { error: 'Account not found', status: 404 };
     }
+
+    // Note: Suspended status is NOT blocked here - it's passed through
+    // Individual API endpoints must check suspension for transactional actions
 
     // Check token version (for session invalidation)
     if (user.tokenVersion !== decoded.tokenVersion) {
@@ -169,12 +153,21 @@ export async function verifyToken(request: NextRequest): Promise<AuthResult> {
 
     const decoded = jwt.verify(token, secret) as DecodedToken;
     
+    // Fetch user from database to get current status
+    await dbConnect();
+    const user = await User.findById(decoded.userId).select('status email role');
+    
+    if (!user || user.status === 'deleted') {
+      return { success: false, error: 'User not found' };
+    }
+    
     return { 
       success: true, 
       user: {
         id: decoded.userId,
-        email: decoded.email,
-        role: decoded.role,
+        email: user.email || decoded.email,
+        role: user.role || decoded.role,
+        status: user.status || 'active',
         iat: decoded.iat,
         exp: decoded.exp
       }

@@ -35,7 +35,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     // Parse form data
     const form = formidable({
-      maxFileSize: 5 * 1024 * 1024, // 5MB
+      maxFileSize: 35 * 1024 * 1024, // 35MB (will be compressed and uploaded to Spaces in KB)
       keepExtensions: true,
     });
 

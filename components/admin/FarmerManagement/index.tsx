@@ -7,8 +7,9 @@ import LoadingDots from '@/components/ui/LoadingDots';
 
 interface Farmer {
   _id: string;
-  firstName: string;
-  lastName: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   role: string;
   isActive: boolean;
@@ -33,6 +34,11 @@ const FarmerManagement: React.FC = () => {
   useEffect(() => {
     fetchFarmers();
   }, []);
+
+  // Auto-refresh when filter changes
+  useEffect(() => {
+    fetchFarmers();
+  }, [verificationFilter]);
 
   const fetchFarmers = async () => {
     try {
@@ -91,12 +97,20 @@ const FarmerManagement: React.FC = () => {
     }
   };
 
+  // Helper function to get display name
+  const getDisplayName = (farmer: Farmer) => {
+    if (farmer.firstName && farmer.lastName) {
+      return `${farmer.firstName} ${farmer.lastName}`;
+    }
+    return farmer.name || 'N/A';
+  };
+
   // Filter farmers based on search and verification status
   const filteredFarmers = farmers.filter(farmer => {
     // Search filter
+    const displayName = getDisplayName(farmer);
     const matchesSearch = searchTerm === '' || 
-      (farmer.firstName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (farmer.lastName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (farmer.email?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
     // Verification filter
@@ -160,12 +174,6 @@ const FarmerManagement: React.FC = () => {
             <option value="rejected">Rejected</option>
             <option value="not-applied">Not Applied</option>
           </select>
-          <Button onClick={fetchFarmers} variant="outline" className="w-full sm:w-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Refresh
-          </Button>
         </div>
       </div>
 
@@ -212,7 +220,7 @@ const FarmerManagement: React.FC = () => {
                   <tr key={farmer._id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4">
                       <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        {farmer.firstName} {farmer.lastName}
+                        {getDisplayName(farmer)}
                       </div>
                     </td>
                     <td className="py-3 px-4 text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -259,7 +267,7 @@ const FarmerManagement: React.FC = () => {
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          {farmer.firstName} {farmer.lastName}
+                          {getDisplayName(farmer)}
                         </h3>
                         <p className="text-sm text-gray-600 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>{farmer.email}</p>
                       </div>

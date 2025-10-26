@@ -9,6 +9,8 @@ import Image from 'next/image';
 import LoadingDots from '@/components/ui/LoadingDots';
 import EditProfileModal from '@/components/ui/EditProfileModal';
 import SellerVerification from '@/components/seller/SellerVerification';
+import AppealStatusCard from '@/components/AppealStatusCard';
+import SuspensionBanner from '@/components/SuspensionBanner';
 
 // Helper function to safely format dates on client-side only
 const formatDate = (dateString: string | null | undefined): string => {
@@ -34,6 +36,10 @@ interface ProfileData {
   farmName?: string;
   farmDescription?: string;
   createdAt?: string;
+  status?: 'active' | 'suspended' | 'deleted';
+  suspendReason?: string;
+  suspendedAt?: string;
+  suspensionExpiresAt?: string;
 }
 
 interface LowStockProduct {
@@ -176,10 +182,6 @@ export default function Profile() {
     // Also update localStorage or trigger a refresh if needed
   };
 
-  return (
-        }
-  };
-
   // Prevent hydration mismatch - only show loading on client
   if (!mounted || loading) {
     return (
@@ -217,6 +219,18 @@ export default function Profile() {
           Edit Profile
         </Button>
       </div>
+
+      {/* Suspension Banner */}
+      {profile?.status === 'suspended' && (
+        <SuspensionBanner 
+          reason={profile.suspendReason}
+          suspendedAt={profile.suspendedAt}
+          suspensionExpiresAt={profile.suspensionExpiresAt}
+        />
+      )}
+
+      {/* Appeal Status Card */}
+      <AppealStatusCard />
 
         {/* Profile Header with Avatar */}
         <Card className="p-6 bg-white border border-gray-200 mb-6">

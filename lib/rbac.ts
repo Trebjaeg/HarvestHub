@@ -172,8 +172,9 @@ export async function verifyAuthAndFetchUser(req: NextRequest): Promise<Authenti
       throw new Error('User not found');
     }
 
-    if (user.status !== 'active') {
-      throw new Error('User account is not active');
+    // Only block DELETED users - suspended users can access but with restrictions
+    if (user.status === 'deleted') {
+      throw new Error('User account has been deleted');
     }
 
     return user;

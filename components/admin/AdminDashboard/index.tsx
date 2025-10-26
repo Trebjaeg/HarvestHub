@@ -10,6 +10,7 @@ import LoadingDots from '@/components/ui/LoadingDots';
 import { useRecentActivities } from '../../../hooks/useRecentActivities';
 import { StatCardSkeleton, ActivitySkeleton, ChartSkeleton } from '@/components/ui/SkeletonLoader';
 import { getAuthHeaders } from '../../../lib/admin-auth';
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import UserManagement from '../UserManagement';
 import FarmerManagement from '../FarmerManagement';
 import FarmerVerification from '../FarmerVerification';
@@ -35,6 +36,7 @@ const AdminDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   
   // Fetch recent activities
   const { activities, loading: activitiesLoading, error: activitiesError, refetch: refetchActivities } = useRecentActivities(5);
@@ -102,7 +104,12 @@ const AdminDashboard: React.FC = () => {
     ]);
   };
 
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
   const handleLogout = async () => {
+    setShowLogoutModal(false);
     console.log('🚪 [ADMIN] Starting logout process...');
     try {
       // Call logout API to clear server-side session
@@ -535,7 +542,7 @@ const AdminDashboard: React.FC = () => {
           {/* Logout Button at Bottom of Sidebar */}
           <div className="p-4 lg:p-6 border-t border-gray-200">
             <Button
-              onClick={handleLogout}
+              onClick={handleLogoutClick}
               variant="outline"
               className="w-full border-gray-200 hover:border-red-300 hover:bg-red-50 text-gray-600 hover:text-red-600 transition-colors font-medium"
               style={{ fontFamily: 'Poppins, sans-serif' }}
@@ -672,23 +679,6 @@ const AdminDashboard: React.FC = () => {
                 <CardHeader className="pb-3 lg:pb-4">
                   <div className="flex items-center justify-between flex-col lg:flex-row space-y-2 lg:space-y-0">
                     <CardTitle className="text-base lg:text-lg font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>Activity Trend</CardTitle>
-                    <Button
-                      onClick={refreshDashboard}
-                      variant="outline"
-                      size="sm"
-                      disabled={refreshing || activitiesLoading}
-                      className="w-full lg:w-auto lg:ml-2"
-                      style={{ fontFamily: 'Poppins, sans-serif' }}
-                    >
-                      {(refreshing || activitiesLoading) ? (
-                        <LoadingDots />
-                      ) : (
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                      )}
-                      Refresh
-                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -842,6 +832,18 @@ const AdminDashboard: React.FC = () => {
           {activeTab === 'audit' && <AuditLogs />}
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+        title="Confirm Logout"
+        description="Are you sure you want to logout? You will need to sign in again to access the admin dashboard."
+        confirmText="Logout"
+        cancelText="Cancel"
+        confirmVariant="destructive"
+      />
     </div>
   );
 };

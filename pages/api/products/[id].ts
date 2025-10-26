@@ -29,7 +29,9 @@ async function productHandler(req: NextApiRequest, res: NextApiResponse) {
 
 async function getProduct(req: NextApiRequest, res: NextApiResponse, id: string) {
   try {
-    const product = await Product.findOne({ _id: id, isActive: true }).lean();
+    const product: any = await Product.findOne({ _id: id, isActive: true })
+      .maxTimeMS(3000)
+      .lean();
 
     if (!product) {
       return res.status(404).json({
@@ -38,9 +40,68 @@ async function getProduct(req: NextApiRequest, res: NextApiResponse, id: string)
       });
     }
 
+    // Get seller info and review stats in parallel for better performance
+    const User = (await import('@/models/User')).default;
+    const Review = (await import('@/models/Review')).default;
+    const sellerId = product.sellerId || product.farmerId;
+    
+    // Simplified approach - get seller and basic review count
+    const seller = sellerId ? await User.findById(sellerId)
+      .select('name firstName lastName email profilePicture profileImage location accountStatus verified')
+      .maxTimeMS(2000)
+      .lean()
+      .catch(() => null) : null;
+    
+    // Get product reviews - simplified
+    const productReviews = await Review.find({ 
+      productId: product._id, 
+      status: 'approved' 
+    })
+      .select('rating')
+      .maxTimeMS(2000)
+      .lean()
+      .catch(() => []);
+
+    // Calculate rating distribution
+    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    let totalRating = 0;
+    productReviews.forEach((review: any) => {
+      if (review.rating >= 1 && review.rating <= 5) {
+        distribution[review.rating as keyof typeof distribution]++;
+        totalRating += review.rating;
+      }
+    });
+
+    const averageRating = productReviews.length > 0 ? totalRating / productReviews.length : 0;
+
+    // Get seller rating - simplified (use product average or default)
+    let sellerRating = averageRating;
+    let sellerReviewCount = productReviews.length;
+
     return res.status(200).json({
       success: true,
-      data: product
+      data: {
+        ...product,
+        seller: seller ? {
+          id: seller._id,
+          name: seller.name || `${seller.firstName || ''} ${seller.lastName || ''}`.trim(),
+          email: seller.email,
+          profileImage: seller.profileImage || seller.profilePicture,
+          location: seller.location || 'Philippines',
+          isActive: seller.accountStatus === 'active',
+          isSuspended: seller.accountStatus === 'suspended',
+          isVerified: seller.verified || false,
+          rating: sellerRating,
+          reviewCount: sellerReviewCount,
+          responseRate: 95,
+          responseTime: '< 2h'
+        } : null,
+        ratings: {
+          average: averageRating,
+          total: productReviews.length,
+          distribution
+        }
+      }
     });
   } catch (error: any) {
     console.error('Get product error:', error);

@@ -127,25 +127,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
   }
 
-  // Check if user account is suspended
-  if (user.status === 'suspended') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Account Suspended</h1>
-          <p className="text-gray-600 mb-4">
-            Your account has been suspended. Please contact support for assistance.
-          </p>
-          <button 
-            onClick={() => router.push('/contact')}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
-          >
-            Contact Support
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Note: Suspended users CAN access protected routes and login
+  // They will see suspension banner and have restricted actions
+  // Only 'deleted' status users are blocked at the auth level
 
   // Check if email is verified for certain actions
   if (!user.emailVerified && requiredRole && requiredRole !== 'user') {

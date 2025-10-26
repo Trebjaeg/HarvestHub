@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Plus, Package, Edit, Trash2, Filter } from "lucide-react";
+import { Search, Plus, Package, Edit, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import AddEditProductModal from "@/components/ui/AddEditProductModal";
+import SuccessDialog from "@/components/ui/SuccessDialog";
 
 interface Product {
   _id?: string;
@@ -48,8 +49,8 @@ export default function Products() {
   const [isVerified, setIsVerified] = useState<boolean>(true); // Assume verified until checked
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [successMessage, setSuccessMessage] = useState({ title: '', message: '' });
 
   const categories = [
     "Leafy Greens",
@@ -134,12 +135,16 @@ export default function Products() {
       if (response.ok) {
         const data = await response.json();
         console.log('Product created successfully:', data);
-        // Refresh the products list
-        fetchProducts();
+        // Close modal first
         setShowAddModal(false);
-        // Show success message
-        setSuccessMessage('Product added successfully!');
-        setShowSuccessModal(true);
+        // Refresh the products list
+        await fetchProducts();
+        // Show success dialog
+        setSuccessMessage({
+          title: 'Success!',
+          message: 'Your product has been added successfully and is now visible in your product list.'
+        });
+        setShowSuccessDialog(true);
       } else {
         const error = await response.json();
         console.error('Server error response:', error);
@@ -153,7 +158,7 @@ export default function Products() {
       }
     } catch (error) {
       console.error('Error creating product:', error);
-      // Silently log - don't show alert
+      alert('An error occurred while adding the product. Please try again.');
     }
   };
 
@@ -172,12 +177,16 @@ export default function Products() {
 
       if (response.ok) {
         const data = await response.json();
-        // Refresh the products list
-        fetchProducts();
+        // Close modal first
         setEditingProduct(null);
-        // Show success message
-        setSuccessMessage('Product updated successfully!');
-        setShowSuccessModal(true);
+        // Refresh the products list
+        await fetchProducts();
+        // Show success dialog
+        setSuccessMessage({
+          title: 'Updated!',
+          message: 'Your product has been updated successfully.'
+        });
+        setShowSuccessDialog(true);
       } else {
         const error = await response.json();
         console.error('Failed to update product:', error);
@@ -218,24 +227,30 @@ export default function Products() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Refresh the products list silently
-        fetchProducts();
+        // Close delete modal
+        setShowDeleteModal(false);
+        setProductToDelete(null);
+        // Refresh the products list
+        await fetchProducts();
         // Show success message
-        setSuccessMessage('Product deleted successfully!');
-        setShowSuccessModal(true);
+        setSuccessMessage({
+          title: 'Deleted!',
+          message: 'Product has been deleted successfully.'
+        });
+        setShowSuccessDialog(true);
       } else {
         console.error('Failed to delete product:', data.error || data.message);
-        // Silently fail - just refresh the list
+        // Close modal and refresh the list
+        setShowDeleteModal(false);
+        setProductToDelete(null);
         fetchProducts();
       }
     } catch (error) {
       console.error('Error deleting product:', error);
-      // Silently fail - just refresh the list
-      fetchProducts();
-    } finally {
-      // Close modal and reset
+      // Close modal and refresh the list
       setShowDeleteModal(false);
       setProductToDelete(null);
+      fetchProducts();
     }
   };
 
@@ -553,26 +568,13 @@ export default function Products() {
           </DialogContent>
         </Dialog>
 
-        {/* Success Modal */}
-        <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-bold text-[#103C2E]">Success!</DialogTitle>
-              <DialogDescription className="text-gray-600 pt-2">
-                {successMessage}
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                type="button"
-                onClick={() => setShowSuccessModal(false)}
-                className="bg-[#103C2E] hover:bg-[#0d2e23] text-white w-full"
-              >
-                OK
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Success Dialog */}
+        <SuccessDialog
+          isOpen={showSuccessDialog}
+          onClose={() => setShowSuccessDialog(false)}
+          title={successMessage.title}
+          message={successMessage.message}
+        />
       </div>
     </div>
   );

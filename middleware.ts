@@ -166,9 +166,11 @@ export async function middleware(request: NextRequest) {
       throw new Error('User not found');
     }
 
-    if (user.status !== 'active') {
-      console.log(`🔐 Middleware: User ${user.email} is not active (status: ${user.status})`);
-      throw new Error('User account is not active');
+    // Only block DELETED users from accessing routes
+    // SUSPENDED users can access routes but will have restricted actions via API guards
+    if (user.status === 'deleted') {
+      console.log(`🔐 Middleware: User ${user.email} is deleted (status: ${user.status})`);
+      throw new Error('User account has been deleted');
     }
 
     // Check role-based access

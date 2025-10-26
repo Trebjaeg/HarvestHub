@@ -22,6 +22,7 @@ interface Product {
   lowStockAlert: number;
   images: string[];
   harvestDate?: string;
+  sku?: string;
 }
 
 interface AddEditProductModalProps {
@@ -44,12 +45,14 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
     stock: 0,
     lowStockAlert: 10,
     images: [],
-    harvestDate: ''
+    harvestDate: '',
+    sku: ''
   });
 
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [autoGenerateSKU, setAutoGenerateSKU] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Update form data when product prop changes
@@ -57,9 +60,11 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
     if (product) {
       setFormData({
         ...product,
-        harvestDate: product.harvestDate || ''
+        harvestDate: product.harvestDate || '',
+        sku: product.sku || ''
       });
       setPreviewImages(product.images || []);
+      setAutoGenerateSKU(!product.sku); // If product has SKU, disable auto-generation
     } else {
       setFormData({
         name: '',
@@ -71,9 +76,11 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
         stock: '' as any,
         lowStockAlert: 10,
         images: [],
-        harvestDate: ''
+        harvestDate: '',
+        sku: ''
       });
       setPreviewImages([]);
+      setAutoGenerateSKU(true);
     }
   }, [product]);
 
@@ -112,8 +119,8 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
           continue;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-          alert('Image size should be less than 5MB');
+        if (file.size > 35 * 1024 * 1024) {
+          alert('Image size should be less than 35MB');
           continue;
         }
 
@@ -179,21 +186,44 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
     }
 
     // Check if price is empty or invalid
-    if (!formData.price || formData.price <= 0) {
+    if (!formData.price || formData.price === '' || formData.price <= 0) {
       errors.price = 'Please enter a valid price greater than 0';
     }
 
     // Check if stock is empty or invalid
-    if (formData.stock === undefined || formData.stock === null || formData.stock < 0) {
+    if (formData.stock === undefined || formData.stock === null || formData.stock === '' || formData.stock < 0) {
       errors.stock = 'Please enter a valid stock quantity (0 or more)';
     }
 
-    if (formData.lowStockAlert !== undefined && formData.lowStockAlert < 0) {
+    if (formData.lowStockAlert !== undefined && formData.lowStockAlert !== '' && formData.lowStockAlert < 0) {
       errors.lowStockAlert = 'Low stock alert must be 0 or greater';
     }
 
     if (formData.description && formData.description.length > 500) {
       errors.description = 'Description cannot exceed 500 characters';
+    }
+
+    // Validate harvest date is not in the future
+    if (formData.harvestDate) {
+      const selectedDate = new Date(formData.harvestDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
+      
+      if (selectedDate > today) {
+        errors.harvestDate = 'Harvest date cannot be in the future';
+      }
+    }
+
+    // Validate SKU format if manually entered
+    if (!autoGenerateSKU && formData.sku) {
+      const sku = formData.sku.trim();
+      if (sku.length < 8 || sku.length > 50) {
+        errors.sku = 'SKU must be between 8 and 50 characters';
+      } else if (!sku.includes('-')) {
+        errors.sku = 'SKU must contain at least one dash (e.g., VEG-F123-0001)';
+      } else if (!/^[A-Z0-9-]+$/.test(sku)) {
+        errors.sku = 'SKU can only contain uppercase letters, numbers, and dashes';
+      }
     }
 
     if (formData.images.length === 0) {
@@ -212,11 +242,13 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
 
     setValidationErrors({});
     onSave(formData);
+    
+    // Reset form after successful save
+    resetForm();
     onClose();
   };
-
-  const handleCancel = () => {
-    // Reset form
+  
+  const resetForm = () => {
     setFormData({
       name: '',
       category: '',
@@ -227,9 +259,16 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
       stock: 0,
       lowStockAlert: 10,
       images: [],
-      harvestDate: ''
+      harvestDate: '',
+      sku: ''
     });
     setPreviewImages([]);
+    setValidationErrors({});
+    setAutoGenerateSKU(true);
+  };
+
+  const handleCancel = () => {
+    resetForm();
     onClose();
   };
 
@@ -280,7 +319,7 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
                     <div className="text-center">
                       <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-600 font-medium mb-1 font-poppins">Upload Product Image</p>
-                      <p className="text-sm text-gray-500">PNG, JPG up to 5MB</p>
+                      <p className="text-sm text-gray-500">PNG, JPG up to 35MB</p>
                     </div>
                   )}
                 </div>
@@ -449,9 +488,13 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
                     type="date"
                     value={formData.harvestDate}
                     onChange={(e) => handleInputChange('harvestDate', e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
                     disabled={!!verificationError}
-                    className={`bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 ${verificationError ? "opacity-50 cursor-not-allowed" : ""}`}
+                    className={`bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 ${verificationError ? "opacity-50 cursor-not-allowed" : ""} ${validationErrors.harvestDate ? "border-red-500" : ""}`}
                   />
+                  {validationErrors.harvestDate && (
+                    <p className="text-xs text-red-500 mt-1">{validationErrors.harvestDate}</p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -494,7 +537,8 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
                     type="number"
                     value={formData.price}
                     onChange={(e) => {
-                      handleInputChange('price', parseFloat(e.target.value) || 0);
+                      const value = e.target.value === '' ? '' : parseFloat(e.target.value);
+                      handleInputChange('price', value);
                       if (validationErrors.price) {
                         setValidationErrors(prev => ({ ...prev, price: '' }));
                       }
@@ -550,7 +594,8 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
                     type="number"
                     value={formData.stock}
                     onChange={(e) => {
-                      handleInputChange('stock', parseInt(e.target.value) || 0);
+                      const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                      handleInputChange('stock', value);
                       if (validationErrors.stock) {
                         setValidationErrors(prev => ({ ...prev, stock: '' }));
                       }
@@ -581,13 +626,64 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
                   <Input
                     type="number"
                     value={formData.lowStockAlert}
-                    onChange={(e) => handleInputChange('lowStockAlert', parseInt(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                      handleInputChange('lowStockAlert', value);
+                    }}
                     placeholder="10"
                     disabled={!!verificationError}
                     className={`bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 font-poppins [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${verificationError ? "opacity-50 cursor-not-allowed" : ""}`}
                     min="0"
                   />
                 </div>
+              </div>
+
+              {/* SKU Field */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-700 font-poppins">
+                    SKU (Stock Keeping Unit)
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="autoGenerateSKU"
+                      checked={autoGenerateSKU}
+                      onChange={(e) => {
+                        setAutoGenerateSKU(e.target.checked);
+                        if (e.target.checked) {
+                          handleInputChange('sku', '');
+                        }
+                      }}
+                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                    />
+                    <label htmlFor="autoGenerateSKU" className="text-xs text-gray-600 font-poppins cursor-pointer">
+                      Auto-generate
+                    </label>
+                  </div>
+                </div>
+                <Input
+                  type="text"
+                  value={formData.sku || ''}
+                  onChange={(e) => handleInputChange('sku', e.target.value.toUpperCase())}
+                  placeholder={autoGenerateSKU ? "Will be auto-generated (e.g., VEG-A1B2-0001)" : "Enter custom SKU"}
+                  disabled={!!verificationError || autoGenerateSKU}
+                  className={`bg-white border-gray-300 focus:border-green-500 focus:ring-green-500 transition-all duration-200 font-poppins uppercase ${verificationError || autoGenerateSKU ? "opacity-50 cursor-not-allowed bg-gray-50" : ""} ${validationErrors.sku ? "border-red-500" : ""}`}
+                  maxLength={50}
+                />
+                {validationErrors.sku && (
+                  <p className="text-xs text-red-500 mt-1">{validationErrors.sku}</p>
+                )}
+                {!autoGenerateSKU && !validationErrors.sku && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Format: XXX-XXXX-XXXX (e.g., VEG-F123-0001). Must be unique.
+                  </p>
+                )}
+                {autoGenerateSKU && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    SKU will be automatically generated based on category and farmer ID
+                  </p>
+                )}
               </div>
             </div>
           </div>

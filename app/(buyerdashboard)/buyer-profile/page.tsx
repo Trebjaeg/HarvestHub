@@ -10,6 +10,8 @@ import Link from 'next/link';
 import EditBuyerProfileModal from '@/components/ui/EditBuyerProfileModal';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import LoadingDots from '@/components/ui/LoadingDots';
+import AppealStatusCard from '@/components/AppealStatusCard';
+import SuspensionBanner from '@/components/SuspensionBanner';
 
 // Helper function to safely format dates on client-side only
 const formatDate = (dateString: string | null | undefined): string => {
@@ -34,6 +36,10 @@ interface BuyerProfileData {
   address?: string;
   profileImage?: string;
   createdAt?: string;
+  status?: 'active' | 'suspended' | 'deleted';
+  suspendReason?: string;
+  suspendedAt?: string;
+  suspensionExpiresAt?: string;
 }
 
 interface BuyerStats {
@@ -237,6 +243,18 @@ function BuyerProfile() {
           Edit Profile
         </Button>
       </div>
+
+      {/* Suspension Banner */}
+      {profile?.status === 'suspended' && (
+        <SuspensionBanner 
+          reason={profile.suspendReason}
+          suspendedAt={profile.suspendedAt}
+          suspensionExpiresAt={profile.suspensionExpiresAt}
+        />
+      )}
+
+      {/* Appeal Status Card */}
+      <AppealStatusCard />
 
       {/* Profile Header with Avatar */}
       <Card className="p-4 sm:p-6 bg-white border border-gray-200 mb-6">
