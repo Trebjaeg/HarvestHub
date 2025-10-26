@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
-import { withAuth, withSecurity, withLogging } from '@/lib/middleware';
+import { withSecurity, withLogging } from '@/lib/middleware';
 
 async function followStatusHandler(req: NextApiRequest, res: NextApiResponse) {
   await dbConnect();
@@ -45,4 +45,4 @@ async function followStatusHandler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default withLogging(withSecurity(withAuth(followStatusHandler)));
+export default withLogging(withSecurity(followStatusHandler));

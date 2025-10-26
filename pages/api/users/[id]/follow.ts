@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse} from 'next';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
-import { withAuth, withSecurity, withLogging } from '@/lib/middleware';
+import { withSecurity, withLogging } from '@/lib/middleware';
 
 async function followHandler(req: NextApiRequest, res: NextApiResponse) {
   await dbConnect();
@@ -84,4 +84,4 @@ async function toggleFollow(req: NextApiRequest, res: NextApiResponse, currentUs
   }
 }
 
-export default withLogging(withSecurity(withAuth(followHandler)));
+export default withLogging(withSecurity(followHandler));

@@ -26,16 +26,18 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
   },
-  // Optimize font loading
-  optimizeFonts: true,
-  // Enable SWC minification for better performance
-  swcMinify: true,
   // Compress responses
   compress: true,
   // Optimize production build
   productionBrowserSourceMaps: false,
   // Reduce payload size
   poweredByHeader: false,
+  // Experimental features for better performance
+  experimental: {
+    // Optimize package imports to reduce bundle size
+    optimizePackageImports: ['lucide-react', 'date-fns'],
+  },
 };
 
 export default nextConfig;
+
