@@ -629,8 +629,8 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
                 className="flex-1 bg-[#40613D] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#2f4a2d] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
-                <ShoppingCart className="w-5 h-5" />
-                Add to Cart
+                <ShoppingCart className="w-5 h-5 flex-shrink-0" />
+                <span className="truncate">Add to Cart</span>
               </button>
               <button
                 onClick={handleBuyNow}

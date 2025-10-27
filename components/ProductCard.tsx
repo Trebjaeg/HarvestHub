@@ -88,8 +88,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
 
   return (
     <>
-    <Link href={`/product/${product._id}`} className="block">
-      <div className={`bg-white rounded-3xl border-2 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${className}`} style={{ width: '218px', height: '275px', borderColor: '#40613D' }}>
+    <Link href={`/product/${product._id}`} className="block w-full">
+      <div className={`bg-white rounded-3xl border-2 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] w-full ${className}`} style={{ height: '275px', borderColor: '#40613D' }}>
         {/* Product Image - Takes remaining space after info section (275px - 89px = 186px) */}
         <div ref={imageRef} className="relative bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden" style={{ height: '186px' }}>
         {imageUrl ? (
@@ -147,12 +147,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
 
         {/* Price Section with Cart Button */}
         <div className="flex items-end justify-between mt-auto">
-          <div className="flex items-center gap-1.5" style={{ height: '24px' }}>
-            <span className="text-[16px] font-bold text-[#1E3A2F]" style={{ fontFamily: 'Poppins, sans-serif', lineHeight: '24px' }}>
+          <div className="flex items-center gap-1.5 overflow-hidden" style={{ height: '24px', maxWidth: 'calc(100% - 36px)' }}>
+            <span className="text-[16px] font-bold text-[#1E3A2F] truncate" style={{ fontFamily: 'Poppins, sans-serif', lineHeight: '24px' }}>
               ₱{displayPrice.toFixed(2)}/{product.unit}
             </span>
             {hasDiscount && displayOriginalPrice && (
-              <span className="text-[12px] text-gray-500 line-through" style={{ fontFamily: 'Poppins, sans-serif', lineHeight: '24px' }}>
+              <span className="text-[12px] text-gray-500 line-through truncate" style={{ fontFamily: 'Poppins, sans-serif', lineHeight: '24px' }}>
                 ₱{displayOriginalPrice.toFixed(2)}/{product.unit}
               </span>
             )}
