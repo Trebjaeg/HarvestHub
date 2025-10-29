@@ -19,9 +19,14 @@ interface MongooseCache {
   promise: Promise<Mongoose> | null;
 }
 
-let cached: MongooseCache = (global as any).mongoose;
+// Extend the global interface to include mongoose
+declare global {
+  var mongoose: MongooseCache | undefined;
+}
+
+let cached: MongooseCache = global.mongoose || { conn: null, promise: null };
 if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+  cached = global.mongoose = { conn: null, promise: null };
 }
 
 // Connection event handlers
@@ -74,6 +79,19 @@ export default async function dbConnect(): Promise<Mongoose> {
     cached.promise = null; // Reset on error
     throw error;
   }
+}
+
+/**
+ * Alternative connection function that returns db and client objects
+ * Used by some API routes that expect this format
+ */
+export async function connectToDatabase() {
+  const connection = await dbConnect();
+  
+  return {
+    db: connection.connection.db,
+    client: connection.connection.getClient()
+  };
 }
 
 // Graceful shutdown

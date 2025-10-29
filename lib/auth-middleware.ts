@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '../models/User';
@@ -11,6 +11,18 @@ interface DecodedToken {
   tokenVersion: number;
   iat: number;
   exp: number;
+}
+
+interface AuthResult {
+  success: boolean;
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+    iat: number;
+    exp: number;
+  };
+  error?: string;
 }
 
 export async function withAuth(req: NextRequest, requiredRole?: string) {
@@ -120,7 +132,7 @@ export async function logAdminAction(
   action: string,
   targetUser: string | null,
   reason: string,
-  details: any = {},
+  details: Record<string, unknown> = {},
   req?: NextRequest,
   severity: 'low' | 'medium' | 'high' | 'critical' = 'medium'
 ) {
@@ -139,5 +151,83 @@ export async function logAdminAction(
     });
   } catch (error) {
     console.error('Failed to log admin action:', error);
+  }
+}
+
+export async function verifyToken(request: NextRequest): Promise<AuthResult> {
+  try {
+    const token = request.cookies.get('auth-token')?.value;
+    
+    if (!token) {
+      return { success: false, error: 'No token provided' };
+    }
+
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return { success: false, error: 'JWT secret not configured' };
+    }
+
+    const decoded = jwt.verify(token, secret) as DecodedToken;
+    
+    return { 
+      success: true, 
+      user: {
+        id: decoded.userId,
+        email: decoded.email,
+        role: decoded.role,
+        iat: decoded.iat,
+        exp: decoded.exp
+      }
+    };
+  } catch (error) {
+    return { success: false, error: 'Invalid token' };
+  }
+}
+
+export async function verifyBuyerAuth(req: NextRequest) {
+  try {
+    const authResult = await verifyToken(req);
+    
+    if (!authResult.success) {
+      return { success: false, error: authResult.error };
+    }
+
+    // Verify user has buyer role or is a user (buyers are users with purchasing capability)
+    if (authResult.user && (authResult.user.role === 'user' || authResult.user.role === 'buyer')) {
+      return { 
+        success: true, 
+        userId: authResult.user.id,
+        user: authResult.user 
+      };
+    }
+
+    return { success: false, error: 'Access denied. Buyer role required.' };
+  } catch (error) {
+    console.error('Buyer auth verification error:', error);
+    return { success: false, error: 'Authentication failed' };
+  }
+}
+
+export async function verifySellerAuth(req: NextRequest) {
+  try {
+    const authResult = await verifyToken(req);
+    
+    if (!authResult.success) {
+      return { success: false, error: authResult.error };
+    }
+
+    // Verify user has seller role or admin/superadmin (who can access seller features)
+    if (authResult.user && ['seller', 'admin', 'superadmin'].includes(authResult.user.role)) {
+      return { 
+        success: true, 
+        userId: authResult.user.id,
+        user: authResult.user 
+      };
+    }
+
+    return { success: false, error: 'Access denied. Seller role required.' };
+  } catch (error) {
+    console.error('Seller auth verification error:', error);
+    return { success: false, error: 'Authentication failed' };
   }
 }

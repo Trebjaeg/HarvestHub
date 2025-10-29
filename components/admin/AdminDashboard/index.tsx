@@ -17,6 +17,7 @@ import Reports from '../Reports';
 import Appeals from '../Appeals';
 import AuditLogs from '../AuditLogs';
 import AdsManagement from '../AdsManagement';
+import SupportManagement from '../SupportManagement';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface AdminStats {
@@ -456,6 +457,19 @@ const AdminDashboard: React.FC = () => {
                   )
                 },
                 { 
+                  id: 'support', 
+                  label: 'Help Center', 
+                  icon: (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-headset">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M4 14v-3a8 8 0 1 1 16 0v3" />
+                      <path d="M18 19c0 1.657 -2.686 3 -6 3" />
+                      <path d="M4 14a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2v-3z" />
+                      <path d="M15 14a2 2 0 0 1 2 -2h1a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-1a2 2 0 0 1 -2 -2v-3z" />
+                    </svg>
+                  )
+                },
+                { 
                   id: 'reports', 
                   label: 'Reports', 
                   icon: (
@@ -836,6 +850,7 @@ const AdminDashboard: React.FC = () => {
           {activeTab === 'users' && <UserManagement />}
           {activeTab === 'farmers' && <FarmerManagement />}
           {activeTab === 'farmers-verification' && <FarmerVerification />}
+          {activeTab === 'support' && <SupportManagement />}
           {activeTab === 'reports' && <Reports />}
           {activeTab === 'ads' && <AdsManagement />}
           {activeTab === 'appeals' && <Appeals />}
