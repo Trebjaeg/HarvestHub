@@ -51,7 +51,6 @@ const technicalGuides: GuideSection[] = [
           'Clear your browser cache and cookies by pressing Ctrl+Shift+Delete (Windows) or Cmd+Shift+Delete (Mac)',
           'Disable browser extensions temporarily to identify conflicts with HarvestHub',
           'Update your browser to the latest version through browser settings',
-          'Enable JavaScript in your browser settings (required for full functionality)',
           'Check if your internet connection is stable and has sufficient bandwidth',
           'Try accessing HarvestHub in an incognito/private browsing window',
           'Disable ad blockers or add HarvestHub to your whitelist',
@@ -74,9 +73,6 @@ const technicalGuides: GuideSection[] = [
         title: 'Common Error Messages & Solutions',
         steps: [
           'If you see "Page Not Found (404)" - check the URL spelling or navigate from the homepage',
-          'For "Server Error (500)" - wait a few minutes and refresh the page, or clear your cache',
-          'When encountering "Payment Processing Error" - verify your payment details and try a different payment method',
-          'If "Session Expired" appears - log out completely and log back in to refresh your session',
           'For "Network Connection Error" - check your internet connection and try refreshing',
           'When seeing "Product Unavailable" - the item may be out of stock, check back later or contact the seller',
           'If "Upload Failed" errors occur - check file size (max 10MB) and format (JPG, PNG, PDF only)',
@@ -145,136 +141,6 @@ const technicalGuides: GuideSection[] = [
       }
     ]
   },
-  {
-    id: 'mobile-app-support',
-    title: 'Mobile App Support',
-    icon: Smartphone,
-    description: 'Download, install, and troubleshoot the HarvestHub mobile app',
-    guides: [
-      {
-        id: 'app-download-install',
-        title: 'Downloading & Installing the App',
-        steps: [
-          'Visit the Google Play Store (Android) or App Store (iOS) on your mobile device',
-          'Search for "HarvestHub" in the store\'s search bar',
-          'Verify the app publisher is "HarvestHub Philippines" before downloading',
-          'Tap "Install" (Android) or "Get" (iOS) to begin the download',
-          'Wait for the app to download and install automatically',
-          'Find the HarvestHub app icon on your home screen or app drawer',
-          'Tap the app icon to launch HarvestHub for the first time',
-          'Grant necessary permissions when prompted (camera, location, notifications)',
-          'Log in with your existing account or create a new account',
-          'Complete the setup process by verifying your phone number and email'
-        ],
-        tips: [
-          'Ensure you have at least 100MB of free storage space before downloading',
-          'Connect to Wi-Fi for faster download, especially on slower mobile data',
-          'Enable automatic app updates to receive the latest features and security fixes',
-          'The app is compatible with Android 7.0+ and iOS 12.0+ devices'
-        ],
-        warnings: [
-          'Only download the app from official app stores to avoid security risks',
-          'Fake HarvestHub apps may exist - verify the publisher name before installing'
-        ]
-      },
-      {
-        id: 'app-crashes-bugs',
-        title: 'Fixing App Crashes & Bugs',
-        steps: [
-          'Force close the app completely by swiping up (iOS) or using recent apps (Android)',
-          'Restart the HarvestHub app and check if the issue persists',
-          'Restart your mobile device to clear memory and refresh system processes',
-          'Check if you have the latest version of the app in your device\'s app store',
-          'Update the app if a newer version is available',
-          'Clear the app cache: Android Settings > Apps > HarvestHub > Storage > Clear Cache',
-          'Free up device storage space - apps need at least 500MB free space to function properly',
-          'Check your internet connection - switch between Wi-Fi and mobile data to test',
-          'Disable battery optimization for HarvestHub in your device settings',
-          'If crashes continue, uninstall and reinstall the app (you won\'t lose your account data)'
-        ],
-        tips: [
-          'Take screenshots of error messages to help our support team identify issues',
-          'Note what specific action caused the crash (viewing products, placing orders, etc.)',
-          'Keep your device\'s operating system updated for better app compatibility',
-          'Close other apps running in the background to free up memory for HarvestHub'
-        ],
-        warnings: [
-          'Clearing app data will log you out and remove saved preferences',
-          'Only reinstall the app from official app stores to maintain security'
-        ]
-      },
-      {
-        id: 'app-features-navigation',
-        title: 'Navigating App Features',
-        steps: [
-          'Use the bottom navigation bar to switch between Home, Shop, Orders, and Profile',
-          'Tap the search icon to find specific products, farmers, or categories',
-          'Access your shopping cart by tapping the cart icon in the top right',
-          'Pull down on most screens to refresh content and check for updates',
-          'Use the hamburger menu (three lines) to access additional features and settings',
-          'Tap and hold product images to quick-add items to favorites or cart',
-          'Swipe left or right on product carousels to browse more items',
-          'Use the filter and sort options at the top of product listings',
-          'Access your order history and tracking from the "Orders" tab',
-          'Update your profile, addresses, and payment methods in the "Profile" section'
-        ],
-        tips: [
-          'Enable push notifications to receive updates on orders, deals, and new products',
-          'Use the "Quick Order" feature to reorder frequently purchased items',
-          'Set up Touch ID or Face ID for faster and secure app access',
-          'Customize your home screen by following your favorite farmers and categories'
-        ]
-      },
-      {
-        id: 'app-performance',
-        title: 'Optimizing App Performance',
-        steps: [
-          'Close unused apps running in the background to free up RAM memory',
-          'Ensure you have at least 1GB of free storage space on your device',
-          'Connect to a stable Wi-Fi network when possible for faster loading',
-          'Update your device\'s operating system to the latest version',
-          'Restart your device at least once a week to clear temporary files',
-          'Clear the HarvestHub app cache regularly through device settings',
-          'Disable unnecessary visual effects and animations in your device settings',
-          'Turn off location services for other apps to prioritize HarvestHub\'s performance',
-          'Enable "High Performance" or "Gaming Mode" on your device if available',
-          'Monitor your data usage and switch to Wi-Fi for data-intensive activities'
-        ],
-        tips: [
-          'The app performs best on devices with at least 3GB of RAM',
-          'Image loading is optimized for mobile data - high-quality images load on Wi-Fi',
-          'Use the app\'s offline mode to browse previously viewed products without internet',
-          'Regular app updates include performance improvements and bug fixes'
-        ]
-      },
-      {
-        id: 'app-connectivity',
-        title: 'Connectivity & Sync Issues',
-        steps: [
-          'Check your internet connection by trying to browse other websites or apps',
-          'Switch between Wi-Fi and mobile data to identify connection-specific issues',
-          'Move to a location with stronger signal strength if using mobile data',
-          'Restart your Wi-Fi router if experiencing connectivity issues at home',
-          'Forget and reconnect to your Wi-Fi network in device settings',
-          'Check if other apps are using excessive bandwidth and close them',
-          'Enable "Background App Refresh" for HarvestHub in your device settings',
-          'Synchronize your account data by pulling down to refresh in the app',
-          'Log out and log back in to refresh your account sync',
-          'Contact your internet service provider if connectivity issues persist across all apps'
-        ],
-        tips: [
-          'HarvestHub automatically syncs your cart and favorites when connection is restored',
-          'Download product images and details while on Wi-Fi for offline browsing',
-          'The app uses minimal data - roughly 2-5MB per typical shopping session',
-          'Enable data compression in your device settings to reduce bandwidth usage'
-        ],
-        warnings: [
-          'Avoid making purchases or payments when connection is unstable',
-          'Some features may not work properly without a stable internet connection'
-        ]
-      }
-    ]
-  }
 ];
 
 export default function TechnicalSupportHelp() {
@@ -396,9 +262,6 @@ export default function TechnicalSupportHelp() {
                   <div className="space-y-2">
                     <button className="w-full text-left text-xs text-blue-600 hover:text-blue-700 transition-colors">
                       Clear Browser Cache
-                    </button>
-                    <button className="w-full text-left text-xs text-blue-600 hover:text-blue-700 transition-colors">
-                      Update Mobile App
                     </button>
                     <button className="w-full text-left text-xs text-blue-600 hover:text-blue-700 transition-colors">
                       Contact Live Support

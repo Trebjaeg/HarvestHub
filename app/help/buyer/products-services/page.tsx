@@ -51,7 +51,6 @@ const productsGuides: GuideSection[] = [
         steps: [
           'Navigate to any product page to view comprehensive product information',
           'Check the "Product Details" section for specifications, dimensions, and features',
-          'Review nutritional information for food products (calories, vitamins, minerals)',
           'View origin information including farm location and harvest dates',
           'Check packaging details including weight, size, and eco-friendly materials used',
           'Read cultivation method information (organic, conventional, hydroponic)',
@@ -62,8 +61,7 @@ const productsGuides: GuideSection[] = [
         tips: [
           'Use the zoom feature on product images to see fine details',
           'Check the "More Info" tab for additional specifications and features',
-          'Fresh produce displays harvest date to ensure maximum freshness',
-          'Look for certified organic or sustainable farming badges'
+          'Fresh produce displays harvest date to ensure maximum freshness'
         ]
       },
       {
@@ -73,7 +71,6 @@ const productsGuides: GuideSection[] = [
           'Check real-time stock levels displayed on each product page',
           'View availability status: "In Stock", "Limited Stock", or "Out of Stock"',
           'See estimated restocking dates for temporarily unavailable items',
-          'Use the "Notify Me" feature to get alerts when products are back in stock',
           'Check seasonal availability calendar for fresh produce items',
           'View alternative similar products when your preferred item is unavailable',
           'Monitor price changes and stock updates through your wishlist',
@@ -82,7 +79,6 @@ const productsGuides: GuideSection[] = [
         ],
         tips: [
           'Fresh produce availability varies by season - check our seasonal guide',
-          'Stock levels update every 15 minutes for accurate availability',
           'Enable notifications to never miss restocks of your favorite products',
           'Pre-order seasonal items to guarantee availability during peak times'
         ]
@@ -91,13 +87,13 @@ const productsGuides: GuideSection[] = [
         id: 'product-categories',
         title: 'Navigating Product Categories',
         steps: [
-          'Browse the main categories: Fresh Vegetables, Fruits, Herbs, Grains, etc.',
+          'Browse the main categories: Leafy Greens, Root Crops, Fruits, Spices & Aromatics, Eggplant & Gourds, Grains & Rice',
           'Use sub-categories to narrow down your search (Leafy Greens, Root Vegetables)',
           'Filter products by price range, rating, delivery time, or farm location',
           'Sort results by popularity, newest arrivals, price, or customer ratings',
           'Use the search bar with specific keywords for quick product discovery',
           'Check "Featured Products" section for seasonal highlights and promotions',
-          'Explore "Local Favorites" to discover popular items in your area',
+          'Explore "Deals" to discover popular items in your area',
           'Browse "New Arrivals" to find recently added products from farmers',
           'Use "Advanced Filters" for specific dietary needs or preferences'
         ],
@@ -442,12 +438,23 @@ export default function ProductsServicesHelp() {
                                 <div className="space-y-3">
                                   {guide.steps.map((step, index) => (
                                     <div key={index} className="flex items-start space-x-3">
-                                      <div className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                                      <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
                                         {index + 1}
                                       </div>
-                                      <p className="text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                        {step}
-                                      </p>
+                                      <div className="flex-1">
+                                        <p className="text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                          {step}
+                                        </p>
+                                        {(step === 'Log in to your HarvestHub account' || step === 'Log in to your HarvestHub account and go to "My Orders"') && (
+                                          <Link 
+                                            href="/auth" 
+                                            className="inline-flex items-center mt-2 px-3 py-1.5 bg-blue-100 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-200 transition-colors"
+                                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                                          >
+                                            Go to Login Page →
+                                          </Link>
+                                        )}
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -456,7 +463,7 @@ export default function ProductsServicesHelp() {
                               {guide.tips && (
                                 <div>
                                   <h4 className="font-semibold text-gray-800 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                    Pro Tips
+                                    Helpful Tips
                                   </h4>
                                   <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
                                     <div className="space-y-3">

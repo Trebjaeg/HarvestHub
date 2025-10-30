@@ -2,26 +2,24 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import LoadingDots from '@/components/ui/LoadingDots';
 import { 
-  ArrowLeft, 
-  ShoppingCart, 
-  Store, 
-  MessageCircle, 
+  Search, 
+  Settings, 
   Mail, 
-  Search,
+  Phone, 
+  Home,
   User,
+  ChevronDown,
+  ChevronUp,
   ShoppingBag,
   CreditCard,
   Truck,
   Star,
-  HelpCircle,
   Package,
-  BarChart3,
-  ChevronDown,
-  ChevronUp,
-  Shield,
-  Settings,
-  Phone
+  ShoppingCart,
+  Store,
+  MessageCircle
 } from 'lucide-react';
 
 interface FAQItem {
@@ -32,7 +30,7 @@ interface FAQItem {
 interface HelpSection {
   id: string;
   title: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   description: string;
   topics: string[];
   faqs: FAQItem[];
@@ -442,8 +440,39 @@ export default function HelpCenterPage() {
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
   const [selectedHotQuestion, setSelectedHotQuestion] = useState<number | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSectionLoading, setIsSectionLoading] = useState(false);
+  const [isNavigatingProfile, setIsNavigatingProfile] = useState(false);
 
   const currentSections = activeTab === 'buyer' ? buyerSections : sellerSections;
+  
+  // Simulate search loading
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    if (value.trim()) {
+      setIsSearching(true);
+      setTimeout(() => setIsSearching(false), 500);
+    } else {
+      setIsSearching(false);
+    }
+  };
+
+  // Simulate section loading
+  const handleSectionClick = (sectionId: string) => {
+    setIsSectionLoading(true);
+    setTimeout(() => {
+      setSelectedSection(selectedSection === sectionId ? null : sectionId);
+      setIsSectionLoading(false);
+    }, 300);
+  };
+
+  const handleProfileNavigation = () => {
+    setIsNavigatingProfile(true);
+    setTimeout(() => {
+      window.location.href = '/my-profile';
+    }, 500);
+  };
+
   const filteredSections = currentSections.filter(section =>
     section.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     section.topics.some(topic => topic.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -452,28 +481,50 @@ export default function HelpCenterPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Top Navigation Bar */}
-      <div className="bg-white border-b border-gray-200 py-3">
+      <div className="bg-[#103C2E] border-b border-gray-200 py-3">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Link href="/home" className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#008236' }}>
-                  <span className="text-white font-bold text-sm">H</span>
-                </div>
-                <span className="font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif', color: '#008236' }}>
-                  HarvestHub
+                <span className="font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  <span style={{ color: '#6CD75A'}}>Harvest</span>
+                  <span style={{ color: '#D4DB69' }}>Hub</span>
                 </span>
               </Link>
               <span className="text-gray-400">|</span>
-              <span className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <span className="text-white/80 font-bold" style={{ fontFamily: 'Poppins, sans-serif'}}>
                 HarvestHub Help Center
               </span>
             </div>
             
-            <div className="text-right">
+            <div className="flex items-center space-x-4">
+              <Link 
+                href="/home"
+                className="flex items-center space-x-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                <Home className="w-4 h-4" />
+                <span className="hidden sm:inline font-black"style={{ fontFamily: 'Poppins, sans-serif'}}>Back to Home</span>
+              </Link>
+              <span className="text-gray-400">|</span>
+              <button 
+                onClick={handleProfileNavigation}
+                className="flex items-center space-x-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                {isNavigatingProfile ? (
+                  <LoadingDots />
+                ) : (
+                  <>
+                    <User className="w-4 h-4" />
+                    <span className="hidden sm:inline font-bold" style={{ fontFamily: 'Poppins, sans-serif'}}>Profile</span>
+                  </>
+                )}
+              </button>
+              <span className="text-gray-400">|</span>
               <Link 
                 href="/privacy" 
-                className="text-gray-600 hover:text-gray-800 transition-colors text-sm"
+                className="text-white/80 hover:text-white transition-colors font-bold"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 Policies
@@ -498,7 +549,7 @@ export default function HelpCenterPage() {
                   type="text"
                   placeholder="Search..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => handleSearch(e.target.value)}
                   className="flex-1 px-4 py-3 text-gray-600 text-base border-0 focus:outline-none focus:ring-0 bg-white"
                   style={{ fontFamily: 'Poppins, sans-serif' }}
                 />
@@ -509,6 +560,11 @@ export default function HelpCenterPage() {
                   <Search className="w-5 h-5" />
                 </button>
               </div>
+              {isSearching && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
+                  <LoadingDots />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -528,12 +584,15 @@ export default function HelpCenterPage() {
               }}
               className={`flex items-center space-x-3 px-8 py-4 rounded-xl font-semibold transition-all duration-300 ${
                 activeTab === 'buyer'
-                  ? 'bg-blue-500 text-white shadow-lg transform scale-105'
-                  : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                  ? 'text-black shadow-lg transform scale-105'
+                  : 'text-gray-600 hover:bg-blue-50'
               }`}
-              style={{ fontFamily: 'Poppins, sans-serif' }}
+              style={{
+                 fontFamily: 'Poppins, sans-serif', 
+                 backgroundColor: activeTab === 'buyer' ? 'oklch(0.967 0.003 264.542)' : 'transparent'
+                }}
             >
-              <ShoppingCart className={`w-6 h-6 ${activeTab === 'buyer' ? 'text-white' : 'text-blue-500'}`} />
+              <ShoppingCart className={`w-6 h-6 ${activeTab === 'buyer' ? 'text-black' : 'oklch(0.967 0.003 264.542)'}`} />
               <span className="text-lg">Buyer Help Center</span>
             </button>
             
@@ -599,7 +658,7 @@ export default function HelpCenterPage() {
                             // Navigate to the detailed Contact Support page
                             window.location.href = '/help/buyer/contact-support';
                           } else {
-                            setSelectedSection(selectedSection === section.id ? null : section.id);
+                            handleSectionClick(section.id);
                           }
                         }}
                       >
@@ -691,7 +750,7 @@ export default function HelpCenterPage() {
                             // Navigate to the detailed Contact Support page
                             window.location.href = '/help/seller/contact-support';
                           } else {
-                            setSelectedSection(selectedSection === section.id ? null : section.id);
+                            handleSectionClick(section.id);
                           }
                         }}
                       >
@@ -786,55 +845,61 @@ export default function HelpCenterPage() {
                       </h3>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-8">
-                      <div>
-                        <h4 className="font-semibold text-gray-800 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          Help Topics
-                        </h4>
-                        <div className="space-y-3">
-                          {section.topics.map((topic, index) => (
-                            <div key={index} className={`flex items-center p-3 ${colorScheme.bgLight} rounded-lg hover:${colorScheme.bgHover} transition-colors cursor-pointer`}>
-                              <div className={`w-2 h-2 ${colorScheme.dot} rounded-full mr-3`}></div>
-                              <span className="text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                {topic}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                    {isSectionLoading ? (
+                      <div className="flex justify-center items-center h-32">
+                        <LoadingDots />
                       </div>
-
-                      <div>
-                        <h4 className="font-semibold text-gray-800 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          Frequently Asked Questions
-                        </h4>
-                        <div className="space-y-3">
-                          {section.faqs.map((faq, index) => (
-                            <div key={index} className="border border-gray-200 rounded-lg">
-                              <button
-                                className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
-                                onClick={() => setExpandedFAQ(expandedFAQ === `${section.id}-${index}` ? null : `${section.id}-${index}`)}
-                              >
-                                <span className="font-medium text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                  {faq.question}
+                    ) : (
+                      <div className="grid md:grid-cols-2 gap-8">
+                        <div>
+                          <h4 className="font-semibold text-gray-800 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                            Help Topics
+                          </h4>
+                          <div className="space-y-3">
+                            {section.topics.map((topic, index) => (
+                              <div key={index} className={`flex items-center p-3 ${colorScheme.bgLight} rounded-lg hover:${colorScheme.bgHover} transition-colors cursor-pointer`}>
+                                <div className={`w-2 h-2 ${colorScheme.dot} rounded-full mr-3`}></div>
+                                <span className="text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                  {topic}
                                 </span>
-                                {expandedFAQ === `${section.id}-${index}` ? (
-                                  <ChevronUp className="w-5 h-5 text-gray-500" />
-                                ) : (
-                                  <ChevronDown className="w-5 h-5 text-gray-500" />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="font-semibold text-gray-800 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                            Frequently Asked Questions
+                          </h4>
+                          <div className="space-y-3">
+                            {section.faqs.map((faq, index) => (
+                              <div key={index} className="border border-gray-200 rounded-lg">
+                                <button
+                                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
+                                  onClick={() => setExpandedFAQ(expandedFAQ === `${section.id}-${index}` ? null : `${section.id}-${index}`)}
+                                >
+                                  <span className="font-medium text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                    {faq.question}
+                                  </span>
+                                  {expandedFAQ === `${section.id}-${index}` ? (
+                                    <ChevronUp className="w-5 h-5 text-gray-500" />
+                                  ) : (
+                                    <ChevronDown className="w-5 h-5 text-gray-500" />
+                                  )}
+                                </button>
+                                {expandedFAQ === `${section.id}-${index}` && (
+                                  <div className="p-4 border-t bg-gray-50 animate-fadeIn">
+                                    <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                      {faq.answer}
+                                    </p>
+                                  </div>
                                 )}
-                              </button>
-                              {expandedFAQ === `${section.id}-${index}` && (
-                                <div className="p-4 border-t bg-gray-50 animate-fadeIn">
-                                  <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                    {faq.answer}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
               })()}

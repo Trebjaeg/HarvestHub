@@ -59,19 +59,13 @@ const paymentGuides: GuideSection[] = [
         id: 'accepted-payments',
         title: 'Accepted Payment Methods from Customers',
         steps: [
-          'Credit and Debit Cards: Visa, Mastercard, JCB accepted from customers',
-          'E-Wallets: GCash, PayMaya, and other digital wallet payments',
-          'Bank Transfers: Direct bank-to-bank transfers for larger orders',
           'Cash on Delivery (COD): Available in eligible delivery areas',
-          'Installment Plans: Credit card installments for qualifying purchases',
-          'Corporate Accounts: Business-to-business payment arrangements',
           'Gift Cards: HarvestHub gift card redemptions',
           'All payment methods are processed securely through our payment gateway'
         ],
         tips: [
           'You receive the same payout regardless of customer payment method',
           'COD orders may have slightly longer payout processing times',
-          'Monitor which payment methods your customers prefer for insights',
           'All transactions are encrypted and PCI DSS compliant'
         ]
       },

@@ -53,7 +53,6 @@ const orderGuides: GuideSection[] = [
           'In your cart, verify quantities and remove unwanted items',
           'Click "Proceed to Checkout" when ready to place your order',
           'Select your delivery address or add a new one',
-          'Choose your preferred payment method',
           'Review your order summary including items, total, and delivery details',
           'Apply any promo codes or vouchers if available',
           'Click "Place Order" to confirm and complete your purchase',
@@ -62,21 +61,17 @@ const orderGuides: GuideSection[] = [
         tips: [
           'Double-check product details and quantities before adding to cart',
           'Look for fresh produce delivery time slots during checkout',
-          'Save frequently used addresses for faster future checkout',
           'Check for available promotions and discounts before placing order',
-          'Screenshot your order confirmation for future reference'
         ]
       },
       {
         id: 'modify-order',
-        title: 'How to Modify an Order Before Payment',
+        title: 'How to Modify an Order Before Checkout',
         steps: [
           'While in your shopping cart, review all added items',
           'To change quantity: Click the + or - buttons next to each item',
           'To remove items: Click the trash icon or "Remove" button',
           'To add more items: Continue shopping and add products to cart',
-          'To change delivery address: Click "Change" next to the address',
-          'To modify payment method: Select a different payment option',
           'To add special instructions: Use the "Delivery Notes" field',
           'Review the updated order total and delivery fees',
           'Proceed to payment only when you\'re satisfied with all details'
@@ -122,7 +117,7 @@ const orderGuides: GuideSection[] = [
         title: 'Resolving Order Confirmation Issues',
         steps: [
           'Check your email inbox and spam folder for order confirmation',
-          'Log in to your HarvestHub account and check "My Orders"',
+          'Log in to your HarvestHub account',
           'Verify that payment was successfully processed',
           'If no confirmation received, screenshot your payment receipt',
           'Contact HarvestHub support with your order details',
@@ -133,7 +128,6 @@ const orderGuides: GuideSection[] = [
         ],
         tips: [
           'Order confirmations are usually sent within 5-10 minutes',
-          'Check if your payment method was actually charged',
           'Multiple attempts to place the same order may result in duplicate charges',
           'Contact support immediately if you suspect payment issues'
         ]
@@ -148,7 +142,6 @@ const orderGuides: GuideSection[] = [
           'Contact the seller directly through the platform messaging',
           'If no response from seller, escalate to HarvestHub support',
           'Document the delay and any communication attempts',
-          'Request compensation or alternative solutions if appropriate',
           'Consider cancelling if delay is unreasonable (case-by-case basis)',
           'Leave feedback about the experience after resolution'
         ],
@@ -178,14 +171,10 @@ const orderGuides: GuideSection[] = [
           'Click "Cancel Order" button if available',
           'Select a reason for cancellation from the dropdown menu',
           'Provide additional details if required',
-          'Confirm the cancellation request',
-          'Wait for cancellation confirmation and refund processing',
-          'Refunds typically process within 3-5 business days'
+          'Confirm the cancellation request'
         ],
         tips: [
-          'Orders can usually be cancelled within 1-2 hours of placement',
           'Once order is "Processing" or "Packed", cancellation may not be possible',
-          'Prepaid orders will be refunded to the original payment method',
           'COD orders don\'t require refund processing'
         ]
       },
@@ -200,7 +189,6 @@ const orderGuides: GuideSection[] = [
           'Contact HarvestHub support to report the rejection',
           'Provide your order number and reason for rejection',
           'Wait for the seller to confirm receipt of returned items',
-          'Refund processing will begin after seller confirms return',
           'Monitor your refund status in the "My Orders" section'
         ],
         tips: [
@@ -297,7 +285,7 @@ export default function OrderTrackingHelp() {
   return (
     <div className="min-h-screen bg-white">
       {/* Top Navigation Bar */}
-      <div className="bg-white border-b border-gray-200 py-3">
+      <div className="bg-[#103C2E] border-b border-gray-200 py-3">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -305,16 +293,17 @@ export default function OrderTrackingHelp() {
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#008236' }}>
                   <span className="text-white font-bold text-sm">H</span>
                 </div>
-                <span className="font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif', color: '#008236' }}>
-                  HarvestHub
+                <span className="font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  <span style={{ color: '#6CD75A' }}>Harvest</span>
+                  <span style={{ color: '#D4DB69' }}>Hub</span>
                 </span>
               </Link>
               <span className="text-gray-400">|</span>
-              <Link href="/help" className="text-gray-600 hover:text-gray-800 transition-colors" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <Link href="/help" className="text-white/80 hover:text-white transition-colors" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Help Center
               </Link>
               <span className="text-gray-400">|</span>
-              <span className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <span className="text-white/80" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Orders & Tracking
               </span>
             </div>
@@ -322,7 +311,7 @@ export default function OrderTrackingHelp() {
             <div className="text-right">
               <Link 
                 href="/privacy" 
-                className="text-gray-600 hover:text-gray-800 transition-colors text-sm"
+                className="text-white/80 hover:text-white transition-colors text-sm"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 Policies
@@ -477,9 +466,20 @@ export default function OrderTrackingHelp() {
                                       <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
                                         {index + 1}
                                       </div>
-                                      <p className="text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                        {step}
-                                      </p>
+                                      <div className="flex-1">
+                                        <p className="text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                          {step}
+                                        </p>
+                                        {step === 'Log in to your HarvestHub account' && (
+                                          <Link 
+                                            href="/auth" 
+                                            className="inline-flex items-center mt-2 px-3 py-1.5 bg-blue-100 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-200 transition-colors"
+                                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                                          >
+                                            Go to Login Page →
+                                          </Link>
+                                        )}
+                                      </div>
                                     </div>
                                   ))}
                                 </div>

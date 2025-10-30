@@ -89,9 +89,7 @@ const accountGuides: GuideSection[] = [
         ],
         tips: [
           'Account deletion is permanent and cannot be undone',
-          'Download any important order history before deletion',
           'Cancel any active orders before deleting your account',
-          'Consider deactivating instead of deleting if you might return'
         ]
       }
     ]
@@ -117,7 +115,7 @@ const accountGuides: GuideSection[] = [
         tips: [
           'Check your spam folder if you don\'t see the reset email',
           'Use a unique password that you haven\'t used before',
-          'The reset link expires after 24 hours for security'
+          'The reset link expires after 15 minutes for security'
         ]
       },
       {
@@ -135,7 +133,6 @@ const accountGuides: GuideSection[] = [
         ],
         tips: [
           'Keep your backup codes safe - you\'ll need them if you lose your phone',
-          'Use a trusted authenticator app for the best security',
           '2FA adds an extra layer of protection to your account'
         ]
       },
@@ -163,48 +160,23 @@ const accountGuides: GuideSection[] = [
   },
   {
     id: 'addresses-payments',
-    title: 'Addresses & Payment Methods',
+    title: 'Addresses',
     icon: CreditCard,
-    description: 'Manage your shipping addresses and payment options',
+    description: 'Manage your shipping addresses',
     guides: [
       {
         id: 'add-address',
         title: 'Adding or Editing Shipping Addresses',
         steps: [
-          'Log in and go to "My Profile" > "Addresses"',
-          'Click "Add New Address" to create a new shipping address',
+          'Log in and go to "My Profile" > "Edit Profile" > "Addresses"',
+          'Type in your new address to set the new shipping address.',
           'Fill in all required fields: name, phone, complete address',
-          'Select your region, province, city, and barangay',
-          'Add any special delivery instructions if needed',
           'Choose if this should be your default address',
-          'Click "Save Address" to add it to your account',
-          'To edit: click the edit icon next to any saved address'
+          'Click "Save Changes" to add it to your account'
         ],
         tips: [
           'Ensure your address details are accurate for successful delivery',
-          'Add landmarks or special instructions for easier delivery',
-          'You can have multiple addresses for different locations',
           'Set a default address for faster checkout'
-        ]
-      },
-      {
-        id: 'payment-methods',
-        title: 'Managing Payment Methods',
-        steps: [
-          'Go to "My Profile" > "Payment Methods"',
-          'Click "Add Payment Method" to add a new option',
-          'Choose your payment type: Credit/Debit Card or Digital Wallet',
-          'For cards: enter card number, expiry date, and CVV',
-          'For digital wallets: link your GCash or PayMaya account',
-          'Verify your payment method as prompted',
-          'Set a default payment method for quicker checkout',
-          'To remove: click the delete icon next to any saved method'
-        ],
-        tips: [
-          'Your payment information is encrypted and secure',
-          'You can save multiple payment methods for convenience',
-          'Digital wallets often offer faster transaction processing',
-          'Cash on Delivery (COD) is available without saving payment methods'
         ]
       },
       {
@@ -212,9 +184,6 @@ const accountGuides: GuideSection[] = [
         title: 'Setting Default Preferences',
         steps: [
           'Navigate to "My Profile" > "Preferences"',
-          'Set your default shipping address from your saved addresses',
-          'Choose your preferred payment method for checkout',
-          'Select your preferred delivery time slots if available',
           'Set notification preferences for order updates',
           'Choose your preferred language for the interface',
           'Enable or disable promotional email notifications',
@@ -417,12 +386,23 @@ export default function AccountProfileHelp() {
                                 <div className="space-y-3">
                                   {guide.steps.map((step, index) => (
                                     <div key={index} className="flex items-start space-x-3">
-                                      <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                                      <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
                                         {index + 1}
                                       </div>
-                                      <p className="text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                        {step}
-                                      </p>
+                                      <div className="flex-1">
+                                        <p className="text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                          {step}
+                                        </p>
+                                        {step === 'Log in to your HarvestHub account' && (
+                                          <Link 
+                                            href="/auth" 
+                                            className="inline-flex items-center mt-2 px-3 py-1.5 bg-blue-100 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-200 transition-colors"
+                                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                                          >
+                                            Go to Login Page →
+                                          </Link>
+                                        )}
+                                      </div>
                                     </div>
                                   ))}
                                 </div>

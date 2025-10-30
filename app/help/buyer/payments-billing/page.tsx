@@ -43,48 +43,6 @@ const paymentGuides: GuideSection[] = [
     description: 'Learn about available payment options for your HarvestHub orders',
     guides: [
       {
-        id: 'credit-debit-cards',
-        title: 'Credit & Debit Cards',
-        steps: [
-          'Go to checkout and select "Credit/Debit Card" as payment method',
-          'Enter your card number (16 digits without spaces)',
-          'Fill in the expiration date (MM/YY format)',
-          'Enter the CVV/CVC code (3 digits on back, 4 for Amex)',
-          'Provide the cardholder name as it appears on the card',
-          'Choose to save the card for future purchases (optional)',
-          'Review card details and billing address',
-          'Complete the payment by clicking "Pay Now"',
-          'Wait for payment confirmation and order processing'
-        ],
-        tips: [
-          'We accept Visa, Mastercard, and American Express cards',
-          'Ensure your card has international transactions enabled',
-          'Your card information is encrypted and secure with 256-bit SSL',
-          'Check with your bank if payment is declined repeatedly'
-        ]
-      },
-      {
-        id: 'digital-wallets',
-        title: 'Digital Wallets & UPI',
-        steps: [
-          'At checkout, select your preferred digital wallet option',
-          'Choose from GCash, PayMaya, or other available wallets',
-          'You\'ll be redirected to your wallet app or website',
-          'Log in to your digital wallet account if prompted',
-          'Verify the payment amount and merchant details',
-          'Confirm the payment using your wallet PIN or biometric',
-          'Wait for the payment confirmation from your wallet',
-          'You\'ll be redirected back to HarvestHub with order confirmation',
-          'Check your wallet for transaction receipt'
-        ],
-        tips: [
-          'Ensure sufficient balance in your digital wallet before payment',
-          'Digital wallet payments are usually processed instantly',
-          'Keep your wallet app updated for smooth transactions',
-          'Contact your wallet provider if payment fails'
-        ]
-      },
-      {
         id: 'cash-on-delivery',
         title: 'Cash on Delivery (COD)',
         steps: [
@@ -96,87 +54,11 @@ const paymentGuides: GuideSection[] = [
           'Prepare exact cash amount for delivery (change may be limited)',
           'Be available during the scheduled delivery window',
           'Pay the delivery person upon receiving your order',
-          'Get your receipt and verify order completeness'
         ],
         tips: [
           'COD is available in select delivery areas only',
           'Small change is provided but exact amount is preferred',
-          'COD orders may have additional service fees',
           'Verify order contents before making payment to delivery person'
-        ]
-      }
-    ]
-  },
-  {
-    id: 'payment-issues',
-    title: 'Payment Issues & Troubleshooting',
-    icon: AlertCircle,
-    description: 'Resolve payment failures and request refunds for payment issues',
-    guides: [
-      {
-        id: 'failed-payments',
-        title: 'Troubleshooting Failed Payments',
-        steps: [
-          'Check your internet connection and try again',
-          'Verify that all card details are entered correctly',
-          'Ensure your card has sufficient available balance or credit limit',
-          'Confirm that your card is enabled for online transactions',
-          'Check if your card has expired or is blocked',
-          'Try using a different payment method (card, wallet, or COD)',
-          'Clear your browser cache and cookies, then retry',
-          'Disable VPN or proxy if you\'re using one',
-          'Contact your bank if the card is being declined',
-          'Reach out to HarvestHub support if issues persist'
-        ],
-        tips: [
-          'Payment failures are often due to bank security measures',
-          'International cards may need to be enabled for Philippines transactions',
-          'Try payment during bank business hours for better success rates',
-          'Screenshot error messages to help support diagnose issues'
-        ]
-      },
-      {
-        id: 'refund-requests',
-        title: 'How to Request Payment Refunds',
-        steps: [
-          'Log in to your HarvestHub account',
-          'Go to "My Orders" and find the problematic order',
-          'Click on "Request Refund" or "Report Payment Issue"',
-          'Select the reason for refund request from the dropdown',
-          'Provide detailed description of the payment issue',
-          'Upload screenshots of error messages or bank statements if applicable',
-          'Submit the refund request for review',
-          'Wait for support team response (usually within 24-48 hours)',
-          'Provide additional information if requested by support',
-          'Track refund status in your order history'
-        ],
-        tips: [
-          'Refunds typically process within 5-7 business days',
-          'Refund will be credited to your original payment method',
-          'Keep transaction receipts and screenshots for faster processing',
-          'Contact support immediately if charged multiple times for same order'
-        ]
-      },
-      {
-        id: 'payment-security',
-        title: 'Payment Security & Protection',
-        steps: [
-          'Always shop on the official HarvestHub website or app',
-          'Look for the padlock icon and "https://" in the URL',
-          'Never share your card details via email or phone',
-          'Use secure networks when making online payments',
-          'Enable two-factor authentication on your account',
-          'Regularly monitor your bank and card statements',
-          'Report suspicious transactions to your bank immediately',
-          'Use strong, unique passwords for your HarvestHub account',
-          'Log out of your account when using shared computers',
-          'Keep your devices and browsers updated with security patches'
-        ],
-        tips: [
-          'HarvestHub uses industry-standard encryption for all payments',
-          'We never store complete card numbers on our servers',
-          'Your CVV code is never saved for future transactions',
-          'Report phishing attempts or suspicious emails to our security team'
         ]
       }
     ]
@@ -440,12 +322,23 @@ export default function PaymentsBillingHelp() {
                                 <div className="space-y-3">
                                   {guide.steps.map((step, index) => (
                                     <div key={index} className="flex items-start space-x-3">
-                                      <div className="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                                      <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
                                         {index + 1}
                                       </div>
-                                      <p className="text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                        {step}
-                                      </p>
+                                      <div className="flex-1">
+                                        <p className="text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                          {step}
+                                        </p>
+                                        {step === 'Log in to your HarvestHub account' && (
+                                          <Link 
+                                            href="/auth" 
+                                            className="inline-flex items-center mt-2 px-3 py-1.5 bg-blue-100 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-200 transition-colors"
+                                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                                          >
+                                            Go to Login Page →
+                                          </Link>
+                                        )}
+                                      </div>
                                     </div>
                                   ))}
                                 </div>

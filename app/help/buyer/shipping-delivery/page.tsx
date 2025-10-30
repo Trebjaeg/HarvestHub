@@ -48,9 +48,6 @@ const shippingGuides: GuideSection[] = [
         steps: [
           'Metro Manila: 1-2 business days for standard delivery',
           'Nearby Provinces (Cavite, Laguna, Rizal, Bulacan): 2-3 business days',
-          'Major Cities (Cebu, Davao, Iloilo, Baguio): 3-5 business days',
-          'Provincial Areas: 5-7 business days depending on location',
-          'Remote/Island Areas: 7-10 business days (subject to weather conditions)',
           'Same-Day Delivery: Available in select Metro Manila areas (order before 12 PM)',
           'Next-Day Delivery: Available for Metro Manila and nearby provinces',
           'Fresh produce may have priority processing for faster delivery',
@@ -88,7 +85,7 @@ const shippingGuides: GuideSection[] = [
         id: 'shipping-fees',
         title: 'Shipping Fees and Charges',
         steps: [
-          'Standard Delivery: ₱30-₱80 within Metro Manila, ₱80-₱150 for provinces',
+          'Standard Delivery: ₱30-₱80 within Metro Manila',
           'Express Delivery: Additional ₱50-₱100 on top of standard rates',
           'Same-Day Delivery: ₱150-₱250 depending on distance and order size',
           'Fresh Produce Delivery: May include ₱20-₱50 cold chain handling fee',
@@ -128,7 +125,6 @@ const shippingGuides: GuideSection[] = [
           'Screenshot tracking details for your records if needed'
         ],
         tips: [
-          'Order ID format: HH-YYYYMMDD-XXXXX (e.g., HH-20241028-00123)',
           'Tracking updates occur every few hours during transit',
           'Fresh produce orders may show temperature monitoring information',
           'Save your Order ID for easy reference and customer support inquiries'
@@ -139,7 +135,7 @@ const shippingGuides: GuideSection[] = [
         title: 'Courier and Delivery Partner Information',
         steps: [
           'Check your order details to see assigned courier partner',
-          'Common partners: LBC, 2GO, J&T Express, Grab Express, Lalamove',
+          'Common partners: Grab Express, Lalamove',
           'Each courier provides their own tracking system and contact details',
           'Use the provided tracking number with the courier\'s website or app',
           'Contact courier directly for delivery-specific inquiries',
@@ -161,7 +157,6 @@ const shippingGuides: GuideSection[] = [
         steps: [
           'Enable push notifications in the HarvestHub app for real-time updates',
           'Check your SMS for delivery status updates and tracking information',
-          'Monitor your email for detailed order progress reports',
           'Receive notification when your order is packed and ready for shipment',
           'Get alerts when your package is out for delivery with estimated time',
           'Confirmation notification sent upon successful delivery with photo proof',
@@ -171,7 +166,6 @@ const shippingGuides: GuideSection[] = [
         ],
         tips: [
           'Ensure your phone number and email are up to date for notifications',
-          'Check spam/junk folders if you don\'t receive email updates',
           'Delivery photos help confirm successful package receipt',
           'Customize notification frequency to avoid being overwhelmed with updates'
         ]
@@ -232,7 +226,7 @@ const shippingGuides: GuideSection[] = [
         id: 'missed-deliveries',
         title: 'Managing Missed Delivery Attempts',
         steps: [
-          'Check for delivery attempt notification via SMS, email, or app',
+          'Check for delivery attempt notification via SMS, or app',
           'Review any delivery attempt notice left at your address',
           'Contact the courier immediately to reschedule delivery',
           'Provide alternative delivery instructions or authorized recipient',
@@ -247,7 +241,7 @@ const shippingGuides: GuideSection[] = [
           'Leave clear delivery instructions and alternative contact numbers',
           'Authorize neighbors or security to receive packages on your behalf',
           'Consider delivery to your workplace if home delivery is problematic',
-          'Most couriers make 2-3 delivery attempts before returning packages'
+          'Most couriers make 2 delivery attempts before returning packages'
         ]
       }
     ]
@@ -440,12 +434,23 @@ export default function ShippingDeliveryHelp() {
                                 <div className="space-y-3">
                                   {guide.steps.map((step, index) => (
                                     <div key={index} className="flex items-start space-x-3">
-                                      <div className="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                                      <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
                                         {index + 1}
                                       </div>
-                                      <p className="text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                        {step}
-                                      </p>
+                                      <div className="flex-1">
+                                        <p className="text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                          {step}
+                                        </p>
+                                        {step === 'Log in to your HarvestHub account' && (
+                                          <Link 
+                                            href="/auth" 
+                                            className="inline-flex items-center mt-2 px-3 py-1.5 bg-blue-100 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-200 transition-colors"
+                                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                                          >
+                                            Go to Login Page →
+                                          </Link>
+                                        )}
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
