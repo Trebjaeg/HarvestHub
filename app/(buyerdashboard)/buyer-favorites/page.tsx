@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import LoadingDots from '@/components/ui/LoadingDots';
+import ProductCard from '@/components/ProductCard';
 import { 
   Heart, 
   Search, 
@@ -11,7 +12,6 @@ import {
   ChevronDown, 
   Eye, 
   Package,
-  RefreshCw,
   Grid3X3,
   List,
   AlertCircle
@@ -106,7 +106,6 @@ export default function FavoritesPage() {
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
   
   // View and filter states
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -144,7 +143,7 @@ export default function FavoritesPage() {
       if (selectedCategory !== 'all') queryParams.set('category', selectedCategory);
       if (searchTerm.trim()) queryParams.set('search', searchTerm.trim());
 
-      const response = await fetch(`/api/buyer/favorites?${queryParams.toString()}`, {
+      const response = await fetch(`/api/favorites?${queryParams.toString()}`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
@@ -175,7 +174,6 @@ export default function FavoritesPage() {
       setPagination(null);
     } finally {
       if (showLoader) setLoading(false);
-      setRefreshing(false);
     }
   }, [currentPage, sortBy, selectedCategory, searchTerm]);
 
@@ -202,18 +200,13 @@ export default function FavoritesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);
 
-  const refreshFavorites = async () => {
-    setRefreshing(true);
-    await fetchFavorites(false);
-  };
-
   const handleRemoveFromFavorites = async (productId: string) => {
     if (!confirm('Remove this product from your favorites?')) return;
 
     try {
       setRemovingFavorites(prev => new Set(prev).add(productId));
 
-      const response = await fetch(`/api/buyer/favorites?productId=${productId}`, {
+      const response = await fetch(`/api/favorites/${productId}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {
@@ -348,15 +341,6 @@ export default function FavoritesPage() {
                 Products you&apos;ve saved for later
               </p>
             </div>
-            <button
-              onClick={refreshFavorites}
-              disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
-              style={{ fontFamily: 'Poppins, sans-serif' }}
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
           </div>
         </div>
 
@@ -516,29 +500,28 @@ export default function FavoritesPage() {
             {/* Grid View */}
             {viewMode === 'grid' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-                {favorites.map((favorite) => (
-                  <div key={favorite._id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                    {/* Product Image */}
-                    <div className="relative aspect-square">
-                      {favorite.productImage ? (
-                        <Image
-                          src={favorite.productImage}
-                          alt={favorite.productName}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                          <Package className="w-12 h-12 text-gray-400" />
-                        </div>
-                      )}
+                {favorites.map((favorite) => {
+                  // Transform favorite data to match ProductCard's expected format
+                  const productData = {
+                    _id: favorite.productId,
+                    name: favorite.productName,
+                    category: favorite.productCategory,
+                    price: favorite.productPrice,
+                    unit: 'pack', // Default unit if not available
+                    stock: favorite.isAvailable ? 10 : 0, // Assume in stock if available
+                    image: favorite.productImage,
+                    farmerName: favorite.sellerName,
+                    farmerId: favorite.sellerId,
+                  };
 
-                      {/* Remove from Favorites Button */}
+                  return (
+                    <div key={favorite._id} className="relative">
+                      <ProductCard product={productData} />
+                      {/* Overlay remove button */}
                       <button
                         onClick={() => handleRemoveFromFavorites(favorite.productId)}
                         disabled={removingFavorites.has(favorite.productId)}
-                        className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
+                        className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50 z-10"
                         title="Remove from favorites"
                       >
                         {removingFavorites.has(favorite.productId) ? (
@@ -547,66 +530,9 @@ export default function FavoritesPage() {
                           <Heart className="w-4 h-4 fill-red-500 text-red-500" />
                         )}
                       </button>
-
-                      {/* Availability Badge */}
-                      {!favorite.isAvailable && (
-                        <div className="absolute top-2 left-2 px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
-                          Unavailable
-                        </div>
-                      )}
                     </div>
-
-                    {/* Product Info */}
-                    <div className="p-4">
-                      <Link href={`/shop/${favorite.productId}`}>
-                        <h3 className="font-medium text-gray-900 hover:text-green-600 transition-colors line-clamp-2 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          {favorite.productName}
-                        </h3>
-                      </Link>
-                      
-                      <p className="text-sm text-gray-600 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        by {favorite.sellerName}
-                      </p>
-
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-lg font-bold text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          {formatCurrency(favorite.productPrice)}
-                        </span>
-                        <span className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          Added {formatDate(favorite.dateAdded)}
-                        </span>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-2">
-                        <Link
-                          href={`/shop/${favorite.productId}`}
-                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                          style={{ fontFamily: 'Poppins, sans-serif' }}
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span className="text-sm">View</span>
-                        </Link>
-                        
-                        {favorite.isAvailable && (
-                          <button
-                            onClick={() => handleAddToCart(favorite.productId)}
-                            disabled={addingToCart.has(favorite.productId)}
-                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
-                            style={{ fontFamily: 'Poppins, sans-serif' }}
-                          >
-                            {addingToCart.has(favorite.productId) ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            ) : (
-                              <ShoppingCart className="w-4 h-4" />
-                            )}
-                            <span className="text-sm">Cart</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

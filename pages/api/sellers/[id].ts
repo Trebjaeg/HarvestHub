@@ -42,7 +42,7 @@ async function getSeller(req: NextApiRequest, res: NextApiResponse, sellerId: st
 
     // Get seller info with timeout (can be role 'seller' or 'farmer')
     const seller: any = await User.findById(sellerId)
-      .select('firstName lastName name email profileImage profilePicture location accountStatus createdAt verified followers following role')
+      .select('firstName lastName name email profileImage profilePicture location accountStatus createdAt verified followers following role responseRate averageResponseTime totalMessagesReceived totalMessagesResponded')
       .maxTimeMS(3000)
       .lean();
 
@@ -165,6 +165,14 @@ async function getSeller(req: NextApiRequest, res: NextApiResponse, sellerId: st
       // Continue without reviews - not a fatal error
     }
 
+    // Calculate response rate and format response time
+    const formatResponseTime = (minutes: number | null): string => {
+      if (minutes === null || minutes === undefined) return null as any;
+      if (minutes < 60) return `${Math.round(minutes)} min${Math.round(minutes) !== 1 ? 's' : ''}`;
+      if (minutes < 1440) return `${Math.round(minutes / 60)} hour${Math.round(minutes / 60) !== 1 ? 's' : ''}`;
+      return `${Math.round(minutes / 1440)} day${Math.round(minutes / 1440) !== 1 ? 's' : ''}`;
+    };
+
     return res.status(200).json({
       success: true,
       data: {
@@ -186,8 +194,13 @@ async function getSeller(req: NextApiRequest, res: NextApiResponse, sellerId: st
             distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
           },
           totalProducts,
-          responseRate: '95%',
-          responseTime: '< 2 hours'
+          // Response metrics from database (null if not yet tracked)
+          responseRate: seller.responseRate !== null && seller.responseRate !== undefined ? seller.responseRate : null,
+          responseTime: formatResponseTime(seller.averageResponseTime),
+          // Raw metrics for frontend to use if needed
+          averageResponseTimeMinutes: seller.averageResponseTime || null,
+          totalMessagesReceived: seller.totalMessagesReceived || 0,
+          totalMessagesResponded: seller.totalMessagesResponded || 0
         },
         products: {
           items: products.map((p: any) => ({

@@ -3,18 +3,21 @@ import dbConnect from '@/lib/mongodb';
 import Favorite from '@/models/Favorite';
 import Product from '@/models/Product';
 import { verifyToken } from '@/lib/auth-middleware';
+import cache from '@/lib/memory-cache';
 
 interface ProductData {
   _id: string;
   name: string;
   price: number;
-  imageUrl: string;
-  description: string;
+  image: string;
+  images?: string[];
+  description?: string;
   category: string;
-  availability: string;
-  weight: string;
-  location: string;
+  stock: number;
+  unit: string;
+  location?: string;
   farmerName: string;
+  isActive: boolean;
 }
 
 export async function GET(request: NextRequest) {
@@ -45,6 +48,15 @@ export async function GET(request: NextRequest) {
     const maxPrice = searchParams.get('maxPrice');
     const search = searchParams.get('search');
 
+    // Create cache key based on user and query params
+    const cacheKey = `favorites:${userId}:${page}:${limit}:${sortBy}:${sortOrder}:${category || 'all'}:${minPrice || ''}:${maxPrice || ''}:${search || ''}`;
+    
+    // Try to get from cache (5 minutes TTL)
+    const cachedData = cache.get<any>(cacheKey);
+    if (cachedData) {
+      return NextResponse.json(cachedData);
+    }
+
     // Build query
     const query: Record<string, unknown> = { buyerId: userId, isActive: true };
 
@@ -69,12 +81,13 @@ export async function GET(request: NextRequest) {
     const sortObject: Record<string, 1 | -1> = {};
     sortObject[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-    // Execute queries
+    // Execute queries with lean() for better performance
     const [favorites, totalCount] = await Promise.all([
       Favorite.find(query)
         .sort(sortObject)
         .skip(skip)
         .limit(limit)
+        .lean()
         .lean(),
       Favorite.countDocuments(query)
     ]);
@@ -90,13 +103,15 @@ export async function GET(request: NextRequest) {
               _id: product._id,
               name: product.name,
               price: product.price,
-              imageUrl: product.imageUrl,
+              image: product.image,
+              images: product.images,
               description: product.description,
               category: product.category,
-              availability: product.availability,
-              weight: product.weight,
+              stock: product.stock,
+              unit: product.unit,
               location: product.location,
-              farmerName: product.farmerName
+              farmerName: product.farmerName,
+              isActive: product.isActive
             } : null
           };
         } catch (error) {
@@ -113,7 +128,7 @@ export async function GET(request: NextRequest) {
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       data: {
         favorites: enrichedFavorites,
@@ -126,7 +141,12 @@ export async function GET(request: NextRequest) {
           hasPrevPage
         }
       }
-    });
+    };
+
+    // Cache the response for 5 minutes (300 seconds)
+    cache.set(cacheKey, responseData, 300);
+
+    return NextResponse.json(responseData);
 
   } catch (error) {
     console.error('Error fetching favorites:', error);
@@ -144,7 +164,7 @@ export async function POST(request: NextRequest) {
     // Verify authentication
     const authResult = await verifyToken(request);
     if (!authResult.success || !authResult.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const userId = authResult.user.id;
@@ -152,13 +172,13 @@ export async function POST(request: NextRequest) {
     const { productId } = body;
 
     if (!productId) {
-      return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Product ID is required' }, { status: 400 });
     }
 
     // Get product details
     const product = await Product.findById(productId);
     if (!product) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });
     }
 
     // Check if already favorited
@@ -168,7 +188,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingFavorite) {
-      return NextResponse.json({ error: 'Product already in favorites' }, { status: 409 });
+      return NextResponse.json({ success: false, error: 'Product already in favorites' }, { status: 409 });
     }
 
     // Create new favorite
@@ -177,15 +197,18 @@ export async function POST(request: NextRequest) {
       productId: productId,
       productName: product.name,
       productPrice: product.price,
-      productImage: product.imageUrl,
+      productImage: product.image || product.images?.[0],
       productCategory: product.category,
-      sellerId: product.sellerId,
+      sellerId: product.farmerId,
       sellerName: product.farmerName,
       isActive: true,
       dateAdded: new Date()
     });
 
     await favorite.save();
+
+    // Invalidate all cache entries for this user
+    cache.delPattern(`favorites:${userId}:*`);
 
     return NextResponse.json({
       success: true,
@@ -194,9 +217,8 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error adding to favorites:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

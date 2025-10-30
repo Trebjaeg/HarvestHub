@@ -22,9 +22,18 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 interface AdminStats {
   totalUsers: number;
+  activeUsers: number;
+  suspendedUsers: number;
+  deletedUsers: number;
+  totalReports: number;
+  pendingReports: number;
+  activeProductReports: number;
+  pendingAppeals: number;
+  recentActions: number;
   totalFarmers: number;
   pendingFarmers: number;
-  totalReports: number;
+  verifiedFarmers: number;
+  rejectedFarmers: number;
 }
 
 const AdminDashboard: React.FC = () => {
@@ -624,6 +633,9 @@ const AdminDashboard: React.FC = () => {
                         <div className="text-xl lg:text-2xl font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
                           {stats?.totalFarmers ?? 0}
                         </div>
+                        <p className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          {stats?.verifiedFarmers ?? 0} verified
+                        </p>
                       </CardContent>
                     </Card>
 
@@ -668,6 +680,9 @@ const AdminDashboard: React.FC = () => {
                         <div className="text-xl lg:text-2xl font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
                           {stats?.totalReports ?? 0}
                         </div>
+                        <p className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          {stats?.activeProductReports ?? 0} product reports
+                        </p>
                       </CardContent>
                     </Card>
                   </>

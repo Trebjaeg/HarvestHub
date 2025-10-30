@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import LoadingDots from '@/components/ui/LoadingDots';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { 
   ArrowLeft, 
   Package, 
@@ -115,6 +116,16 @@ export default function OrderDetailsPage() {
   const [cancelling, setCancelling] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Cancel confirmation dialog state
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  
+  // Result dialog state
+  const [resultDialog, setResultDialog] = useState<{
+    open: boolean;
+    success: boolean;
+    message: string;
+  }>({ open: false, success: false, message: '' });
+
   useEffect(() => {
     if (orderId) {
       fetchOrderDetails();
@@ -167,7 +178,12 @@ export default function OrderDetailsPage() {
   };
 
   const handleCancelOrder = async () => {
-    if (!order || !confirm('Are you sure you want to cancel this order?')) return;
+    if (!order) return;
+    setShowCancelDialog(true);
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!order) return;
 
     try {
       setCancelling(true);
@@ -179,14 +195,38 @@ export default function OrderDetailsPage() {
         }
       });
 
+      const data = await response.json();
+
       if (response.ok) {
+        setShowCancelDialog(false);
+        
+        // Show success message
+        setResultDialog({
+          open: true,
+          success: true,
+          message: 'Order cancelled successfully. Your inventory has been released.'
+        });
+        
         await fetchOrderDetails(false); // Refresh order details
       } else {
-        const errorData = await response.json();
-        alert(errorData.message || 'Failed to cancel order');
+        setShowCancelDialog(false);
+        
+        // Show error message
+        setResultDialog({
+          open: true,
+          success: false,
+          message: data.message || 'Failed to cancel order. Please try again.'
+        });
       }
     } catch (error) {
-      alert('Error cancelling order. Please try again.');
+      setShowCancelDialog(false);
+      
+      // Show error message
+      setResultDialog({
+        open: true,
+        success: false,
+        message: 'Error cancelling order. Please check your connection and try again.'
+      });
     } finally {
       setCancelling(false);
     }
@@ -673,6 +713,85 @@ export default function OrderDetailsPage() {
           </div>
         )}
       </div>
+
+      {/* Cancel Order Confirmation Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={(open) => !cancelling && setShowCancelDialog(open)}>
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <div className="flex flex-col items-center gap-4">
+            {/* Icon */}
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+              <XCircle className="w-10 h-10 text-red-600" />
+            </div>
+            
+            {/* Title */}
+            <h3 className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Cancel Order?
+            </h3>
+            
+            {/* Message */}
+            <p className="text-gray-600 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Are you sure you want to cancel this order? This action cannot be undone.
+            </p>
+            
+            {/* Buttons */}
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setShowCancelDialog(false)}
+                disabled={cancelling}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                No, Keep It
+              </button>
+              <button
+                onClick={confirmCancelOrder}
+                disabled={cancelling}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Result Dialog */}
+      <Dialog open={resultDialog.open} onOpenChange={(open) => setResultDialog({ ...resultDialog, open })}>
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <div className="flex flex-col items-center gap-4">
+            {/* Icon */}
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+              resultDialog.success ? 'bg-green-100' : 'bg-red-100'
+            }`}>
+              {resultDialog.success ? (
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              ) : (
+                <XCircle className="w-10 h-10 text-red-600" />
+              )}
+            </div>
+            
+            {/* Title */}
+            <h3 className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              {resultDialog.success ? 'Success!' : 'Error'}
+            </h3>
+            
+            {/* Message */}
+            <p className="text-gray-600 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              {resultDialog.message}
+            </p>
+            
+            {/* Button */}
+            <button
+              onClick={() => setResultDialog({ open: false, success: false, message: '' })}
+              className="w-full bg-[#4A7C59] hover:bg-[#3d6849] text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+            >
+              OK
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

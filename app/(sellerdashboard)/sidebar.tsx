@@ -16,6 +16,8 @@ import {
   ArrowLeft,
   Menu,
   X,
+  MapPin,
+  FileText,
 } from "lucide-react";
 import Image from "next/image";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
@@ -45,9 +47,19 @@ const menuItems = [
     href: "/products",
   },
   {
+    icon: FileText,
+    label: "Appeals",
+    href: "/my-appeals",
+  },
+  {
     icon: ShoppingCart,
     label: "Manage Orders",
     href: "/orders",
+  },
+  {
+    icon: MapPin,
+    label: "Pickup Locations",
+    href: "/pickup-locations",
   },
   {
     icon: BarChart3,
@@ -94,7 +106,7 @@ export default function Sidebar() {
         setProfile(data.seller);
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      // Silent error handling
     } finally {
       setLoading(false);
     }
@@ -106,7 +118,6 @@ export default function Sidebar() {
 
   const handleLogout = async () => {
     setShowLogoutModal(false);
-    console.log('🚪 Starting logout process...');
     try {
       // Call logout API to clear server-side session
       const response = await fetch('/api/auth/logout', {
@@ -116,8 +127,6 @@ export default function Sidebar() {
           'Content-Type': 'application/json',
         },
       });
-      
-      console.log('🚪 Logout API response:', response.status);
       
       // Clear ALL possible storage
       if (typeof window !== 'undefined') {
@@ -134,15 +143,11 @@ export default function Sidebar() {
         // Trigger logout event for other tabs
         localStorage.setItem('logout-event', Date.now().toString());
         localStorage.removeItem('logout-event');
-        
-        console.log('🚪 Cleared all storage');
       }
       
     } catch (error) {
-      console.error('🚪 Logout error:', error);
+      // Silent error handling
     } finally {
-      console.log('🚪 Redirecting to auth page...');
-      
       // Force a complete page reload to clear any cached state
       window.location.href = '/auth';
     }

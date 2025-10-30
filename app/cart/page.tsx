@@ -88,6 +88,15 @@ export default function CartPage() {
         setCartItems(data.items || []);
         setCartCount(data.count || 0); // Update cart count from API
         
+        // Show notification if items were auto-removed
+        if (data.removedItems && data.removedItems > 0) {
+          toast({
+            title: "Cart Updated",
+            description: `${data.removedItems} unavailable item(s) were removed from your cart.`,
+            variant: "default",
+          });
+        }
+        
         // Populate stock info from cart items
         const newStockInfo = new Map<string, number>();
         (data.items || []).forEach((item: CartItem) => {
@@ -361,6 +370,34 @@ export default function CartPage() {
   const selectedShippingFee = selectedItems.size > 0 ? shippingFee : 0;
   const selectedTotal = selectedSubtotal + selectedShippingFee;
 
+  // ==================== CHECKOUT HANDLER ====================
+  
+  const handleCheckout = () => {
+    // Check if any items are selected
+    if (selectedItems.size === 0) {
+      setAlertDialog({
+        isOpen: true,
+        title: 'No Items Selected',
+        message: 'Please select at least one item to proceed to checkout.'
+      });
+      return;
+    }
+
+    // Get selected items data
+    const selectedCartItems = cartItems.filter(item => selectedItems.has(item._id) && item.isAvailable !== false);
+    
+    // Store selected items in sessionStorage for checkout page
+    sessionStorage.setItem('checkoutItems', JSON.stringify({
+      items: selectedCartItems,
+      subtotal: selectedSubtotal,
+      shippingFee: selectedShippingFee,
+      total: selectedTotal
+    }));
+
+    // Navigate to checkout
+    router.push('/checkout');
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F5F5]" style={{ fontFamily: 'Poppins, sans-serif' }}>
       {/* Header - Same as Home */}
@@ -491,7 +528,7 @@ export default function CartPage() {
                 <>
                   {groupedItems.map((group) => (
                     <div key={group.sellerId} className="border-b last:border-b-0">
-                      {/* Seller Name */}
+                      {/* Seller Name - Clickable */}
                       <div className="px-4 md:px-6 py-3 bg-gray-50 flex items-center">
                         <input 
                           type="checkbox" 
@@ -505,10 +542,15 @@ export default function CartPage() {
                           aria-label={`Select all products from ${group.sellerName}`}
                           className="w-4 h-4 md:w-5 md:h-5 rounded mr-2 md:mr-3 cursor-pointer" 
                         />
-                        <svg className="w-4 h-4 md:w-5 md:h-5 text-gray-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-4 h-4 md:w-5 md:h-5 text-gray-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
                         </svg>
-                        <span className="font-medium text-gray-700 text-sm md:text-base">{group.sellerName}</span>
+                        <Link 
+                          href={`/seller/${group.sellerId}`}
+                          className="font-medium text-gray-700 text-sm md:text-base hover:text-[#4A7C59] transition-colors hover:underline"
+                        >
+                          {group.sellerName}
+                        </Link>
                       </div>
 
                       {/* Products */}
@@ -536,8 +578,11 @@ export default function CartPage() {
                                 className={`w-5 h-5 rounded border-gray-300 mt-1 flex-shrink-0 ${item.isAvailable === false ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                               />
                               
-                              {/* Product Image */}
-                              <div className={`relative w-24 h-24 bg-gray-100 rounded-lg flex-shrink-0 ${item.isAvailable === false ? 'blur-sm' : ''}`}>
+                              {/* Product Image - Clickable */}
+                              <Link 
+                                href={`/product/${item.productId}`}
+                                className={`relative w-24 h-24 bg-gray-100 rounded-lg flex-shrink-0 hover:opacity-80 transition-opacity ${item.isAvailable === false ? 'blur-sm pointer-events-none' : ''}`}
+                              >
                                 {item.productImage ? (
                                   <Image 
                                     src={item.productImage} 
@@ -552,11 +597,16 @@ export default function CartPage() {
                                     </svg>
                                   </div>
                                 )}
-                              </div>
+                              </Link>
 
                               {/* Product Details */}
                               <div className={`flex-1 min-w-0 ${item.isAvailable === false ? 'blur-sm' : ''}`}>
-                                <h3 className="font-medium text-gray-900 mb-1 text-sm line-clamp-2">{item.productName}</h3>
+                                <Link 
+                                  href={`/product/${item.productId}`}
+                                  className={`font-medium text-gray-900 mb-1 text-sm line-clamp-2 hover:text-[#4A7C59] transition-colors block ${item.isAvailable === false ? 'pointer-events-none' : ''}`}
+                                >
+                                  {item.productName}
+                                </Link>
                                 <p className="text-sm text-gray-500 mb-2">
                                   ₱{item.pricePerUnit.toFixed(2)}/{item.unit}
                                 </p>
@@ -639,8 +689,11 @@ export default function CartPage() {
                             />
                             
                             <div className="flex items-center flex-1">
-                              {/* Product Image */}
-                              <div className={`relative w-20 h-20 bg-gray-100 rounded-lg mr-4 flex-shrink-0 ${item.isAvailable === false ? 'blur-sm' : ''}`}>
+                              {/* Product Image - Clickable */}
+                              <Link 
+                                href={`/product/${item.productId}`}
+                                className={`relative w-20 h-20 bg-gray-100 rounded-lg mr-4 flex-shrink-0 hover:opacity-80 transition-opacity ${item.isAvailable === false ? 'blur-sm pointer-events-none' : ''}`}
+                              >
                                 {item.productImage ? (
                                   <Image 
                                     src={item.productImage} 
@@ -655,11 +708,16 @@ export default function CartPage() {
                                     </svg>
                                   </div>
                                 )}
-                              </div>
+                              </Link>
 
                               {/* Product Details */}
                               <div className={`flex-1 ${item.isAvailable === false ? 'blur-sm' : ''}`}>
-                                <h3 className="font-medium text-gray-900 mb-1">{item.productName}</h3>
+                                <Link 
+                                  href={`/product/${item.productId}`}
+                                  className={`font-medium text-gray-900 mb-1 hover:text-[#4A7C59] transition-colors block ${item.isAvailable === false ? 'pointer-events-none' : ''}`}
+                                >
+                                  {item.productName}
+                                </Link>
                                 <p className="text-sm text-gray-500">
                                   ₱{item.pricePerUnit.toFixed(2)}/{item.unit}
                                 </p>
@@ -794,10 +852,11 @@ export default function CartPage() {
 
                 {/* Checkout Button */}
                 <button
-                  disabled={cartItems.length === 0}
+                  onClick={handleCheckout}
+                  disabled={cartItems.length === 0 || selectedItems.size === 0}
                   className="w-full bg-[#4A7C59] hover:bg-[#3d6549] text-white py-3 md:py-4 rounded-lg font-semibold text-base md:text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Proceed to Checkout
+                  Proceed to Checkout ({selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''})
                 </button>
               </div>
             </div>

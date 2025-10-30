@@ -1,34 +1,8 @@
 import type { Metadata } from "next";
-import { Inter, Poppins, Pacifico } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import I18nProvider from "@/components/I18nProvider";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-  fallback: ["system-ui", "arial"],
-  adjustFontFallback: false,
-});
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-poppins",
-  display: "swap",
-  fallback: ["system-ui", "arial"],
-  adjustFontFallback: false,
-});
-
-const pacifico = Pacifico({
-  subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-pacifico",
-  display: "swap",
-  fallback: ["cursive", "system-ui"],
-  adjustFontFallback: false,
-});
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: "HarvestHub",
@@ -43,17 +17,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-        <meta httpEquiv="Pragma" content="no-cache" />
-        <meta httpEquiv="Expires" content="0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800;900&family=Pacifico&display=swap" rel="stylesheet" />
       </head>
-      <body className={`${inter.variable} ${poppins.variable} ${pacifico.variable} antialiased isolate`}>
-        <I18nProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </I18nProvider>
+      <body className="antialiased isolate font-poppins">
+        <ErrorBoundary>
+          <I18nProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </I18nProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

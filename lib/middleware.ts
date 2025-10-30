@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { rateLimiter, RATE_LIMITS, getClientIP, applySecurityHeaders } from '@/lib/security';
+import jwt from 'jsonwebtoken';
 
 export type ApiHandler = (req: NextApiRequest, res: NextApiResponse) => Promise<void> | void;
 
@@ -128,6 +129,51 @@ export function withLogging(handler: ApiHandler): ApiHandler {
     } finally {
       const duration = Date.now() - start;
       console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - ${res.statusCode} - ${duration}ms`);
+    }
+  };
+}
+
+/**
+ * Cookie-based authentication middleware for API routes
+ * Verifies the auth-token cookie and attaches userId to request
+ */
+export function withCookieAuth(handler: ApiHandler): ApiHandler {
+  return async (req: NextApiRequest, res: NextApiResponse) => {
+    try {
+      // Get token from cookies
+      const token = req.cookies['auth-token'];
+      
+      if (!token) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required'
+        });
+      }
+
+      // Verify JWT token
+      const secret = process.env.JWT_SECRET;
+      if (!secret) {
+        console.error('JWT_SECRET not configured');
+        return res.status(500).json({
+          success: false,
+          message: 'Server configuration error'
+        });
+      }
+
+      const decoded = jwt.verify(token, secret) as any;
+      
+      // Attach user ID to request
+      (req as any).userId = decoded.userId;
+      (req as any).user = decoded;
+
+      // Call the actual handler
+      await handler(req, res);
+    } catch (error) {
+      console.error('Cookie auth error:', error);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired token'
+      });
     }
   };
 }

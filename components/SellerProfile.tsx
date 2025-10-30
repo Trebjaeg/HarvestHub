@@ -16,7 +16,7 @@ interface SellerProfileProps {
 
 export default function SellerProfile({ sellerId }: SellerProfileProps) {
   const router = useRouter();
-  const { cartCount: initialCartCount, notificationCount } = useAuthUserData();
+  const { cartCount: initialCartCount, notificationCount, isAuthenticated, user } = useAuthUserData();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [seller, setSeller] = useState<any>(null);
@@ -26,10 +26,21 @@ export default function SellerProfile({ sellerId }: SellerProfileProps) {
   const [sortBy, setSortBy] = useState('popular');
   const [cartShake, setCartShake] = useState(false);
   const [cartCount, setCartCount] = useState(initialCartCount);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
 
   useEffect(() => {
     fetchSellerProfile();
   }, [sellerId, currentPage, sortBy]);
+
+  // Check follow status when seller data loads
+  useEffect(() => {
+    if (seller) {
+      setFollowerCount(seller.followers || 0);
+      checkFollowStatus();
+    }
+  }, [seller?.id]);
 
   // Update cart count when initial value changes
   useEffect(() => {
@@ -77,6 +88,68 @@ export default function SellerProfile({ sellerId }: SellerProfileProps) {
       setError(err instanceof Error ? err.message : 'Failed to load seller profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkFollowStatus = async () => {
+    if (!isAuthenticated || !user) {
+      setIsFollowing(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/users/${sellerId}/follow-status`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsFollowing(data.isFollowing || false);
+      } else if (response.status === 401) {
+        setIsFollowing(false);
+      }
+    } catch (err) {
+      console.error('Error checking follow status:', err);
+      setIsFollowing(false);
+    }
+  };
+
+  const handleFollowToggle = async () => {
+    if (!isAuthenticated || !user) {
+      router.push('/auth/login');
+      return;
+    }
+
+    try {
+      setFollowLoading(true);
+
+      const response = await fetch(`/api/users/${sellerId}/follow`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsFollowing(data.isFollowing);
+        
+        // Update follower count
+        setFollowerCount(prev => data.isFollowing ? prev + 1 : Math.max(0, prev - 1));
+      } else if (response.status === 401) {
+        router.push('/auth/login');
+      } else {
+        const errorData = await response.json();
+        console.error('Follow error:', errorData.message);
+      }
+    } catch (err) {
+      console.error('Error toggling follow:', err);
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -137,7 +210,11 @@ export default function SellerProfile({ sellerId }: SellerProfileProps) {
           {/* Mobile Header */}
           <div className="flex md:hidden items-center justify-between">
             <div className="flex items-center space-x-3">
-              <button onClick={() => router.back()}>
+              <button 
+                onClick={() => router.back()}
+                className="hover:bg-white/10 p-1 rounded-lg transition-all duration-200"
+                title="Go back"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
                 </svg>
@@ -159,7 +236,7 @@ export default function SellerProfile({ sellerId }: SellerProfileProps) {
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-5 h-5 ${cartShake ? 'animate-shake' : ''}`}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                 </svg>
-                {cartCount > 0 && (
+                {isAuthenticated && cartCount > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
@@ -209,7 +286,7 @@ export default function SellerProfile({ sellerId }: SellerProfileProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                 </svg>
                 <span className="text-sm font-medium">Cart</span>
-                {cartCount > 0 && (
+                {isAuthenticated && cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
@@ -234,94 +311,156 @@ export default function SellerProfile({ sellerId }: SellerProfileProps) {
         </div>
       </header>
 
-      {/* Store Header */}
-      <div className="bg-gradient-to-br from-[#2d5016] to-[#40613D] text-white">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row gap-6 items-start">
+      {/* Store Header - Clean & Simple */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
+          {/* Main Profile Section */}
+          <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start">
             {/* Store Logo */}
-            <div className="relative w-24 h-24 rounded-full overflow-hidden bg-white flex-shrink-0 border-4 border-white shadow-xl">
-              {seller.profileImage || seller.profilePicture ? (
-                <Image
-                  src={seller.profileImage || seller.profilePicture}
-                  alt={seller.name}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-[#40613D] bg-green-100">
-                  {seller.name.charAt(0).toUpperCase()}
-                </div>
-              )}
+            <div className="relative flex-shrink-0">
+              <div className="relative w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden shadow-lg border-4 border-gray-200 bg-gray-100 flex items-center justify-center">
+                {seller.profileImage || seller.profilePicture ? (
+                  <Image
+                    src={seller.profileImage || seller.profilePicture}
+                    alt={seller.name}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                    <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                    <path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" />
+                  </svg>
+                )}
+              </div>
+              {/* Verified Badge */}
+              <div className="absolute -bottom-2 -right-2 bg-[#40613D] text-white rounded-full p-2 shadow-lg">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
             </div>
 
             {/* Store Info */}
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold mb-2">{seller.name}</h1>
-              {seller.isSuspended && (
-                <span className="inline-block bg-red-600 text-white text-xs px-3 py-1 rounded-full mb-3">
-                  Suspended
-                </span>
-              )}
-              
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3 mt-4">
-                <button className="flex items-center gap-2 bg-white text-[#40613D] px-6 py-2 rounded-lg hover:bg-gray-100 transition font-semibold shadow-md">
-                  <Users className="w-5 h-5" />
-                  Follow
-                </button>
-                <button className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/30 text-white px-6 py-2 rounded-lg hover:bg-white/20 transition font-semibold">
-                  <MessageCircle className="w-5 h-5" />
-                  Chat
-                </button>
-              </div>
-            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div className="flex-1">
+                  <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">{seller.name}</h1>
+                  {seller.isSuspended && (
+                    <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-700 text-xs font-semibold px-3 py-1.5 rounded-lg mb-3 border border-red-200">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                      Suspended
+                    </span>
+                  )}
+                  
+                  {/* Stats Row */}
+                  <div className="flex items-center gap-6 mt-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
+                      <span className="font-semibold text-gray-900">{seller.rating?.average?.toFixed(1) || '0.0'}</span>
+                      <span className="text-gray-500">({formatNumber(seller.rating?.total || 0)} Rating{(seller.rating?.total || 0) !== 1 ? 's' : ''})</span>
+                    </div>
+                    {(seller.responseRate !== null && seller.responseRate !== undefined) && (
+                      <>
+                        <div className="h-4 w-px bg-gray-300"></div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <MessageCircle className="w-4 h-4" />
+                          <span className="font-medium">{Math.round(seller.responseRate)}%</span>
+                          <span className="text-gray-500 hidden sm:inline">Response Rate</span>
+                        </div>
+                      </>
+                    )}
+                    {seller.responseTime && (
+                      <>
+                        <div className="h-4 w-px bg-gray-300"></div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="font-medium">{seller.responseTime}</span>
+                          <span className="text-gray-500 hidden sm:inline">Response</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
 
-            {/* Store Stats Grid */}
-            <div className="grid grid-cols-3 gap-4 w-full md:w-auto">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center border border-white/20">
-                <p className="text-sm opacity-90 mb-1">Products</p>
-                <p className="text-2xl font-bold">{formatNumber(seller.totalProducts || 0)}</p>
-              </div>
-              
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center border border-white/20">
-                <p className="text-sm opacity-90 mb-1">Followers</p>
-                <p className="text-2xl font-bold">{formatNumber(seller.followers || 0)}</p>
-              </div>
-              
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center border border-white/20">
-                <p className="text-sm opacity-90 mb-1">Following</p>
-                <p className="text-2xl font-bold">{seller.following || 0}</p>
+                  {/* Joined Date */}
+                  <div className="flex items-center gap-2 mt-3 text-sm text-gray-600">
+                    <Calendar className="w-4 h-4" />
+                    <span>Joined {formatDate(seller.memberSince || seller.createdAt)}</span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap gap-3">
+                  <button 
+                    onClick={handleFollowToggle}
+                    disabled={followLoading}
+                    className={`flex items-center gap-2 ${
+                      isFollowing 
+                        ? 'bg-gray-200 hover:bg-gray-300 text-gray-700' 
+                        : 'bg-[#40613D] hover:bg-[#2d5016] text-white'
+                    } px-6 py-2.5 rounded-lg font-semibold shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <Users className="w-5 h-5" />
+                    {followLoading ? 'Loading...' : isFollowing ? 'Following' : 'Follow'}
+                  </button>
+                  <button className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-lg font-semibold shadow-sm hover:shadow-md transition-all duration-200 border border-gray-300">
+                    <MessageCircle className="w-5 h-5" />
+                    Chat
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Store Details Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/20">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 mb-2">
-                <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                <span className="text-lg font-bold">{seller.rating?.average?.toFixed(1) || '0.0'}</span>
-                <span className="text-sm opacity-75">({formatNumber(seller.rating?.total || 0)} Rating)</span>
+          {/* Stats Cards - Simple & Clean */}
+          <div className="grid grid-cols-3 gap-4 mt-8">
+            {/* Products Card */}
+            <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 md:w-14 md:h-14 bg-[#EFF9F0] rounded-xl flex items-center justify-center mb-3">
+                  <svg className="w-6 h-6 md:w-7 md:h-7 text-[#40613D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </div>
+                <p className="text-xs md:text-sm text-gray-600 mb-1 font-medium">Products</p>
+                <p className="text-2xl md:text-3xl font-bold text-gray-900">
+                  {formatNumber(seller.totalProducts || 0)}
+                </p>
               </div>
-              <p className="text-sm opacity-90">Rating</p>
             </div>
-            
-            <div className="text-center">
-              <p className="text-lg font-bold mb-2 text-green-300">{seller.responseRate || '100%'}</p>
-              <p className="text-sm opacity-90">Chat Performance</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 mb-2">
-                <Calendar className="w-5 h-5" />
-                <span className="text-lg font-bold">{formatDate(seller.memberSince || seller.createdAt)}</span>
+
+            {/* Followers Card */}
+            <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 md:w-14 md:h-14 bg-[#EFF9F0] rounded-xl flex items-center justify-center mb-3">
+                  <Users className="w-6 h-6 md:w-7 md:h-7 text-[#40613D]" />
+                </div>
+                <p className="text-xs md:text-sm text-gray-600 mb-1 font-medium">Followers</p>
+                <p className="text-2xl md:text-3xl font-bold text-gray-900">
+                  {formatNumber(followerCount)}
+                </p>
               </div>
-              <p className="text-sm opacity-90">Joined</p>
             </div>
-            
-            <div className="text-center">
-              <p className="text-lg font-bold mb-2">{seller.totalProducts || 0}</p>
-              <p className="text-sm opacity-90">Total Products</p>
+
+            {/* Following Card */}
+            <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 md:w-14 md:h-14 bg-[#EFF9F0] rounded-xl flex items-center justify-center mb-3">
+                  <svg className="w-6 h-6 md:w-7 md:h-7 text-[#40613D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <p className="text-xs md:text-sm text-gray-600 mb-1 font-medium">Following</p>
+                <p className="text-2xl md:text-3xl font-bold text-gray-900">
+                  {seller.following || 0}
+                </p>
+              </div>
             </div>
           </div>
         </div>

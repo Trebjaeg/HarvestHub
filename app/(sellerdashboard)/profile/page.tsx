@@ -9,7 +9,6 @@ import Image from 'next/image';
 import LoadingDots from '@/components/ui/LoadingDots';
 import EditProfileModal from '@/components/ui/EditProfileModal';
 import SellerVerification from '@/components/seller/SellerVerification';
-import AppealStatusCard from '@/components/AppealStatusCard';
 import SuspensionBanner from '@/components/SuspensionBanner';
 
 // Helper function to safely format dates on client-side only
@@ -228,9 +227,6 @@ export default function Profile() {
           suspensionExpiresAt={profile.suspensionExpiresAt}
         />
       )}
-
-      {/* Appeal Status Card */}
-      <AppealStatusCard />
 
         {/* Profile Header with Avatar */}
         <Card className="p-6 bg-white border border-gray-200 mb-6">

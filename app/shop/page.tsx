@@ -32,6 +32,9 @@ const ShopPageContent = () => {
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const [cartShake, setCartShake] = useState(false);
   const [cartCount, setCartCount] = useState(initialCartCount);
+  
+  // Debounce timer for search suggestions
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [activeSortType, setActiveSortType] = useState<'price' | 'general'>('general');
   const activeSortBy: 'price_asc' | 'price_desc' | 'name' | 'newest' | 'createdAt' = 
@@ -141,10 +144,18 @@ const ShopPageContent = () => {
   const handleSearchInputChange = (value: string) => {
     setSearchInput(value);
     
-    // Show suggestions when typing
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Show suggestions when typing (debounced)
     if (value.trim().length > 1) {
-      fetchSearchSuggestions(value);
-      setShowSuggestions(true);
+      // Debounce the API call by 500ms
+      searchTimeoutRef.current = setTimeout(() => {
+        fetchSearchSuggestions(value);
+        setShowSuggestions(true);
+      }, 500);
     } else {
       setShowSuggestions(false);
       setSearchSuggestions([]);
@@ -165,13 +176,23 @@ const ShopPageContent = () => {
 
   const fetchSearchSuggestions = async (query: string) => {
     try {
-      const response = await fetch(`/api/products/suggestions?q=${encodeURIComponent(query)}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+      
+      const response = await fetch(`/api/products/suggestions?q=${encodeURIComponent(query)}`, {
+        signal: controller.signal,
+        cache: 'no-store'
+      });
+      
+      clearTimeout(timeoutId);
+      
       if (response.ok) {
         const data = await response.json();
         setSearchSuggestions(data.suggestions || []);
       }
     } catch (error) {
-      console.error('Error fetching suggestions:', error);
+      // Silently handle all errors including timeout
+      setSearchSuggestions([]);
     }
   };
 
@@ -213,7 +234,14 @@ const ShopPageContent = () => {
     };
     
     window.addEventListener('cart-updated', handleCartUpdate);
-    return () => window.removeEventListener('cart-updated', handleCartUpdate);
+    
+    // Cleanup debounce timer on unmount
+    return () => {
+      window.removeEventListener('cart-updated', handleCartUpdate);
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
   }, []);
 
   return (
@@ -229,13 +257,13 @@ const ShopPageContent = () => {
             </div>
             
             <div className="flex items-center space-x-3">
-              <Link href="/my-profile" className="flex items-center space-x-1" title="Profile">
+              <Link href="/my-profile" className="flex items-center space-x-1 p-2 rounded-lg hover:bg-white/10 transition-all duration-200" title="Profile">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-white">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                 </svg>
               </Link>
               
-              <Link href="/cart" data-cart-icon className="relative" title="Cart">
+              <Link href="/cart" data-cart-icon className="relative p-2 rounded-lg hover:bg-white/10 transition-all duration-200" title="Cart">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-5 h-5 ${cartShake ? 'animate-shake' : ''}`}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                 </svg>
@@ -246,7 +274,7 @@ const ShopPageContent = () => {
                 )}
               </Link>
               
-              <Link href="/messages" className="relative" title="Notifications">
+              <Link href="/messages" className="relative p-2 rounded-lg hover:bg-white/10 transition-all duration-200" title="Notifications">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                 </svg>
@@ -694,7 +722,7 @@ const ShopPageContent = () => {
               {loading ? (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 lg:gap-10 justify-items-center">
                   {[...Array(12)].map((_, index) => (
-                    <div key={index} className="border-2 border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden animate-pulse" style={{ width: '218px', height: '275px' }}>
+                    <div key={index} className="w-full max-w-[218px] border-2 border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden animate-pulse" style={{ height: '275px' }}>
                       <div className="bg-gray-200" style={{ height: '186px' }}></div>
                       <div className="p-4 space-y-2" style={{ height: '89px' }}>
                         <div className="h-2 bg-gray-200 rounded w-1/2"></div>

@@ -13,7 +13,12 @@ export interface IProduct {
   farmerId: string; // Reference to the farmer who posted
   farmerName: string;
   location?: string;
-  stock: number;
+  stock: number; // Legacy field - kept for backward compatibility (equals inventory_on_hand)
+  // New inventory management fields
+  inventory_on_hand: number; // Total physical inventory
+  inventory_available: number; // Available for purchase (on_hand - reserved - committed)
+  inventory_reserved: number; // Reserved by pending orders (not yet confirmed by seller)
+  inventory_committed: number; // Committed to confirmed orders (seller confirmed)
   sku?: string; // Stock Keeping Unit - unique identifier
   status?: string; // 'Available', 'Out of Stock', 'Coming Soon'
   isOrganic: boolean;
@@ -79,7 +84,35 @@ const ProductSchema = new mongoose.Schema<IProduct>({
   stock: {
     type: Number,
     required: [true, 'Stock quantity is required'],
-    min: [0, 'Stock cannot be negative']
+    min: [0, 'Stock cannot be negative'],
+    default: function() {
+      return this.inventory_on_hand || 0;
+    }
+  },
+  // New inventory tracking fields
+  inventory_on_hand: {
+    type: Number,
+    required: [true, 'Inventory on hand is required'],
+    min: [0, 'Inventory on hand cannot be negative'],
+    default: 0
+  },
+  inventory_available: {
+    type: Number,
+    required: [true, 'Inventory available is required'],
+    min: [0, 'Inventory available cannot be negative'],
+    default: function() {
+      return this.inventory_on_hand || 0;
+    }
+  },
+  inventory_reserved: {
+    type: Number,
+    min: [0, 'Inventory reserved cannot be negative'],
+    default: 0
+  },
+  inventory_committed: {
+    type: Number,
+    min: [0, 'Inventory committed cannot be negative'],
+    default: 0
   },
   sku: {
     type: String,
@@ -140,6 +173,15 @@ ProductSchema.index({ name: 'text', description: 'text' }); // Text search
 ProductSchema.index({ createdAt: -1 }); // Sort by newest
 ProductSchema.index({ price: 1 }); // Sort by price
 ProductSchema.index({ stock: 1, lowStockAlert: 1 }); // Low stock alerts
-ProductSchema.index({ sku: 1 }); // SKU lookup
+ProductSchema.index({ inventory_available: 1 }); // Available inventory queries
+ProductSchema.index({ inventory_reserved: 1 }); // Reserved inventory tracking
+ProductSchema.index({ inventory_committed: 1 }); // Committed inventory tracking
+// Compound indexes for common queries
+ProductSchema.index({ category: 1, isActive: 1, createdAt: -1 }); // Category + active + newest
+ProductSchema.index({ category: 1, isActive: 1, price: 1 }); // Category + active + price
+ProductSchema.index({ isActive: 1, featured: 1, createdAt: -1 }); // Active featured products
+ProductSchema.index({ farmerId: 1, isActive: 1, createdAt: -1 }); // Farmer products sorted
+ProductSchema.index({ farmerId: 1, inventory_available: 1 }); // Farmer inventory management
+// Note: sku index is automatically created by unique: true in schema definition
 
 export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);

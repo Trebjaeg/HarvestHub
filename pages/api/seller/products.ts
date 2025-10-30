@@ -85,7 +85,8 @@ async function handleGET(req: NextApiRequest, res: NextApiResponse, userId: stri
     const products = await Product.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limitNum);
+      .limit(limitNum)
+      .lean();
 
     // Get total count for pagination
     const total = await Product.countDocuments(query);

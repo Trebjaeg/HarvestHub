@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Favorite from '@/models/Favorite';
 import { verifyToken } from '@/lib/auth-middleware';
+import cache from '@/lib/memory-cache';
 
 export async function DELETE(
   request: NextRequest,
@@ -32,6 +33,9 @@ export async function DELETE(
     if (!favorite) {
       return NextResponse.json({ error: 'Favorite not found' }, { status: 404 });
     }
+
+    // Invalidate cache for this user
+    cache.delPattern(`favorites:${userId}:*`);
 
     return NextResponse.json({
       success: true,

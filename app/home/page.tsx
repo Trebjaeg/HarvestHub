@@ -889,7 +889,7 @@ const HomePageContent = () => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 lg:gap-10 justify-items-center">
                     {/* Loading skeleton cards */}
                     {[...Array(8)].map((_, index) => (
-                      <div key={index} className="border-2 border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden animate-pulse" style={{ width: '218px', height: '275px' }}>
+                      <div key={index} className="w-full max-w-[218px] border-2 border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden animate-pulse" style={{ height: '275px' }}>
                         <div className="bg-gray-200" style={{ height: '186px' }}></div>
                         <div className="p-4 space-y-2" style={{ height: '89px' }}>
                           <div className="h-2 bg-gray-200 rounded w-1/2"></div>

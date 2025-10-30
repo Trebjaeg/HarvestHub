@@ -26,16 +26,24 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
   },
-  // Compress responses
   compress: true,
-  // Optimize production build
   productionBrowserSourceMaps: false,
-  // Reduce payload size
   poweredByHeader: false,
-  // Experimental features for better performance
   experimental: {
-    // Optimize package imports to reduce bundle size
-    optimizePackageImports: ['lucide-react', 'date-fns'],
+    optimizePackageImports: ['lucide-react', 'date-fns', '@radix-ui/react-dialog', '@radix-ui/react-select'],
+    optimizeCss: true,
+  },
+  // Optimize webpack bundle
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+    return config;
   },
 };
 

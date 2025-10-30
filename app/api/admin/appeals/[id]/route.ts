@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Appeal from '@/models/Appeal';
 import User from '@/models/User';
+import Product from '@/models/Product';
 import AuditLog from '@/models/AuditLog';
 import { verifyAdminAccess } from '@/lib/rbac';
+import cache from '@/lib/memory-cache';
 
 // PATCH /api/admin/appeals/[id] - Review an appeal (Admin only)
 export async function PATCH(
@@ -79,18 +81,89 @@ export async function PATCH(
       notes: decisionReason
     });
 
-    // If approved, restore the user's account
+    // If approved, restore the user's account or reactivate the product
     if (decision === 'approved') {
-      const user = await User.findById(appeal.user._id);
-      if (user && user.status === 'suspended') {
-        user.status = 'active';
-        user.suspendReason = null;
-        user.suspendedAt = null;
-        user.suspendedBy = null;
-        user.suspensionExpiresAt = null;
-        await user.save();
+      // Handle account suspension appeals
+      if (appeal.type === 'suspension' || appeal.type === 'deletion' || appeal.type === 'warning') {
+        const userId = typeof appeal.user === 'object' ? appeal.user._id : appeal.user;
+        // @ts-ignore - MongoDB $unset operation
+        await User.findByIdAndUpdate(userId, {
+          $set: { status: 'active' },
+          $unset: {
+            suspendReason: '',
+            suspendedAt: '',
+            suspendedBy: '',
+            suspensionExpiresAt: ''
+          }
+        });
 
         appeal.actionTaken = 'Account restored to active status';
+      }
+      
+      // Handle product listing removal appeals
+      if (appeal.type === 'listing_removal' && appeal.productId) {
+        // Direct database update using updateOne for guaranteed persistence
+        const updateResult = await Product.updateOne(
+          { _id: appeal.productId },
+          { 
+            $set: { 
+              isActive: true,
+              status: 'Available'
+            }
+          }
+        );
+
+        if (updateResult.matchedCount === 0) {
+          return NextResponse.json({
+            error: 'Product not found'
+          }, { status: 404 });
+        }
+
+        // Check if the update was actually applied
+        if (updateResult.modifiedCount === 0) {
+          // Try alternative update method
+          const product = await Product.findById(appeal.productId);
+          if (product) {
+            product.isActive = true;
+            product.status = 'Available';
+            await product.save();
+          }
+        }
+
+        // Verify the update actually worked
+        const verifyProduct = await Product.findById(appeal.productId).lean();
+        
+        // CRITICAL: Verify the product is actually active
+        if (!verifyProduct?.isActive || verifyProduct.status !== 'Available') {
+          return NextResponse.json({
+            error: 'Failed to reactivate product',
+            details: {
+              isActive: verifyProduct?.isActive,
+              status: verifyProduct?.status,
+              productId: appeal.productId
+            }
+          }, { status: 500 });
+        }
+        
+        // Clear only product-related caches (more targeted approach)
+        const productCachePatterns = [
+          `products:*`,
+          `product:${appeal.productId}`,
+          `favorites:*`,
+          `best-sellers:*`,
+          `deals:*`,
+          `top-farmers:*`
+        ];
+        
+        for (const pattern of productCachePatterns) {
+          try {
+            cache.delPattern(pattern);
+          } catch (e) {
+            // Silent fail - cache clear is not critical
+          }
+        }
+
+        appeal.actionTaken = `Product "${verifyProduct?.name}" reactivated successfully (isActive: ${verifyProduct?.isActive})`;
       }
     }
 

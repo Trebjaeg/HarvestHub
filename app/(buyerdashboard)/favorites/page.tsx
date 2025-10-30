@@ -249,7 +249,7 @@ export default function FavoritesPage() {
           <h3 className="font-semibold text-lg text-gray-900 mb-1">
             {product?.name || favorite.productName}
           </h3>
-          <p className="text-green-600 font-bold text-xl mb-2">
+          <p className="text-[#4A7C59] font-bold text-xl mb-2">
             ₱{(product?.price || favorite.productPrice).toFixed(2)}
           </p>
           <p className="text-sm text-gray-600 mb-2">
@@ -260,8 +260,8 @@ export default function FavoritesPage() {
           </p>
           {product?.availability && (
             <div className={`inline-block px-2 py-1 rounded text-xs mb-3 ${
-              product.availability === 'Available' 
-                ? 'bg-green-100 text-green-800' 
+              {product.availability === 'Available' 
+                ? 'bg-[#4A7C59]/10 text-[#4A7C59]' 
                 : 'bg-red-100 text-red-800'
             }`}>
               {product.availability}
@@ -272,7 +272,7 @@ export default function FavoritesPage() {
             <button
               onClick={() => addToCart(favorite.productId)}
               disabled={product?.availability !== 'Available'}
-              className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2 bg-[#4A7C59] text-white px-4 py-2 rounded-lg hover:bg-[#3d6549] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
               <ShoppingCart className="w-4 h-4" />
               Add to Cart
@@ -312,7 +312,7 @@ export default function FavoritesPage() {
                 onClick={() => setShowAnalytics(!showAnalytics)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                   showAnalytics 
-                    ? 'bg-green-600 text-white' 
+                    ? 'bg-[#4A7C59] text-white' 
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
                 style={{ fontFamily: 'Poppins, sans-serif' }}
@@ -417,7 +417,7 @@ export default function FavoritesPage() {
               <div className="flex gap-2">
                 <button
                   onClick={handleSearch}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6549] transition-colors"
                 >
                   <Search className="w-4 h-4" />
                   Search
@@ -450,7 +450,7 @@ export default function FavoritesPage() {
               <p className="text-gray-600 mb-4">{error}</p>
               <button
                 onClick={refreshFavorites}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="px-6 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6549] transition-colors"
               >
                 Try Again
               </button>
@@ -465,7 +465,7 @@ export default function FavoritesPage() {
             </p>
             <a
               href="/shop"
-              className="inline-block px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="inline-block px-6 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6549] transition-colors"
             >
               Browse Products
             </a>
@@ -508,7 +508,7 @@ export default function FavoritesPage() {
                             onClick={() => goToPage(page)}
                             className={`px-3 py-2 rounded-lg ${
                               page === pagination.currentPage
-                                ? 'bg-green-600 text-white'
+                                ? 'bg-[#4A7C59] text-white'
                                 : 'border border-gray-300 hover:bg-gray-50'
                             }`}
                           >

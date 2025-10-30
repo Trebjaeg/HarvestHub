@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const userId = authResult.user.id;
     const body = await request.json();
     
-    const { subject, explanation, evidence } = body;
+    const { subject, explanation, evidence, appealType, productId, productName } = body;
 
     // Validate required fields
     if (!explanation || explanation.trim().length < 20) {
@@ -83,28 +83,41 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine appeal type
-    let appealType = 'suspension';
-    if (user.status === 'deleted') {
-      appealType = 'deletion';
+    let finalAppealType = appealType || 'suspension';
+    let originalAction = `Account ${user.status}`;
+    let originalReason = user.suspendReason || 'No reason provided';
+    let originalDate = user.suspendedAt || new Date();
+    let originalActionBy = user.suspendedBy || userId;
+
+    // Handle product-specific appeals
+    if (finalAppealType === 'listing_removal' && productId) {
+      originalAction = 'Product deactivation';
+      originalReason = 'Product taken down by administrator';
+      originalDate = new Date(); // Could fetch from product if available
+      originalActionBy = userId; // Could fetch from product takenDownBy if available
+    } else if (user.status === 'deleted') {
+      finalAppealType = 'deletion';
     }
 
     // Create appeal
     const appeal = await Appeal.create({
       user: userId,
-      type: appealType,
+      type: finalAppealType,
+      productId: productId || null,
+      productName: productName || null,
       reason: explanation,
-      originalAction: `Account ${user.status}`,
-      originalReason: user.suspendReason || 'No reason provided',
-      originalDate: user.suspendedAt || new Date(),
-      originalActionBy: user.suspendedBy || userId,
+      originalAction,
+      originalReason,
+      originalDate,
+      originalActionBy,
       evidence: evidence || [],
       status: 'pending',
-      priority: 'medium',
+      priority: finalAppealType === 'listing_removal' ? 'low' : 'medium',
       timeline: [{
-        action: 'Appeal submitted',
+        action: `${finalAppealType === 'listing_removal' ? 'Product listing removal' : 'Account'} appeal submitted`,
         performedBy: userId,
         date: new Date(),
-        notes: subject || 'User submitted suspension appeal'
+        notes: subject || `User submitted ${finalAppealType} appeal`
       }]
     });
 

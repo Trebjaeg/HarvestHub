@@ -52,8 +52,11 @@ export async function POST(request: NextRequest) {
       await cache.set(cacheKeys.product(productId), product, 600).catch(() => {});
     }
 
-    // Check if product is available (using status field and stock)
-    if (!product.isActive || product.stock <= 0) {
+    // Use inventory_available for stock checks (real-time availability)
+    const availableStock = product.inventory_available ?? product.stock ?? 0;
+
+    // Check if product is available (using status field and inventory_available)
+    if (!product.isActive || availableStock <= 0) {
       return NextResponse.json({ error: 'Product is not available' }, { status: 400 });
     }
 
@@ -76,8 +79,23 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingCartItem) {
+      // Calculate new quantity
+      const newQuantity = existingCartItem.quantity + quantity;
+      
+      // Check if new quantity exceeds available stock
+      if (newQuantity > availableStock) {
+        return NextResponse.json({ 
+          error: 'Insufficient stock',
+          code: 'INSUFFICIENT_STOCK',
+          message: `Cannot add ${quantity} more. Only ${availableStock} available, and you already have ${existingCartItem.quantity} in your cart.`,
+          availableStock: availableStock,
+          currentCartQuantity: existingCartItem.quantity,
+          maxCanAdd: Math.max(0, availableStock - existingCartItem.quantity)
+        }, { status: 400 });
+      }
+
       // Update existing cart item quantity
-      existingCartItem.quantity += quantity;
+      existingCartItem.quantity = newQuantity;
       await existingCartItem.save();
 
       // Get total cart count
@@ -94,6 +112,16 @@ export async function POST(request: NextRequest) {
         count: totalCount
       });
     } else {
+      // Check if requested quantity exceeds available stock for new items
+      if (quantity > availableStock) {
+        return NextResponse.json({ 
+          error: 'Insufficient stock',
+          code: 'INSUFFICIENT_STOCK',
+          message: `Cannot add ${quantity} items. Only ${availableStock} available in stock.`,
+          availableStock: availableStock
+        }, { status: 400 });
+      }
+
       // Get seller name from User model if product.farmerName is missing or "Unknown"
       let sellerName = product.farmerName;
       if (!sellerName || sellerName === 'Unknown Farmer' || sellerName === 'Unknown Seller') {

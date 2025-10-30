@@ -27,7 +27,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
       .select('name')
       .limit(5)
-      .lean();
+      .lean()
+      .maxTimeMS(3000); // 3 second timeout
 
     // Search sellers/farmers by name
     const sellers = await User.find({
@@ -40,7 +41,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
       .select('name firstName lastName')
       .limit(5)
-      .lean();
+      .lean()
+      .maxTimeMS(3000); // 3 second timeout
 
     // Format suggestions
     const productSuggestions = products.map(p => ({

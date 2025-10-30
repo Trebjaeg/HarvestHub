@@ -1,8 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Fonts are loaded via Next.js Google Fonts in layout.tsx */
-/* Using var(--font-poppins), var(--font-inter), var(--font-pacifico) */
+/* Font CSS Variables */
+:root {
+  --font-poppins: 'Poppins', system-ui, -apple-system, sans-serif;
+  --font-inter: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-pacifico: 'Pacifico', cursive, system-ui;
+}
 
 /* Mobile viewport fixes */
 html, body {
@@ -18,6 +22,7 @@ html {
 
 body {
   scrollbar-gutter: stable !important;
+  font-family: var(--font-poppins);
 }
 
 * {

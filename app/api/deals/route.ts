@@ -2,8 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Deal from '@/models/Deal';
 import Product from '@/models/Product';
+import { applyRateLimit, getRateLimitHeaders } from '@/lib/app-rate-limiter';
 
 export async function GET(request: NextRequest) {
+  // Apply rate limiting: 150 requests per 15 minutes for deals browsing
+  const rateLimitResponse = await applyRateLimit(request, {
+    windowMs: 15 * 60 * 1000,
+    max: 150,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await dbConnect();
     

@@ -90,6 +90,35 @@ const UserSchema = new Schema({
   productCount: { type: Number, default: 0, min: 0 },
   reviewCount: { type: Number, default: 0, min: 0 },
   
+  // Seller/Farmer messaging response metrics
+  responseRate: { type: Number, default: null, min: 0, max: 100 }, // Percentage (0-100)
+  averageResponseTime: { type: Number, default: null, min: 0 }, // In minutes
+  totalMessagesReceived: { type: Number, default: 0, min: 0 },
+  totalMessagesResponded: { type: Number, default: 0, min: 0 },
+  
+  // Social following system
+  followers: [{ type: String }], // Array of user IDs who follow this user
+  following: [{ type: String }], // Array of user IDs this user follows
+  
+  // Address management - support up to 3 addresses for both buyers and sellers
+  addresses: [{
+    label: { type: String, required: true, maxlength: 100 }, // e.g., "Home", "Office", "Farm Location"
+    fullName: { type: String, required: true, maxlength: 100 },
+    phone: { type: String, required: true, maxlength: 20 },
+    street: { type: String, required: true, maxlength: 500 },
+    city: { type: String, required: true, maxlength: 100 },
+    province: { type: String, required: true, maxlength: 100 },
+    zipCode: { type: String, maxlength: 10 },
+    isDefault: { type: Boolean, default: false },
+    type: { 
+      type: String, 
+      enum: ['delivery', 'pickup', 'both'], // For sellers: pickup location, For buyers: delivery address
+      default: 'delivery' 
+    },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
+  }],
+  
   // For password reset flow
   resetPasswordToken: { type: String, default: null },
   resetPasswordExpires: { type: Date, default: null },

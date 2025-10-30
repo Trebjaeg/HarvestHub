@@ -2,6 +2,8 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '../../../../../lib/mongodb';
 import Order from '../../../../../models/Order';
 import jwt from 'jsonwebtoken';
+import inventoryManager from '../../../../../lib/inventory-manager';
+import mongoose from 'mongoose';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'PATCH') {
@@ -41,27 +43,71 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Only allow cancellation for pending and confirmed orders
-    if (!['pending', 'confirmed'].includes(order.status)) {
+    // Buyer can ONLY cancel if status is 'pending' (before seller confirms)
+    if (order.status !== 'pending') {
       return res.status(400).json({ 
         success: false, 
-        message: 'Order cannot be cancelled at this stage' 
+        message: order.status === 'confirmed' || order.status === 'preparing' || order.status === 'shipped' || order.status === 'delivered'
+          ? 'Order has been confirmed by seller and cannot be cancelled'
+          : 'Order cannot be cancelled at this stage',
+        locked: true // Signal to UI that cancellation is locked
       });
     }
 
-    // Update order status to cancelled
-    order.status = 'cancelled';
-    await order.save();
+    // Prepare inventory items from order
+    const inventoryItems = order.products.map((p: any) => ({
+      productId: p.productId,
+      quantity: p.quantity
+    }));
 
-    res.status(200).json({
-      success: true,
-      message: 'Order cancelled successfully',
-      order: {
-        _id: order._id,
-        orderNumber: order.orderNumber,
-        status: order.status
+    // Start transaction for atomic cancel + inventory release
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Release reserved inventory back to available
+      const releaseResult = await inventoryManager.releaseReservedInventory(inventoryItems, session);
+      
+      if (!releaseResult.success) {
+        await session.abortTransaction();
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to release inventory',
+          details: releaseResult.failedItems
+        });
       }
-    });
+
+      // Update order status to cancelled
+      const updatedOrder = await Order.findByIdAndUpdate(
+        orderId,
+        { status: 'cancelled' },
+        { new: true, session }
+      ).lean();
+
+      // Commit transaction - both inventory release and order cancellation succeed
+      await session.commitTransaction();
+
+      res.status(200).json({
+        success: true,
+        message: 'Order cancelled successfully. Inventory has been released.',
+        order: {
+          _id: updatedOrder._id.toString(),
+          orderNumber: updatedOrder.orderNumber,
+          status: updatedOrder.status
+        }
+      });
+
+    } catch (transactionError) {
+      await session.abortTransaction();
+      console.error('Transaction error:', transactionError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to cancel order',
+        error: process.env.NODE_ENV === 'development' ? (transactionError as Error).message : undefined
+      });
+    } finally {
+      session.endSession();
+    }
 
   } catch (error) {
     console.error('Error cancelling order:', error);

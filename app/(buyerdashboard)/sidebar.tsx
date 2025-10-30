@@ -12,6 +12,7 @@ import {
   Home,
   Menu,
   X,
+  MapPin,
 } from "lucide-react";
 import Image from "next/image";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
@@ -40,6 +41,11 @@ const menuItems = [
     icon: ShoppingBag,
     label: "My Orders",
     href: "/buyer-orders",
+  },
+  {
+    icon: MapPin,
+    label: "My Addresses",
+    href: "/buyer-addresses",
   },
   {
     icon: Heart,

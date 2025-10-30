@@ -2,8 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Message from '@/models/Message';
 import { verifyToken } from '@/lib/auth-middleware';
+import { applyRateLimit, getRateLimitHeaders } from '@/lib/app-rate-limiter';
 
 export async function GET(request: NextRequest) {
+  // Apply rate limiting: 100 requests per 15 minutes for message retrieval
+  const rateLimitResponse = await applyRateLimit(request, {
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await dbConnect();
 
@@ -128,6 +136,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Apply stricter rate limiting for message creation: 30 messages per 15 minutes
+  const rateLimitResponse = await applyRateLimit(request, {
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await dbConnect();
 

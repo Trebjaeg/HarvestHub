@@ -1,6 +1,7 @@
 'use client';
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@/components/ui/VisuallyHidden";
 import { CheckCircle } from 'lucide-react';
 
 interface SuccessDialogProps {
@@ -13,7 +14,10 @@ interface SuccessDialogProps {
 export default function SuccessDialog({ isOpen, onClose, title, message }: SuccessDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md" style={{ fontFamily: 'Poppins, sans-serif' }}>
+      <DialogContent className="sm:max-w-md font-poppins">
+        <VisuallyHidden>
+          <DialogTitle>{title}</DialogTitle>
+        </VisuallyHidden>
         <div className="flex flex-col items-center justify-center py-6 px-4">
           {/* Success Icon */}
           <div className="mb-4 relative">
@@ -24,19 +28,19 @@ export default function SuccessDialog({ isOpen, onClose, title, message }: Succe
           </div>
           
           {/* Title */}
-          <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center font-poppins">
+          <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center">
             {title}
           </h3>
           
           {/* Message */}
-          <p className="text-gray-600 text-center mb-6 font-poppins">
+          <p className="text-gray-600 text-center mb-6">
             {message}
           </p>
           
           {/* OK Button */}
           <button
             onClick={onClose}
-            className="w-full bg-[#4A7C59] hover:bg-[#3d6849] text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 font-poppins"
+            className="w-full bg-[#4A7C59] hover:bg-[#3d6849] text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
           >
             OK
           </button>

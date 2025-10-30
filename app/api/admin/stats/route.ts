@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import User from '../../../../models/User';
 import UserReport from '../../../../models/UserReport';
+import Report from '../../../../models/Report';
 import Appeal from '../../../../models/Appeal';
 import AuditLog from '../../../../models/AuditLog';
 import { verifyAdminAuth } from '../../../../lib/admin-auth-server';
@@ -18,8 +19,12 @@ export async function GET(req: NextRequest) {
     const suspendedUsers = await User.countDocuments({ status: 'suspended' });
     const deletedUsers = await User.countDocuments({ status: 'deleted' });
 
-    // Get report statistics
+    // Get report statistics (both user reports and product reports)
     const pendingReports = await UserReport.countDocuments({ status: 'pending' });
+    const activeProductReports = await Report.countDocuments({ 
+      status: { $in: ['pending', 'investigating'] } 
+    });
+    const totalReports = pendingReports + activeProductReports;
 
     // Get appeal statistics
     const pendingAppeals = await Appeal.countDocuments({ status: 'pending' });
@@ -31,19 +36,32 @@ export async function GET(req: NextRequest) {
       createdAt: { $gte: sevenDaysAgo }
     });
 
-    // Get farmer verification statistics
-    const pendingFarmers = await User.countDocuments({ sellerStatus: 'pending' });
-    const verifiedFarmers = await User.countDocuments({ sellerStatus: 'verified' });
-    const rejectedFarmers = await User.countDocuments({ sellerStatus: 'rejected' });
+    // Get farmer statistics
+    const totalFarmers = await User.countDocuments({ role: 'seller' });
+    const pendingFarmers = await User.countDocuments({ 
+      role: 'seller',
+      sellerStatus: 'pending' 
+    });
+    const verifiedFarmers = await User.countDocuments({ 
+      role: 'seller',
+      sellerStatus: 'verified' 
+    });
+    const rejectedFarmers = await User.countDocuments({ 
+      role: 'seller',
+      sellerStatus: 'rejected' 
+    });
 
     const stats = {
       totalUsers,
       activeUsers,
       suspendedUsers,
       deletedUsers,
+      totalReports,
       pendingReports,
+      activeProductReports,
       pendingAppeals,
       recentActions,
+      totalFarmers,
       pendingFarmers,
       verifiedFarmers,
       rejectedFarmers

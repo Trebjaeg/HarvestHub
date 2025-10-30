@@ -47,7 +47,7 @@ async function getProduct(req: NextApiRequest, res: NextApiResponse, id: string)
     
     // Simplified approach - get seller and basic review count
     const seller = sellerId ? await User.findById(sellerId)
-      .select('name firstName lastName email profilePicture profileImage location accountStatus verified')
+      .select('name firstName lastName email profilePicture profileImage location accountStatus verified responseRate averageResponseTime')
       .maxTimeMS(2000)
       .lean()
       .catch(() => null) : null;
@@ -78,6 +78,19 @@ async function getProduct(req: NextApiRequest, res: NextApiResponse, id: string)
     let sellerRating = averageRating;
     let sellerReviewCount = productReviews.length;
 
+    // Format response time from minutes to readable format
+    const formatResponseTime = (minutes: number | null): string => {
+      if (minutes === null || minutes === undefined) return 'N/A';
+      if (minutes < 60) return `< 1h`;
+      if (minutes < 120) return `< 2h`;
+      if (minutes < 180) return `< 3h`;
+      if (minutes < 240) return `< 4h`;
+      if (minutes < 480) return `< 8h`;
+      if (minutes < 1440) return `< 24h`;
+      const days = Math.floor(minutes / 1440);
+      return `< ${days}d`;
+    };
+
     return res.status(200).json({
       success: true,
       data: {
@@ -93,8 +106,8 @@ async function getProduct(req: NextApiRequest, res: NextApiResponse, id: string)
           isVerified: seller.verified || false,
           rating: sellerRating,
           reviewCount: sellerReviewCount,
-          responseRate: 95,
-          responseTime: '< 2h'
+          responseRate: seller.responseRate ?? 0,
+          responseTime: formatResponseTime(seller.averageResponseTime)
         } : null,
         ratings: {
           average: averageRating,

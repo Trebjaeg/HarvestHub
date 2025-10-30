@@ -62,6 +62,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         email: buyer.email,
         phone: buyer.phone || null,
         address: buyer.address || null,
+        addresses: buyer.addresses || [], // Include saved addresses
         profileImage: buyer.profileImage || null,
         createdAt: buyer.createdAt,
         role: buyer.role

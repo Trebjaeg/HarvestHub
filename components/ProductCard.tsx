@@ -2,9 +2,10 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { IProduct } from '../types/product';
 import AlertDialog from './ui/AlertDialog';
+import ReportProductModal from './ui/ReportProductModal';
 
 // Extended interface to handle both IProduct and DealProduct types
 interface FlexibleProduct {
@@ -55,11 +56,27 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const imageRef = useRef<HTMLDivElement>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [alertDialog, setAlertDialog] = useState({
     isOpen: false,
     title: '',
     message: ''
   });
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showMenu && imageRef.current && !imageRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
 
   // Handle both currentPrice/basePrice and price/originalPrice formats
   const flexProduct = product as FlexibleProduct;
@@ -81,17 +98,78 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
     ? rawImageUrl
     : null;
 
-  // Debug logging only in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('ProductCard image URL:', imageUrl, 'for product:', product.name);
-  }
-
   return (
     <>
     <Link href={`/product/${product._id}`} className="block w-full">
       <div className={`bg-white rounded-3xl border-2 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] w-full ${className}`} style={{ height: '275px', borderColor: '#40613D' }}>
         {/* Product Image - Takes remaining space after info section (275px - 89px = 186px) */}
         <div ref={imageRef} className="relative bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden" style={{ height: '186px' }}>
+        
+        {/* Three Dots Menu Button */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowMenu(!showMenu);
+          }}
+          className="absolute top-2 right-2 z-10 bg-white/90 backdrop-blur-sm rounded-full p-1.5 hover:bg-white transition-all duration-200 shadow-md"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+            <path d="M12 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+            <path d="M12 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+          </svg>
+        </button>
+
+        {/* Dropdown Menu */}
+        {showMenu && (
+          <div 
+            className="absolute top-11 right-2 z-20 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[160px]"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowMenu(false);
+                setShowReportModal(true);
+              }}
+              className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors font-poppins flex items-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              Report Product
+            </button>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowMenu(false);
+                setAlertDialog({
+                  isOpen: true,
+                  title: 'Need Help?',
+                  message: 'For assistance, please contact our support team at support@harvesthub.com or call +1 (800) 123-4567.'
+                });
+              }}
+              className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors font-poppins flex items-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              Need Help
+            </button>
+          </div>
+        )}
+        
         {imageUrl ? (
           <Image
             src={imageUrl}
@@ -101,9 +179,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
             sizes="218px"
             unoptimized={imageUrl.includes('digitaloceanspaces.com')}
             onError={(e) => {
-              if (process.env.NODE_ENV === 'development') {
-                console.error('Image failed to load from Spaces:', imageUrl);
-              }
               // Hide broken image - show placeholder SVG instead
               (e.target as HTMLImageElement).style.display = 'none';
             }}
@@ -272,16 +347,26 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
                     }));
                   }
                 } else {
-                  // Handle errors (cart limit, etc.)
+                  // Handle errors (stock insufficient, cart limit, etc.)
                   setIsAnimating(false);
+                  
+                  // Don't update cart count on error
+                  let errorTitle = 'Error';
+                  if (data.code === 'CART_LIMIT') {
+                    errorTitle = 'Cart Limit Reached';
+                  } else if (data.code === 'INSUFFICIENT_STOCK') {
+                    errorTitle = 'Error';
+                  } else if (data.code === 'SUSPENDED') {
+                    errorTitle = 'Account Suspended';
+                  }
+                  
                   setAlertDialog({
                     isOpen: true,
-                    title: data.code === 'CART_LIMIT' ? 'Cart Limit Reached' : 'Error',
+                    title: errorTitle,
                     message: data.message || data.error || 'Failed to add to cart'
                   });
                 }
               } catch (error) {
-                console.error('Error adding to cart:', error);
                 setIsAnimating(false);
                 setAlertDialog({
                   isOpen: true,
@@ -304,6 +389,20 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
         onClose={() => setAlertDialog({ isOpen: false, title: '', message: '' })}
         title={alertDialog.title}
         message={alertDialog.message}
+      />
+      <ReportProductModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        productId={product._id}
+        productName={product.name}
+        onReportSubmitted={() => {
+          setShowReportModal(false);
+          setAlertDialog({
+            isOpen: true,
+            title: 'Report Submitted',
+            message: 'Thank you for your report. Our team will review it shortly and take appropriate action.'
+          });
+        }}
       />
     </>
   );

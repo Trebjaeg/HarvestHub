@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth-middleware';
 import { uploadToSpaces } from '@/lib/digitalocean-spaces';
+import { applyRateLimit, getRateLimitHeaders } from '@/lib/app-rate-limiter';
 
 export const config = {
   api: {
@@ -10,6 +11,13 @@ export const config = {
 
 // POST /api/upload - Upload images to DigitalOcean Spaces
 export async function POST(request: NextRequest) {
+  // Apply stricter rate limiting for uploads: 20 uploads per 15 minutes
+  const rateLimitResponse = await applyRateLimit(request, {
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     // Verify authentication
     const authResult = await verifyToken(request);
