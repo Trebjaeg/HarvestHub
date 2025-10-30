@@ -260,7 +260,7 @@ export default function FavoritesPage() {
           </p>
           {product?.availability && (
             <div className={`inline-block px-2 py-1 rounded text-xs mb-3 ${
-              {product.availability === 'Available' 
+              product.availability === 'Available' 
                 ? 'bg-[#4A7C59]/10 text-[#4A7C59]' 
                 : 'bg-red-100 text-red-800'
             }`}>
