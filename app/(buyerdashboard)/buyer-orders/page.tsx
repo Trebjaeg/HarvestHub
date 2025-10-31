@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import LoadingDots from '@/components/ui/LoadingDots';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { 
   Package, 
   Search, 
-  Filter, 
   Calendar, 
   ChevronDown, 
   Eye, 
@@ -18,6 +19,22 @@ import {
   ShoppingBag,
   RefreshCw
 } from 'lucide-react';
+
+// Custom Filter Icon
+const Filter = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+    <path d="M14 6m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+    <path d="M4 6l8 0" />
+    <path d="M16 6l4 0" />
+    <path d="M8 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+    <path d="M4 12l2 0" />
+    <path d="M10 12l10 0" />
+    <path d="M17 18m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+    <path d="M4 18l11 0" />
+    <path d="M19 18l1 0" />
+  </svg>
+);
 
 interface Order {
   _id: string;
@@ -99,9 +116,27 @@ export default function MyOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Cancel confirmation dialog state
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  
+  // Result dialog state
+  const [resultDialog, setResultDialog] = useState<{
+    open: boolean;
+    success: boolean;
+    message: string;
+  }>({ open: false, success: false, message: '' });
+  
+  // Ensure client-side only rendering
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // Filters and sorting
   const [filters, setFilters] = useState<Filters>({
@@ -244,10 +279,16 @@ export default function MyOrdersPage() {
   };
 
   const handleCancelOrder = async (orderId: string) => {
-    if (!confirm('Are you sure you want to cancel this order?')) return;
+    setOrderToCancel(orderId);
+    setShowCancelDialog(true);
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!orderToCancel) return;
 
     try {
-      const response = await fetch(`/api/buyer/orders/${orderId}/cancel`, {
+      setCancelling(true);
+      const response = await fetch(`/api/buyer/orders/${orderToCancel}/cancel`, {
         method: 'PATCH',
         credentials: 'include',
         headers: {
@@ -255,15 +296,44 @@ export default function MyOrdersPage() {
         }
       });
 
+      const data = await response.json();
+
       if (response.ok) {
+        setShowCancelDialog(false);
+        setOrderToCancel(null);
+        
+        // Show success message
+        setResultDialog({
+          open: true,
+          success: true,
+          message: 'Order cancelled successfully. Your inventory has been released.'
+        });
+        
         // Refresh orders to get updated data
         await fetchOrders(false);
       } else {
-        const errorData = await response.json();
-        alert(errorData.message || 'Failed to cancel order');
+        setShowCancelDialog(false);
+        setOrderToCancel(null);
+        
+        // Show error message
+        setResultDialog({
+          open: true,
+          success: false,
+          message: data.message || 'Failed to cancel order. Please try again.'
+        });
       }
     } catch (error) {
-      alert('Error cancelling order. Please try again.');
+      setShowCancelDialog(false);
+      setOrderToCancel(null);
+      
+      // Show error message
+      setResultDialog({
+        open: true,
+        success: false,
+        message: 'Error cancelling order. Please check your connection and try again.'
+      });
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -299,14 +369,20 @@ export default function MyOrdersPage() {
     return `${products[0].productName} ${products.length > 1 ? `+${products.length - 1} more` : ''}`;
   };
 
-  if (loading) {
+  // Prevent hydration mismatch - only show loading on client
+  if (!mounted || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Loading your orders...</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <LoadingDots size="lg" color="#103C2E" />
           </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Loading your orders
+          </h3>
+          <p className="text-gray-500 font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Please wait
+          </p>
         </div>
       </div>
     );
@@ -775,6 +851,88 @@ export default function MyOrdersPage() {
           </div>
         )}
       </div>
+
+      {/* Cancel Order Confirmation Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={(open) => !cancelling && setShowCancelDialog(open)}>
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <div className="flex flex-col items-center gap-4">
+            {/* Icon */}
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+              <XCircle className="w-10 h-10 text-red-600" />
+            </div>
+            
+            {/* Title */}
+            <h3 className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Cancel Order?
+            </h3>
+            
+            {/* Message */}
+            <p className="text-gray-600 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Are you sure you want to cancel this order? This action cannot be undone.
+            </p>
+            
+            {/* Buttons */}
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => {
+                  setShowCancelDialog(false);
+                  setOrderToCancel(null);
+                }}
+                disabled={cancelling}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                No, Keep It
+              </button>
+              <button
+                onClick={confirmCancelOrder}
+                disabled={cancelling}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Result Dialog */}
+      <Dialog open={resultDialog.open} onOpenChange={(open) => setResultDialog({ ...resultDialog, open })}>
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <div className="flex flex-col items-center gap-4">
+            {/* Icon */}
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+              resultDialog.success ? 'bg-green-100' : 'bg-red-100'
+            }`}>
+              {resultDialog.success ? (
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              ) : (
+                <XCircle className="w-10 h-10 text-red-600" />
+              )}
+            </div>
+            
+            {/* Title */}
+            <h3 className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              {resultDialog.success ? 'Success!' : 'Error'}
+            </h3>
+            
+            {/* Message */}
+            <p className="text-gray-600 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              {resultDialog.message}
+            </p>
+            
+            {/* Button */}
+            <button
+              onClick={() => setResultDialog({ open: false, success: false, message: '' })}
+              className="w-full bg-[#4A7C59] hover:bg-[#3d6849] text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+            >
+              OK
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

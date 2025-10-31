@@ -3,6 +3,7 @@ import dbConnect from '../../../lib/mongodb';
 import User from '../../../models/User';
 import Product from '../../../models/Product';
 import TopFarmersConfig, { ITopFarmersConfig } from '../../../models/TopFarmersConfig';
+import { applyRateLimit, getRateLimitHeaders } from '@/lib/app-rate-limiter';
 
 // Types for better type safety
 interface FarmerDocument {
@@ -77,6 +78,13 @@ let rankingsCache: Record<string, number> | null = null;
 let rankingsCacheTime = 0;
 
 export async function GET(request: NextRequest) {
+  // Apply rate limiting: 150 requests per 15 minutes for top farmers browsing
+  const rateLimitResponse = await applyRateLimit(request, {
+    windowMs: 15 * 60 * 1000,
+    max: 150,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await dbConnect();
 

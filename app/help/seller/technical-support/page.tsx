@@ -66,10 +66,10 @@ const technicalGuides: GuideSection[] = [
           'Ensure your password is entered correctly, paying attention to caps lock and special characters',
           'If you forgot your password, click "Forgot Password?" on the login page',
           'Check your email for the password reset link and follow the instructions provided',
-          'Clear your browser cache and cookies by pressing Ctrl+Shift+Delete (Windows)',
+          'Clear your browser cache and cookies',
           'Try logging in using an incognito or private browsing window',
           'Disable browser extensions temporarily as they may interfere with login functionality',
-          'Contact seller support if login issues persist after trying these troubleshooting steps'
+          'Contact support if login issues persist after trying these troubleshooting steps'
         ],
         tips: [
           'Use a strong, unique password and consider using a password manager for security',

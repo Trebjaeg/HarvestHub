@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
   try {
     const admin = await verifyAdmin(req);
     const body = await req.json();
-    const { action, userId, reason } = body;
+    const { action, userId, reason, expiresAt } = body;
 
     const targetUser = await User.findById(userId);
     if (!targetUser) {
@@ -93,7 +93,13 @@ export async function POST(req: NextRequest) {
       case 'suspend':
         updatedUser = await User.findByIdAndUpdate(
           userId, 
-          { status: 'suspended' }, 
+          { 
+            status: 'suspended',
+            suspendReason: reason || 'No reason provided',
+            suspendedAt: new Date(),
+            suspendedBy: admin._id,
+            suspensionExpiresAt: expiresAt ? new Date(expiresAt) : null
+          }, 
           { new: true }
         ).select('-password');
         auditAction = 'user_suspended';
@@ -102,7 +108,13 @@ export async function POST(req: NextRequest) {
       case 'activate':
         updatedUser = await User.findByIdAndUpdate(
           userId, 
-          { status: 'active' }, 
+          { 
+            status: 'active',
+            suspendReason: null,
+            suspendedAt: null,
+            suspendedBy: null,
+            suspensionExpiresAt: null
+          }, 
           { new: true }
         ).select('-password');
         auditAction = 'user_unsuspended';

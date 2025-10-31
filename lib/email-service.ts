@@ -692,6 +692,200 @@ This is an automated message, please do not reply to this email.
       html,
     });
   }
+
+  /**
+   * Send order confirmation email to buyer
+   */
+  async sendOrderConfirmation(
+    email: string,
+    orderDetails: {
+      orderNumber: string;
+      buyerName: string;
+      products: Array<{
+        productName: string;
+        quantity: number;
+        price: number;
+        unit: string;
+      }>;
+      totalAmount: number;
+      deliveryFee: number;
+      finalAmount: number;
+      deliveryAddress: {
+        fullName: string;
+        phoneNumber: string;
+        address: string;
+        barangay: string;
+        city: string;
+        province: string;
+        postalCode: string;
+      };
+      estimatedDelivery?: Date;
+    }
+  ): Promise<boolean> {
+    const { 
+      orderNumber, 
+      buyerName, 
+      products, 
+      totalAmount, 
+      deliveryFee, 
+      finalAmount,
+      deliveryAddress,
+      estimatedDelivery 
+    } = orderDetails;
+
+    const subject = `Order Confirmation - ${orderNumber}`;
+    
+    // Format currency
+    const formatCurrency = (amount: number) => {
+      return new Intl.NumberFormat('en-PH', {
+        style: 'currency',
+        currency: 'PHP'
+      }).format(amount);
+    };
+
+    // Format date
+    const formatDate = (date?: Date) => {
+      if (!date) return 'To be confirmed';
+      return new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Order Confirmation</title>
+      <style>
+        body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+        .header { background: linear-gradient(135deg, #4A7C59 0%, #3d6549 100%); padding: 40px 30px; text-align: center; }
+        .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; }
+        .header p { color: #e8f5e9; margin: 10px 0 0; font-size: 14px; }
+        .content { padding: 40px 30px; }
+        .order-info { background-color: #f8f9fa; border-left: 4px solid #4A7C59; padding: 20px; margin-bottom: 30px; border-radius: 4px; }
+        .order-info h2 { margin: 0 0 10px; color: #333; font-size: 20px; font-weight: 600; }
+        .order-info p { margin: 5px 0; color: #666; font-size: 14px; }
+        .section-title { color: #333; font-size: 18px; font-weight: 600; margin: 30px 0 15px; padding-bottom: 10px; border-bottom: 2px solid #e0e0e0; }
+        .product-item { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #e0e0e0; }
+        .product-item:last-child { border-bottom: none; }
+        .product-name { font-weight: 500; color: #333; }
+        .product-quantity { color: #666; font-size: 14px; margin-top: 5px; }
+        .product-price { font-weight: 600; color: #4A7C59; }
+        .address-box { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 15px; }
+        .address-box p { margin: 8px 0; color: #333; font-size: 14px; line-height: 1.6; }
+        .totals { margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; }
+        .total-row { display: flex; justify-content: space-between; margin: 10px 0; font-size: 15px; }
+        .total-row.final { border-top: 2px solid #4A7C59; padding-top: 15px; margin-top: 15px; font-weight: 700; font-size: 18px; color: #4A7C59; }
+        .footer { background-color: #f8f9fa; padding: 30px; text-align: center; color: #666; font-size: 13px; }
+        .footer a { color: #4A7C59; text-decoration: none; }
+        .button { display: inline-block; background-color: #4A7C59; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: 600; }
+        .icon { width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 8px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <!-- Header -->
+        <div class="header">
+          <h1>🌾 HarvestHub Philippines</h1>
+          <p>Thank you for your order!</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+          <div class="order-info">
+            <h2>Order Confirmed! 🎉</h2>
+            <p><strong>Order Number:</strong> ${orderNumber}</p>
+            <p><strong>Order Date:</strong> ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p><strong>Estimated Delivery:</strong> ${formatDate(estimatedDelivery)}</p>
+          </div>
+
+          <p style="color: #333; font-size: 15px; line-height: 1.6;">
+            Hi <strong>${buyerName}</strong>,
+          </p>
+          <p style="color: #666; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
+            Your order has been successfully placed and is being prepared by our farmers. You will receive updates as your order progresses.
+          </p>
+
+          <!-- Products -->
+          <div class="section-title">📦 Order Items</div>
+          <div>
+            ${products.map(product => `
+              <div class="product-item">
+                <div>
+                  <div class="product-name">${product.productName}</div>
+                  <div class="product-quantity">${product.quantity} ${product.unit}</div>
+                </div>
+                <div class="product-price">${formatCurrency(product.price * product.quantity)}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <!-- Totals -->
+          <div class="totals">
+            <div class="total-row">
+              <span>Subtotal:</span>
+              <span>${formatCurrency(totalAmount)}</span>
+            </div>
+            <div class="total-row">
+              <span>Delivery Fee:</span>
+              <span>${formatCurrency(deliveryFee)}</span>
+            </div>
+            <div class="total-row final">
+              <span>Total Amount:</span>
+              <span>${formatCurrency(finalAmount)}</span>
+            </div>
+          </div>
+
+          <!-- Delivery Address -->
+          <div class="section-title">📍 Delivery Address</div>
+          <div class="address-box">
+            <p><strong>${deliveryAddress.fullName}</strong></p>
+            <p>${deliveryAddress.phoneNumber}</p>
+            <p>${deliveryAddress.address}</p>
+            <p>Barangay ${deliveryAddress.barangay}, ${deliveryAddress.city}</p>
+            <p>${deliveryAddress.province} ${deliveryAddress.postalCode}</p>
+          </div>
+
+          <!-- Track Order Button -->
+          <div style="text-align: center;">
+            <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://harvesthubph.com'}/buyer-orders" class="button">
+              Track Your Order
+            </a>
+          </div>
+
+          <p style="color: #666; font-size: 13px; line-height: 1.6; margin-top: 30px;">
+            If you have any questions about your order, please don't hesitate to contact us or reach out to the seller directly through our platform.
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          <p><strong>HarvestHub Philippines</strong></p>
+          <p>Connecting farmers with customers</p>
+          <p style="margin-top: 15px;">
+            <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://harvesthubph.com'}">Visit Website</a> | 
+            <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://harvesthubph.com'}/buyer-orders">My Orders</a>
+          </p>
+          <p style="margin-top: 20px; color: #999; font-size: 12px;">
+            This is an automated email. Please do not reply to this message.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject,
+      html,
+    });
+  }
 }
 
 // Export a singleton instance

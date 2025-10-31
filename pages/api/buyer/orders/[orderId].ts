@@ -14,6 +14,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 }
 
 async function getOrderDetails(req: NextApiRequest, res: NextApiResponse, orderId: string) {
+  // Set no-cache headers for real-time data
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   try {
     // Extract and verify JWT token from multiple sources
     const token = req.cookies.token || 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import LoadingDots from '@/components/ui/LoadingDots';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,71 +12,17 @@ interface ProtectedRouteProps {
 }
 
 const LoadingSpinner = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gray-50">
-    <div className="flex flex-col items-center gap-3">
-      <svg
-        viewBox="0 0 120 30"
-        className="w-12 h-8"
-        role="img"
-        aria-label="loading"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <circle cx={30} cy={15} r={8} fill="#103C2E">
-          <animate
-            attributeName="cy"
-            dur="0.8s"
-            begin="0s"
-            repeatCount="indefinite"
-            values="15;7;15"
-            keyTimes="0;0.5;1"
-          />
-          <animate
-            attributeName="opacity"
-            dur="0.8s"
-            begin="0s"
-            repeatCount="indefinite"
-            values="0.4;1;0.4"
-            keyTimes="0;0.5;1"
-          />
-        </circle>
-        <circle cx={60} cy={15} r={8} fill="#103C2E">
-          <animate
-            attributeName="cy"
-            dur="0.8s"
-            begin="0.15s"
-            repeatCount="indefinite"
-            values="15;7;15"
-            keyTimes="0;0.5;1"
-          />
-          <animate
-            attributeName="opacity"
-            dur="0.8s"
-            begin="0.15s"
-            repeatCount="indefinite"
-            values="0.4;1;0.4"
-            keyTimes="0;0.5;1"
-          />
-        </circle>
-        <circle cx={90} cy={15} r={8} fill="#103C2E">
-          <animate
-            attributeName="cy"
-            dur="0.8s"
-            begin="0.3s"
-            repeatCount="indefinite"
-            values="15;7;15"
-            keyTimes="0;0.5;1"
-          />
-          <animate
-            attributeName="opacity"
-            dur="0.8s"
-            begin="0.3s"
-            repeatCount="indefinite"
-            values="0.4;1;0.4"
-            keyTimes="0;0.5;1"
-          />
-        </circle>
-      </svg>
-      <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Loading...</p>
+  <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="text-center">
+      <div className="flex justify-center mb-4">
+        <LoadingDots size="lg" color="#103C2E" />
+      </div>
+      <h3 className="text-lg font-bold text-gray-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        Loading
+      </h3>
+      <p className="text-gray-500 font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        Please wait
+      </p>
     </div>
   </div>
 );
@@ -180,25 +127,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
   }
 
-  // Check if user account is suspended
-  if (user.status === 'suspended') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Account Suspended</h1>
-          <p className="text-gray-600 mb-4">
-            Your account has been suspended. Please contact support for assistance.
-          </p>
-          <button 
-            onClick={() => router.push('/contact')}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
-          >
-            Contact Support
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Note: Suspended users CAN access protected routes and login
+  // They will see suspension banner and have restricted actions
+  // Only 'deleted' status users are blocked at the auth level
 
   // Check if email is verified for certain actions
   if (!user.emailVerified && requiredRole && requiredRole !== 'user') {

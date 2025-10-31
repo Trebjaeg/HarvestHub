@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Plus, Package, Edit, Trash2, Filter } from "lucide-react";
+import { Search, Plus, Package, Edit, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import AddEditProductModal from "@/components/ui/AddEditProductModal";
+import SuccessDialog from "@/components/ui/SuccessDialog";
 
 interface Product {
   _id?: string;
@@ -36,9 +37,27 @@ interface Product {
   updatedAt?: Date;
 }
 
+interface Appeal {
+  _id: string;
+  user: string;
+  productId?: string;
+  productName?: string;
+  type: 'suspension' | 'deletion' | 'warning' | 'listing_removal';
+  reason: string;
+  status: 'pending' | 'under_review' | 'approved' | 'rejected';
+  decision?: 'approved' | 'rejected' | 'partial';
+  decisionReason?: string;
+  reviewNotes?: string;
+  reviewedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [appeals, setAppeals] = useState<Appeal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [appealsLoading, setAppealsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -48,8 +67,9 @@ export default function Products() {
   const [isVerified, setIsVerified] = useState<boolean>(true); // Assume verified until checked
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [successMessage, setSuccessMessage] = useState({ title: '', message: '' });
 
   const categories = [
     "Leafy Greens",
@@ -64,6 +84,7 @@ export default function Products() {
 
   useEffect(() => {
     fetchProducts();
+    fetchAppeals();
     checkVerificationStatus();
   }, []);
 
@@ -72,17 +93,37 @@ export default function Products() {
       const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
       const response = await fetch('/api/seller/verification/status', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        credentials: 'include'
+        credentials: 'include',
+        cache: 'no-store'
       });
 
       if (response.ok) {
         const data = await response.json();
         const verified = data.sellerStatus === 'verified';
         setIsVerified(verified);
-        console.log('Verification status:', data.sellerStatus, 'isVerified:', verified);
       }
     } catch (error) {
-      console.error('Error checking verification status:', error);
+      setIsVerified(false);
+    }
+  };
+
+  const fetchAppeals = async () => {
+    try {
+      setAppealsLoading(true);
+      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
+      const response = await fetch('/api/seller/appeals', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        cache: 'no-store'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAppeals(data);
+      }
+    } catch (error) {
+      setAppeals([]);
+    } finally {
+      setAppealsLoading(false);
     }
   };
 
@@ -91,7 +132,8 @@ export default function Products() {
       setLoading(true);
       const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
       const response = await fetch('/api/seller/products', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        cache: 'no-store'
       });
 
       if (response.ok) {
@@ -102,15 +144,21 @@ export default function Products() {
           harvestDate: product.harvestDate ? new Date(product.harvestDate).toISOString().split('T')[0] : undefined
         }));
         setProducts(formattedProducts);
+        setRetryCount(0); // Reset retry count on success
       } else if (response.status === 403) {
         const error = await response.json();
         if (error.error === 'Insufficient permissions' || error.message?.includes('verification')) {
           // Don't show anything on page load - user will see error when trying to add/edit
-          console.log('User needs verification to manage products');
         }
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
+      // Retry once if first attempt fails
+      if (retryCount < 1) {
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => {
+          fetchProducts();
+        }, 1000);
+      }
     } finally {
       setLoading(false);
     }
@@ -118,7 +166,6 @@ export default function Products() {
 
   const handleAddProduct = async (product: Product) => {
     try {
-      console.log('Attempting to create product:', product);
       const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
       const response = await fetch('/api/seller/products', {
         method: 'POST',
@@ -128,21 +175,21 @@ export default function Products() {
         },
         body: JSON.stringify(product)
       });
-
-      console.log('Response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Product created successfully:', data);
-        // Refresh the products list
-        fetchProducts();
+        // Close modal first
         setShowAddModal(false);
-        // Show success message
-        setSuccessMessage('Product added successfully!');
-        setShowSuccessModal(true);
+        // Refresh the products list
+        await fetchProducts();
+        // Show success dialog
+        setSuccessMessage({
+          title: 'Success!',
+          message: 'Your product has been added successfully and is now visible in your product list.'
+        });
+        setShowSuccessDialog(true);
       } else {
         const error = await response.json();
-        console.error('Server error response:', error);
         // Check if it's a verification error
         if (response.status === 403 && (error.error === 'Insufficient permissions' || error.message?.includes('verification'))) {
           // Keep modal open and show error inline
@@ -152,8 +199,7 @@ export default function Products() {
         }
       }
     } catch (error) {
-      console.error('Error creating product:', error);
-      // Silently log - don't show alert
+      alert('An error occurred while adding the product. Please try again.');
     }
   };
 
@@ -172,21 +218,23 @@ export default function Products() {
 
       if (response.ok) {
         const data = await response.json();
-        // Refresh the products list
-        fetchProducts();
+        // Close modal first
         setEditingProduct(null);
-        // Show success message
-        setSuccessMessage('Product updated successfully!');
-        setShowSuccessModal(true);
+        // Refresh the products list
+        await fetchProducts();
+        // Show success dialog
+        setSuccessMessage({
+          title: 'Updated!',
+          message: 'Your product has been updated successfully.'
+        });
+        setShowSuccessDialog(true);
       } else {
         const error = await response.json();
-        console.error('Failed to update product:', error);
         // Silently fail and close modal
         setEditingProduct(null);
         fetchProducts();
       }
     } catch (error) {
-      console.error('Error updating product:', error);
       // Silently fail and close modal
       setEditingProduct(null);
       fetchProducts();
@@ -218,24 +266,28 @@ export default function Products() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Refresh the products list silently
-        fetchProducts();
+        // Close delete modal
+        setShowDeleteModal(false);
+        setProductToDelete(null);
+        // Refresh the products list
+        await fetchProducts();
         // Show success message
-        setSuccessMessage('Product deleted successfully!');
-        setShowSuccessModal(true);
+        setSuccessMessage({
+          title: 'Deleted!',
+          message: 'Product has been deleted successfully.'
+        });
+        setShowSuccessDialog(true);
       } else {
-        console.error('Failed to delete product:', data.error || data.message);
-        // Silently fail - just refresh the list
+        // Close modal and refresh the list
+        setShowDeleteModal(false);
+        setProductToDelete(null);
         fetchProducts();
       }
     } catch (error) {
-      console.error('Error deleting product:', error);
-      // Silently fail - just refresh the list
-      fetchProducts();
-    } finally {
-      // Close modal and reset
+      // Close modal and refresh the list
       setShowDeleteModal(false);
       setProductToDelete(null);
+      fetchProducts();
     }
   };
 
@@ -247,6 +299,10 @@ export default function Products() {
     
     return matchesSearch && matchesCategory && matchesStatus;
   });
+
+  // Separate active and deactivated for rendering
+  const activeProducts = filteredProducts.filter(product => product.isActive !== false);
+  const deactivatedProducts = filteredProducts.filter(product => product.isActive === false);
 
   const getStatusColor = (status: string) => {
     return status === 'Available' 
@@ -273,7 +329,6 @@ export default function Products() {
           </div>
           <Button 
             onClick={() => {
-              console.log('Add Product clicked, isVerified:', isVerified);
               if (!isVerified) {
                 setVerificationMessage('You must complete seller verification to add products. Please verify your account in the Profile section.');
               } else {
@@ -376,8 +431,15 @@ export default function Products() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {filteredProducts.map((product) => (
-                      <tr key={product._id} className="hover:bg-gray-50 transition-colors">
+                    {filteredProducts.map((product) => {
+                      const productAppeal = appeals.find(
+                        (appeal) => appeal.productId === product._id && appeal.type === 'listing_removal'
+                      );
+                      // Show as deactivated only if isActive is false AND status is not Available
+                      const isDeactivated = product.isActive === false && product.status !== 'Available';
+
+                      return (
+                        <tr key={product._id} className={`hover:bg-gray-50 transition-colors ${isDeactivated ? 'bg-red-50' : ''}`}>
                         <td className="px-6 py-4">
                           <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
                             {product.images && product.images.length > 0 ? (
@@ -396,7 +458,27 @@ export default function Products() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="font-medium text-gray-900">{product.name}</p>
+                          <div className="space-y-1">
+                            <p className="font-medium text-gray-900">{product.name}</p>
+                            {isDeactivated && (
+                              <div className="flex flex-col gap-1">
+                                <Badge className="bg-red-100 text-red-800 w-fit">
+                                  Deactivated by Admin
+                                </Badge>
+                                {productAppeal && (
+                                  <span className="text-xs" style={{
+                                    color: productAppeal.status === 'pending' ? '#FFA726' :
+                                           productAppeal.status === 'under_review' ? '#42A5F5' :
+                                           productAppeal.status === 'approved' ? '#4A7C59' : '#EF5350'
+                                  }}>
+                                    Appeal: {productAppeal.status === 'pending' ? 'Pending' :
+                                            productAppeal.status === 'under_review' ? 'Under Review' :
+                                            productAppeal.status === 'approved' ? 'Approved' : 'Rejected'}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <p className="text-gray-900">₱{product.price}</p>
@@ -411,24 +493,29 @@ export default function Products() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => setEditingProduct(product)}
-                              className="p-2 text-[#103C2E] hover:bg-green-50 rounded-lg transition-colors"
-                              title="Edit"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteProduct(product._id!)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {!isDeactivated && (
+                              <>
+                                <button
+                                  onClick={() => setEditingProduct(product)}
+                                  className="p-2 text-[#103C2E] hover:bg-green-50 rounded-lg transition-colors"
+                                  title="Edit"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteProduct(product._id!)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    );
+                  })}
                   </tbody>
                 </table>
               </div>
@@ -436,64 +523,92 @@ export default function Products() {
 
             {/* Mobile Card View (hidden on desktop) */}
             <div className="md:hidden space-y-4">
-              {filteredProducts.map((product) => (
-                <Card key={product._id} className="bg-white border border-gray-200 overflow-hidden">
-                  <div className="p-4">
-                    <div className="flex gap-4">
-                      {/* Product Image */}
-                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                        {product.images && product.images.length > 0 ? (
-                          <Image
-                            src={product.images[0]}
-                            alt={product.name}
-                            width={80}
-                            height={80}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Package className="w-8 h-8 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
+              {filteredProducts.map((product) => {
+                const productAppeal = appeals.find(
+                  (appeal) => appeal.productId === product._id && appeal.type === 'listing_removal'
+                );
+                // Show as deactivated only if isActive is false AND status is not Available
+                const isDeactivated = product.isActive === false && product.status !== 'Available';
 
-                      {/* Product Info */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 mb-1 truncate">
-                          {product.name}
-                        </h3>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-lg font-bold text-[#103C2E]">₱{product.price}</span>
-                          <Badge className={getStatusColor(product.status || 'Available')}>
-                            {product.status || 'Available'}
-                          </Badge>
+                return (
+                  <Card key={product._id} className={`border border-gray-200 overflow-hidden ${isDeactivated ? 'bg-red-50 border-red-300' : 'bg-white'}`}>
+                    <div className="p-4">
+                      <div className="flex gap-4">
+                        {/* Product Image */}
+                        <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                          {product.images && product.images.length > 0 ? (
+                            <Image
+                              src={product.images[0]}
+                              alt={product.name}
+                              width={80}
+                              height={80}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package className="w-8 h-8 text-gray-400" />
+                            </div>
+                          )}
                         </div>
-                        <p className="text-sm text-gray-600">
-                          Stock: <span className="font-medium">{product.stock}</span>
-                        </p>
-                      </div>
-                    </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
-                      <button
-                        onClick={() => setEditingProduct(product)}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-[#103C2E] bg-green-50 hover:bg-green-100 rounded-lg transition-colors font-medium"
-                      >
-                        <Edit className="w-4 h-4" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProduct(product._id!)}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors font-medium"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete
-                      </button>
+                        {/* Product Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 mb-1 truncate">
+                            {product.name}
+                          </h3>
+                          {isDeactivated && (
+                            <div className="flex flex-col gap-1 mb-2">
+                              <Badge className="bg-red-100 text-red-800 w-fit text-xs">
+                                Deactivated by Admin
+                              </Badge>
+                              {productAppeal && (
+                                <span className="text-xs font-medium" style={{
+                                  color: productAppeal.status === 'pending' ? '#FFA726' :
+                                         productAppeal.status === 'under_review' ? '#42A5F5' :
+                                         productAppeal.status === 'approved' ? '#4A7C59' : '#EF5350'
+                                }}>
+                                  Appeal: {productAppeal.status === 'pending' ? 'Pending' :
+                                          productAppeal.status === 'under_review' ? 'Under Review' :
+                                          productAppeal.status === 'approved' ? 'Approved' : 'Rejected'}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg font-bold text-[#103C2E]">₱{product.price}</span>
+                            <Badge className={getStatusColor(product.status || 'Available')}>
+                              {product.status || 'Available'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Stock: <span className="font-medium">{product.stock}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Actions - Only show for active products */}
+                      {!isDeactivated && (
+                        <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
+                          <button
+                            onClick={() => setEditingProduct(product)}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-[#103C2E] bg-green-50 hover:bg-green-100 rounded-lg transition-colors font-medium"
+                          >
+                            <Edit className="w-4 h-4" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(product._id!)}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors font-medium"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
           </>
         )}
@@ -523,10 +638,10 @@ export default function Products() {
 
         {/* Delete Confirmation Modal */}
         <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] font-poppins">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold text-[#103C2E]">Delete Product</DialogTitle>
-              <DialogDescription className="text-gray-600 pt-2">
+              <DialogTitle className="text-xl font-semibold text-gray-900">Delete Product</DialogTitle>
+              <DialogDescription className="text-gray-600 pt-2 font-normal">
                 Are you sure you want to delete this product? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
@@ -538,14 +653,14 @@ export default function Products() {
                   setShowDeleteModal(false);
                   setProductToDelete(null);
                 }}
-                className="border-gray-300"
+                className="border-gray-300 font-medium"
               >
                 Cancel
               </Button>
               <Button
                 type="button"
                 onClick={confirmDelete}
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="bg-red-600 hover:bg-red-700 text-white font-medium"
               >
                 Delete
               </Button>
@@ -553,26 +668,13 @@ export default function Products() {
           </DialogContent>
         </Dialog>
 
-        {/* Success Modal */}
-        <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-bold text-[#103C2E]">Success!</DialogTitle>
-              <DialogDescription className="text-gray-600 pt-2">
-                {successMessage}
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                type="button"
-                onClick={() => setShowSuccessModal(false)}
-                className="bg-[#103C2E] hover:bg-[#0d2e23] text-white w-full"
-              >
-                OK
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Success Dialog */}
+        <SuccessDialog
+          isOpen={showSuccessDialog}
+          onClose={() => setShowSuccessDialog(false)}
+          title={successMessage.title}
+          message={successMessage.message}
+        />
       </div>
     </div>
   );

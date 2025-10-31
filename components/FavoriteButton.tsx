@@ -21,6 +21,7 @@ export default function FavoriteButton({
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const sizeClasses = {
     sm: 'w-4 h-4',
@@ -62,6 +63,7 @@ export default function FavoriteButton({
 
     try {
       setLoading(true);
+      setIsAnimating(true);
 
       if (isFavorite) {
         // Remove from favorites
@@ -80,11 +82,10 @@ export default function FavoriteButton({
             onToggle?.(false);
           } else {
             console.error('Failed to remove from favorites:', data.error);
-            alert('Failed to remove from favorites. Please try again.');
+            // Silently handle error - better UX than showing alerts
           }
         } else {
           console.error('Failed to remove from favorites');
-          alert('Failed to remove from favorites. Please try again.');
         }
       } else {
         // Add to favorites
@@ -106,20 +107,17 @@ export default function FavoriteButton({
             console.error('Failed to add to favorites:', data.error);
             if (data.error === 'Product already in favorites') {
               setIsFavorite(true); // Update UI state
-            } else {
-              alert('Failed to add to favorites. Please try again.');
             }
           }
         } else {
           console.error('Failed to add to favorites');
-          alert('Failed to add to favorites. Please try again.');
         }
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      alert('An error occurred. Please try again.');
     } finally {
       setLoading(false);
+      setTimeout(() => setIsAnimating(false), 300);
     }
   };
 
@@ -144,27 +142,36 @@ export default function FavoriteButton({
       onClick={toggleFavorite}
       disabled={loading}
       className={`
-        inline-flex items-center gap-2 rounded-lg transition-all duration-200 transform
+        inline-flex items-center gap-2 rounded-lg transition-all duration-300 transform
         ${isFavorite 
           ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200' 
           : 'bg-gray-50 text-gray-600 hover:bg-red-50 hover:text-red-600 border border-gray-200'
         }
-        ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}
+        ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95 cursor-pointer'}
         ${buttonSizeClasses[size]} ${className}
       `}
       title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+      style={{ fontFamily: 'Poppins, sans-serif' }}
     >
       {loading ? (
         <div className={`animate-spin rounded-full border-2 border-current border-t-transparent ${sizeClasses[size]}`}></div>
       ) : (
         <Heart 
-          className={`${sizeClasses[size]} transition-all duration-200 ${
-            isFavorite ? 'fill-current text-red-500' : ''
-          }`} 
+          className={`
+            ${sizeClasses[size]} 
+            transition-all duration-300 
+            ${isAnimating ? 'animate-bounce' : ''}
+            ${isFavorite 
+              ? 'fill-red-500 text-red-500 drop-shadow-lg' 
+              : 'text-gray-600 hover:text-red-500'
+            }
+          `} 
         />
       )}
       {showText && (
-        <span className="text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        <span className={`text-sm font-medium transition-colors ${
+          isFavorite ? 'text-red-600' : 'text-gray-600 hover:text-red-600'
+        }`}>
           {loading 
             ? 'Loading...' 
             : isFavorite 

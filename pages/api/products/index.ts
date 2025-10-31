@@ -2,6 +2,9 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import Product, { IProduct } from '@/models/Product';
 import { withSecurity, withLogging } from '@/lib/middleware';
+import { cache, cacheKeys } from '@/lib/redis';
+import { rateLimiter } from '@/lib/rate-limiter';
+import memoryCache from '@/lib/memory-cache';
 
 async function productsHandler(req: NextApiRequest, res: NextApiResponse) {
   await dbConnect();
@@ -26,17 +29,64 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
       limit = '12', // Reduced from 20 for better performance
       page = '1',
       sort = 'createdAt',
-      sortBy
+      sortBy,
+      minPrice,
+      maxPrice
     } = req.query;
+
+    // Build cache key from query parameters
+    const cacheKey = `products:${JSON.stringify({ category, featured, farmerId, search, limit, page, sort, sortBy, minPrice, maxPrice })}`;
+
+    // Try memory cache first (fastest - no network calls)
+    let cachedData: any = memoryCache.get(cacheKey);
+    if (cachedData) {
+      return res.status(200).json(cachedData);
+    }
+
+    // Try Redis cache as fallback (with timeout protection)
+    try {
+      const redisCachedData = await Promise.race([
+        cache.get(cacheKeys.products(JSON.stringify({ category, featured, farmerId, search, limit, page, sort, sortBy, minPrice, maxPrice }))),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Cache timeout')), 2000))
+      ]);
+      if (redisCachedData) {
+        // Store in memory cache for next time
+        memoryCache.set(cacheKey, redisCachedData, 300);
+        return res.status(200).json(redisCachedData);
+      }
+    } catch (cacheError) {
+      // Continue without cache
+    }
 
     const query: any = { isActive: true };
 
     // Apply filters
-    if (category) query.category = category;
+    if (category) {
+      // Handle special category filters that map to multiple DB categories
+      if (category === 'vegetables') {
+        // Show all vegetable-related categories
+        query.category = { $in: ['Leafy Greens', 'Root Crops', 'Eggplant & Gourds'] };
+      } else {
+        query.category = category;
+      }
+    }
     if (featured === 'true') query.featured = true;
     if (farmerId) query.farmerId = farmerId;
     if (search) {
-      query.$text = { $search: search as string };
+      // Search in product name, description, and farmer name
+      const searchRegex = new RegExp(search as string, 'i');
+      query.$or = [
+        { name: { $regex: searchRegex } },
+        { description: { $regex: searchRegex } },
+        { farmerName: { $regex: searchRegex } }
+      ];
+    }
+    
+    // Price range filter
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = parseFloat(minPrice as string);
+      if (maxPrice) query.price.$lte = parseFloat(maxPrice as string);
     }
 
     const limitNum = Math.min(parseInt(limit as string), 50); // Max 50 items per page
@@ -79,32 +129,71 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
       }
     }
 
+    // Fetch products (without count for performance)
     const products = await Product.find(query)
       .sort(sortOption)
       .limit(limitNum)
       .skip(skip)
       .select('-__v') // Exclude version field
       .lean() // Return plain JS objects for better performance
+      .maxTimeMS(30000) // 30 second timeout for MongoDB query
       .exec();
 
-    const total = await Product.countDocuments(query);
+    // Map inventory_available to stock for backwards compatibility
+    const productsWithStock = products.map(p => ({
+      ...p,
+      stock: p.inventory_available ?? p.stock ?? 0 // Use inventory_available as stock
+    }));
 
-    return res.status(200).json({
+    // Estimate total (don't run expensive count query)
+    // Use a simple estimate based on results
+    const estimatedTotal = products.length < limitNum ? skip + products.length : (pageNum + 1) * limitNum;
+
+    const responseData = {
       success: true,
-      products: products, // Changed from 'data' to 'products' for consistency with TopProducts component
-      data: products, // Keep 'data' for backward compatibility
+      products: productsWithStock, // Changed from 'data' to 'products' for consistency with TopProducts component
+      data: productsWithStock, // Keep 'data' for backward compatibility
       pagination: {
         current: pageNum,
-        total: Math.ceil(total / limitNum),
+        total: Math.ceil(estimatedTotal / limitNum),
         count: products.length,
-        totalItems: total
+        totalItems: estimatedTotal,
+        hasMore: products.length === limitNum
       }
-    });
+    };
+
+    // Cache the response in both memory (10 min) and Redis (10 min)
+    memoryCache.set(cacheKey, responseData, 600);
+    
+    // Redis cache with timeout protection
+    try {
+      await Promise.race([
+        cache.set(cacheKeys.products(JSON.stringify({ category, featured, farmerId, search, limit, page, sort, sortBy, minPrice, maxPrice })), responseData, 600),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Cache write timeout')), 3000))
+      ]);
+    } catch (cacheError) {
+      // Continue without cache
+    }
+
+    return res.status(200).json(responseData);
   } catch (error: any) {
-    console.error('Get products error:', error);
+    // Return cached data if available on error
+    if (cachedData) {
+      return res.status(200).json(cachedData);
+    }
+    
     return res.status(500).json({ 
       success: false,
-      message: 'Failed to fetch products' 
+      message: 'Failed to fetch products',
+      products: [],
+      data: [],
+      pagination: {
+        current: 1,
+        total: 1,
+        count: 0,
+        totalItems: 0,
+        hasMore: false
+      }
     });
   }
 }
@@ -126,6 +215,10 @@ async function createProduct(req: NextApiRequest, res: NextApiResponse) {
 
     const product = new Product(productData);
     await product.save();
+
+    // Invalidate both memory and Redis product caches
+    memoryCache.delPattern('products:*');
+    await cache.delPattern('products:*');
 
     return res.status(201).json({
       success: true,
@@ -150,11 +243,18 @@ async function createProduct(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default withSecurity(
-  withLogging(productsHandler),
+// Apply rate limiting: 200 requests per 15 minutes for product browsing
+export default rateLimiter(
+  withSecurity(
+    withLogging(productsHandler),
+    {
+      rateLimit: 'general',
+      allowedMethods: ['GET', 'POST'],
+      cors: true
+    }
+  ),
   {
-    rateLimit: 'general',
-    allowedMethods: ['GET', 'POST'],
-    cors: true
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 200, // 200 requests per 15 min (generous for browsing)
   }
 );

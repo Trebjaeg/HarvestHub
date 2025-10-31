@@ -14,6 +14,10 @@ export interface User {
   emailVerified: boolean;
   profileImage?: string;
   lastLogin?: Date;
+  suspendReason?: string | null;
+  suspendedAt?: Date | string | null;
+  suspendedBy?: string | null;
+  suspensionExpiresAt?: Date | string | null;
 }
 
 interface AuthContextType {
@@ -50,22 +54,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Check authentication status
   const checkAuth = useCallback(async (): Promise<boolean> => {
     try {
-      console.log('🔐 AuthContext: Checking authentication...');
+      
       
       // Log current cookies to debug
       if (typeof window !== 'undefined') {
-        console.log('🔐 AuthContext: Current cookies:', document.cookie);
+        
       }
       
       const response = await apiRequest('/api/auth/me', {
         method: 'GET',
       });
 
-      console.log('🔐 AuthContext: Auth check response:', { status: response.status });
+      
 
       if (response.ok) {
         const userData = await response.json();
-        console.log('🔐 AuthContext: User authenticated:', userData.user?.email);
+        
         setUser(userData.user);
         
         // Store in sessionStorage as backup
@@ -75,7 +79,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         return true;
       } else {
-        console.log('🔐 AuthContext: User not authenticated');
+        
         setUser(null);
         
         // Clear sessionStorage
@@ -100,19 +104,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Login function
   const login = async (email: string, password: string) => {
     try {
-      console.log('🔐 AuthContext: Starting login for:', email);
+      
       
       const response = await apiRequest('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
 
-      console.log('🔐 AuthContext: Response status:', response.status);
+      
       const data = await response.json();
-      console.log('🔐 AuthContext: Response data:', data);
+      
 
       if (response.ok && data.success) {
-        console.log('🔐 AuthContext: Login successful, setting user');
+        
         setUser(data.user);
         
         // Store token in localStorage as fallback for mobile browsers where cookies may not work
@@ -122,13 +126,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Store token for Authorization header fallback (important for mobile)
           if (data.token) {
             localStorage.setItem('hh_token', data.token);
-            console.log('🔐 AuthContext: Token stored in localStorage for mobile fallback');
+            
           }
         }
         
         return { success: true };
       } else {
-        console.log('🔐 AuthContext: Login failed:', data.message);
+        
         return { 
           success: false, 
           message: data.message || 'Login failed',
@@ -176,17 +180,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (isOnAuthPage) {
         // On auth page - don't check, just set as not loading
-        console.log('🔐 AuthContext: On auth page, skipping auth check');
+        
         setIsLoading(false);
         setUser(null);
         return;
       }
 
       // Not on auth page - check if user is authenticated IMMEDIATELY
-      console.log('🔐 AuthContext: Checking authentication...');
+      
       try {
         const authResult = await checkAuth();
-        console.log('🔐 AuthContext: Auth check result:', authResult);
+        
         
         if (!authResult) {
           // Clear any stale data

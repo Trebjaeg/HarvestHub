@@ -3,6 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+<<<<<<< HEAD
+=======
+import LoadingDots from '@/components/ui/LoadingDots';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+>>>>>>> origin/IOS28
 import { 
   ArrowLeft, 
   Package, 
@@ -114,6 +119,19 @@ export default function OrderDetailsPage() {
   const [cancelling, setCancelling] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+<<<<<<< HEAD
+=======
+  // Cancel confirmation dialog state
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  
+  // Result dialog state
+  const [resultDialog, setResultDialog] = useState<{
+    open: boolean;
+    success: boolean;
+    message: string;
+  }>({ open: false, success: false, message: '' });
+
+>>>>>>> origin/IOS28
   useEffect(() => {
     if (orderId) {
       fetchOrderDetails();
@@ -166,7 +184,16 @@ export default function OrderDetailsPage() {
   };
 
   const handleCancelOrder = async () => {
+<<<<<<< HEAD
     if (!order || !confirm('Are you sure you want to cancel this order?')) return;
+=======
+    if (!order) return;
+    setShowCancelDialog(true);
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!order) return;
+>>>>>>> origin/IOS28
 
     try {
       setCancelling(true);
@@ -178,6 +205,7 @@ export default function OrderDetailsPage() {
         }
       });
 
+<<<<<<< HEAD
       if (response.ok) {
         await fetchOrderDetails(false); // Refresh order details
       } else {
@@ -186,6 +214,40 @@ export default function OrderDetailsPage() {
       }
     } catch (error) {
       alert('Error cancelling order. Please try again.');
+=======
+      const data = await response.json();
+
+      if (response.ok) {
+        setShowCancelDialog(false);
+        
+        // Show success message
+        setResultDialog({
+          open: true,
+          success: true,
+          message: 'Order cancelled successfully. Your inventory has been released.'
+        });
+        
+        await fetchOrderDetails(false); // Refresh order details
+      } else {
+        setShowCancelDialog(false);
+        
+        // Show error message
+        setResultDialog({
+          open: true,
+          success: false,
+          message: data.message || 'Failed to cancel order. Please try again.'
+        });
+      }
+    } catch (error) {
+      setShowCancelDialog(false);
+      
+      // Show error message
+      setResultDialog({
+        open: true,
+        success: false,
+        message: 'Error cancelling order. Please check your connection and try again.'
+      });
+>>>>>>> origin/IOS28
     } finally {
       setCancelling(false);
     }
@@ -227,12 +289,26 @@ export default function OrderDetailsPage() {
 
   if (loading) {
     return (
+<<<<<<< HEAD
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
             <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Loading order details...</p>
           </div>
+=======
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <LoadingDots size="lg" color="#103C2E" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Loading order details
+          </h3>
+          <p className="text-gray-500 font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Please wait
+          </p>
+>>>>>>> origin/IOS28
         </div>
       </div>
     );
@@ -248,7 +324,11 @@ export default function OrderDetailsPage() {
               {error || 'Order not found'}
             </h2>
             <p className="text-gray-600 mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
+<<<<<<< HEAD
               The order you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to view it.
+=======
+              The order you're looking for doesn't exist or you don't have permission to view it.
+>>>>>>> origin/IOS28
             </p>
             <div className="flex gap-4 justify-center">
               <Link
@@ -667,6 +747,88 @@ export default function OrderDetailsPage() {
           </div>
         )}
       </div>
+<<<<<<< HEAD
+=======
+
+      {/* Cancel Order Confirmation Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={(open) => !cancelling && setShowCancelDialog(open)}>
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <div className="flex flex-col items-center gap-4">
+            {/* Icon */}
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+              <XCircle className="w-10 h-10 text-red-600" />
+            </div>
+            
+            {/* Title */}
+            <h3 className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Cancel Order?
+            </h3>
+            
+            {/* Message */}
+            <p className="text-gray-600 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Are you sure you want to cancel this order? This action cannot be undone.
+            </p>
+            
+            {/* Buttons */}
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setShowCancelDialog(false)}
+                disabled={cancelling}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                No, Keep It
+              </button>
+              <button
+                onClick={confirmCancelOrder}
+                disabled={cancelling}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Result Dialog */}
+      <Dialog open={resultDialog.open} onOpenChange={(open) => setResultDialog({ ...resultDialog, open })}>
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <div className="flex flex-col items-center gap-4">
+            {/* Icon */}
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+              resultDialog.success ? 'bg-green-100' : 'bg-red-100'
+            }`}>
+              {resultDialog.success ? (
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              ) : (
+                <XCircle className="w-10 h-10 text-red-600" />
+              )}
+            </div>
+            
+            {/* Title */}
+            <h3 className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              {resultDialog.success ? 'Success!' : 'Error'}
+            </h3>
+            
+            {/* Message */}
+            <p className="text-gray-600 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              {resultDialog.message}
+            </p>
+            
+            {/* Button */}
+            <button
+              onClick={() => setResultDialog({ open: false, success: false, message: '' })}
+              className="w-full bg-[#4A7C59] hover:bg-[#3d6849] text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+            >
+              OK
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+>>>>>>> origin/IOS28
     </div>
   );
 }

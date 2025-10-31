@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
 import User from '@/models/User';
+import { generateSKU, isSKUUnique } from '@/lib/sku-generator';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   await dbConnect();
@@ -17,17 +18,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string; status?: string };
     
-    // Verify user exists
-    const user = await User.findById(decoded.userId);
+    // Verify user exists and get status
+    const user = await User.findById(decoded.userId).select('status role sellerStatus');
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // Check if user is deleted
+    if (user.status === 'deleted') {
+      return res.status(403).json({ error: 'Account not found' });
+    }
+
     if (req.method === 'GET') {
+      // GET requests allowed even when suspended (viewing products)
       return handleGET(req, res, decoded.userId);
     } else if (req.method === 'POST') {
+      // POST requests (creating products) blocked when suspended
+      if (user.status === 'suspended') {
+        return res.status(403).json({ 
+          error: 'Account suspended',
+          code: 'SUSPENDED',
+          message: 'Your account is suspended and you cannot list or sell products. You can view your account but selling is disabled. Please submit an appeal to request account restoration.',
+          canAppeal: true,
+          appealUrl: '/appeals/new'
+        });
+      }
       return handlePOST(req, res, decoded.userId, user);
     } else {
       return res.status(405).json({ error: 'Method not allowed' });
@@ -68,7 +85,8 @@ async function handleGET(req: NextApiRequest, res: NextApiResponse, userId: stri
     const products = await Product.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limitNum);
+      .limit(limitNum)
+      .lean();
 
     // Get total count for pagination
     const total = await Product.countDocuments(query);
@@ -104,7 +122,8 @@ async function handlePOST(req: NextApiRequest, res: NextApiResponse, userId: str
       stock,
       images,
       harvestDate,
-      lowStockAlert
+      lowStockAlert,
+      sku
     } = req.body;
 
     // Validate required fields
@@ -116,13 +135,40 @@ async function handlePOST(req: NextApiRequest, res: NextApiResponse, userId: str
       });
     }
 
+    // Handle SKU - either validate custom or generate new
+    let productSKU = sku?.trim().toUpperCase() || '';
+    
+    try {
+      if (productSKU) {
+        // Validate custom SKU
+        const isUnique = await isSKUUnique(productSKU);
+        if (!isUnique) {
+          return res.status(400).json({
+            error: 'SKU already exists',
+            message: 'This SKU is already in use. Please use a different SKU or enable auto-generation.'
+          });
+        }
+      } else {
+        // Auto-generate SKU
+        productSKU = await generateSKU(category, userId);
+      }
+    } catch (skuError) {
+      console.error('SKU generation error:', skuError);
+      // Continue without SKU if generation fails
+      productSKU = '';
+    }
+
     console.log('Creating product with data:', {
       name,
       price: parseFloat(price),
       category,
       unit,
       stock: parseInt(stock),
-      images: images?.length || 0
+      images: images?.length || 0,
+      sku: productSKU,
+      farmerId: userId,
+      farmerName: user.name || user.firstName || 'Unknown Farmer',
+      location: user.address || user.farmAddress || 'Unknown Location'
     });
 
     // Create product
@@ -138,14 +184,16 @@ async function handlePOST(req: NextApiRequest, res: NextApiResponse, userId: str
       image: images?.[0] || '/images/products/default.png',
       images: images || [],
       farmerId: userId,
-      farmerName: user.name,
-      location: user.address,
+      farmerName: user.name || user.firstName || 'Unknown Farmer',
+      location: user.address || user.farmAddress || 'Unknown Location',
       harvestDate: harvestDate ? new Date(harvestDate) : undefined,
+      ...(productSKU && { sku: productSKU }),
       isActive: true,
       isOrganic: false,
       featured: false
     });
 
+    console.log('Attempting to save product to database...');
     await product.save();
     console.log('Product created successfully:', product._id);
 

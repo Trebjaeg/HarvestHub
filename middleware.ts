@@ -28,8 +28,6 @@ interface DecodedToken {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  console.log(`🔐 Middleware: Processing request for ${pathname}`);
-  
   // Create response - will be used throughout
   const response = NextResponse.next();
   
@@ -67,27 +65,19 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check if route is public (doesn't need auth)
-  console.log(`🔐 Middleware: Checking if ${pathname} is public...`);
   const isPublic = isPublicPath(pathname);
-  console.log(`🔐 Middleware: isPublicPath(${pathname}) returned: ${isPublic}`);
   
   if (isPublic) {
-    console.log(`🔐 Middleware: ${pathname} is public, allowing access`);
     return response;
   }
-  
-  console.log(`🔐 Middleware: ${pathname} NOT in public paths`);
 
   // Check if route requires protection
   const isProtectedRoute = isProtectedPath(pathname);
   const isAdminRoute = isAdminPath(pathname);
   const isApiRoute = pathname.startsWith('/api/');
 
-  console.log(`🔐 Middleware: ${pathname} - Protected: ${isProtectedRoute}, Admin: ${isAdminRoute}, API: ${isApiRoute}`);
-
   // If not a protected route, admin route, or API route, allow access (public route)
   if (!isApiRoute && !isProtectedRoute && !isAdminRoute) {
-    console.log(`🔐 Middleware: ${pathname} is not protected - allowing public access`);
     return response;
   }
 
@@ -104,13 +94,8 @@ export async function middleware(request: NextRequest) {
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.substring(7);
       tokenSource = 'authorization-header';
-      console.log(`🔐 Middleware: Token found in Authorization header (mobile fallback)`);
     }
   }
-  
-  console.log(`🔐 Middleware: Checking ${pathname}`);
-  console.log(`🔐 Middleware: All cookies:`, request.cookies.getAll());
-  console.log(`🔐 Middleware: Token found: ${!!token} (source: ${token ? tokenSource : 'none'})`);
 
   // No token found - redirect to auth or return 401 for API
   if (!token) {
@@ -133,17 +118,11 @@ export async function middleware(request: NextRequest) {
     // Don't double encode - searchParams.set will encode it
     loginUrl.searchParams.set('returnUrl', safeReturnUrl);
     
-    console.log(`🔐 Middleware: Redirecting to auth with returnUrl: ${safeReturnUrl}`);
     return NextResponse.redirect(loginUrl);
   }
 
   // Verify token
   try {
-    console.log(`🔐 Middleware: Attempting to verify token for ${pathname}`);
-    console.log(`🔐 Middleware: Token exists: ${!!token}`);
-    console.log(`🔐 Middleware: Token length: ${token?.length || 0}`);
-    console.log(`🔐 Middleware: JWT_SECRET exists: ${!!process.env.JWT_SECRET}`);
-    
     if (!process.env.JWT_SECRET) {
       throw new Error('JWT_SECRET not configured');
     }
@@ -162,13 +141,13 @@ export async function middleware(request: NextRequest) {
     const user = await fetchAuthoritativeUser(decoded.userId);
     
     if (!user) {
-      console.log(`🔐 Middleware: User not found for ID: ${decoded.userId}`);
       throw new Error('User not found');
     }
 
-    if (user.status !== 'active') {
-      console.log(`🔐 Middleware: User ${user.email} is not active (status: ${user.status})`);
-      throw new Error('User account is not active');
+    // Only block DELETED users from accessing routes
+    // SUSPENDED users can access routes but will have restricted actions via API guards
+    if (user.status === 'deleted') {
+      throw new Error('User account has been deleted');
     }
 
     // Check role-based access
@@ -176,11 +155,8 @@ export async function middleware(request: NextRequest) {
     const requiresBuyer = isBuyerPath(pathname);
     const requiresAdmin = isAdminRoute;
 
-    console.log(`🔐 Middleware: Role checks - User: ${user.role}, Seller: ${requiresSeller}, Buyer: ${requiresBuyer}, Admin: ${requiresAdmin}`);
-
     // Admin route access
     if (requiresAdmin && !RoleHierarchy.canAccessAdminFeatures(user)) {
-      console.log(`🔐 Middleware: User ${user.email} lacks admin access for ${pathname}`);
       if (isApiRoute) {
         return NextResponse.json(
           { 
@@ -215,7 +191,6 @@ export async function middleware(request: NextRequest) {
       if (isSellerDashboard || isVerificationEndpoint || isProfileEndpoint) {
         // Dashboard/verification/profile access: Allow if user has seller role (regardless of verification)
         if (user.role !== 'seller' && user.role !== 'admin' && user.role !== 'superadmin') {
-          console.log(`🔐 Middleware: User ${user.email} (${user.role}) lacks seller role for ${pathname}`);
           if (isApiRoute) {
             return NextResponse.json(
               { 
@@ -231,7 +206,6 @@ export async function middleware(request: NextRequest) {
       } else {
         // Other seller features (products, orders): Require verification
         if (!RoleHierarchy.canAccessSellerFeatures(user)) {
-          console.log(`🔐 Middleware: User ${user.email} (${user.role}) lacks seller verification for ${pathname}`);
           if (isApiRoute) {
             return NextResponse.json(
               { 
@@ -250,7 +224,6 @@ export async function middleware(request: NextRequest) {
     // Buyer route access - all authenticated users can access buyer features
     // Sellers have union access (can access both seller and buyer features)
     if (requiresBuyer && !RoleHierarchy.canAccessBuyerFeatures(user)) {
-      console.log(`🔐 Middleware: User ${user.email} lacks buyer access for ${pathname}`);
       if (isApiRoute) {
         return NextResponse.json(
           { 
@@ -264,7 +237,6 @@ export async function middleware(request: NextRequest) {
     }
 
     // Token is valid and role checks passed, proceed with request
-    console.log(`🔐 Middleware: Access granted to ${pathname} for user: ${user.email} (${user.role})`);
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-user-id', user.id);
     requestHeaders.set('x-user-email', user.email);
@@ -280,7 +252,6 @@ export async function middleware(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error(`🔐 Middleware: Token verification failed for ${pathname}:`, error);
     
     // Invalid token - clear cookies and redirect
     if (isApiRoute) {
@@ -308,7 +279,6 @@ export async function middleware(request: NextRequest) {
     redirectResponse.cookies.delete('userToken');
     redirectResponse.cookies.delete('hh_token');
     
-    console.log(`🔐 Middleware: Token invalid, redirecting to auth with returnUrl: ${safeReturnUrl}`);
     return redirectResponse;
   }
 }

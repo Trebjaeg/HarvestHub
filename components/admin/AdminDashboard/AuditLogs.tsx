@@ -8,6 +8,7 @@ import { Input } from '../../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 import { Alert, AlertDescription } from '../../ui/alert';
 import { useReactiveTranslation } from '../../../hooks/useReactiveTranslation';
+import LoadingDots from '../../ui/LoadingDots';
 
 interface AuditLog {
   _id: string;
@@ -50,6 +51,8 @@ const AuditLogs: React.FC = () => {
   const fetchLogs = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '50',
@@ -61,42 +64,46 @@ const AuditLogs: React.FC = () => {
 
       const response = await fetch(`/api/admin/audit?${params}`, {
         method: 'GET',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch audit logs');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to fetch audit logs');
       }
 
       const data = await response.json();
-      setLogs(data.logs);
-      setTotalPages(data.pagination.pages);
+      setLogs(data.logs || []);
+      setTotalPages(data.pagination?.pages || 1);
     } catch (error) {
       console.error('Error fetching audit logs:', error);
-      setError('Failed to load audit logs');
+      setError(error instanceof Error ? error.message : 'Failed to load audit logs');
     } finally {
       setLoading(false);
     }
   };
 
   const getSeverityBadge = (severity: AuditLog['severity']) => {
+    const style = { fontFamily: 'Poppins, sans-serif' };
     switch (severity) {
       case 'critical':
-        return <Badge className="bg-red-100 text-red-800 border-red-200">Critical</Badge>;
+        return <Badge className="bg-red-100 text-red-800 border-red-200" style={style}>Critical</Badge>;
       case 'high':
-        return <Badge className="bg-orange-100 text-orange-800 border-orange-200">High</Badge>;
+        return <Badge className="bg-orange-100 text-orange-800 border-orange-200" style={style}>High</Badge>;
       case 'medium':
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Medium</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200" style={style}>Medium</Badge>;
       case 'low':
-        return <Badge className="bg-gray-100 text-gray-800 border-gray-200">Low</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800 border-gray-200" style={style}>Low</Badge>;
       default:
-        return <Badge variant="outline">{severity}</Badge>;
+        return <Badge variant="outline" style={style}>{severity}</Badge>;
     }
   };
 
   const getActionBadge = (action: string) => {
+    const style = { fontFamily: 'Poppins, sans-serif' };
     const actionTypes: Record<string, { label: string; color: string }> = {
       user_suspended: { label: 'User Suspended', color: 'bg-orange-100 text-orange-800 border-orange-200' },
       user_deleted: { label: 'User Deleted', color: 'bg-red-100 text-red-800 border-red-200' },
@@ -112,7 +119,7 @@ const AuditLogs: React.FC = () => {
     };
 
     const actionInfo = actionTypes[action] || { label: action, color: 'bg-gray-100 text-gray-800 border-gray-200' };
-    return <Badge className={actionInfo.color}>{actionInfo.label}</Badge>;
+    return <Badge className={actionInfo.color} style={style}>{actionInfo.label}</Badge>;
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -127,7 +134,7 @@ const AuditLogs: React.FC = () => {
     if (!metadata || Object.keys(metadata).length === 0) return null;
     
     return Object.entries(metadata).map(([key, value]) => (
-      <div key={key} className="text-xs text-gray-600">
+      <div key={key} className="text-xs text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
         <span className="font-medium">{key}:</span> {JSON.stringify(value)}
       </div>
     ));
@@ -135,14 +142,12 @@ const AuditLogs: React.FC = () => {
 
   if (loading && logs.length === 0) {
     return (
-      <div className="space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded mb-4 w-64"></div>
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="h-16 bg-gray-200 rounded"></div>
-            ))}
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <LoadingDots size="md" color="#40613D" />
           </div>
+          <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Loading audit logs...</p>
         </div>
       </div>
     );
@@ -159,8 +164,8 @@ const AuditLogs: React.FC = () => {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('admin.audit.title', 'Audit Logs') as string}</CardTitle>
-          <CardDescription>
+          <CardTitle style={{ fontFamily: 'Poppins, sans-serif' }}>{t('admin.audit.title', 'Audit Logs') as string}</CardTitle>
+          <CardDescription style={{ fontFamily: 'Poppins, sans-serif' }}>
             {t('admin.audit.description', 'Monitor all administrative actions and system events') as string}
           </CardDescription>
         </CardHeader>
@@ -172,13 +177,14 @@ const AuditLogs: React.FC = () => {
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                 className="w-full"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
               />
             </div>
             <Select value={actionFilter} onValueChange={setActionFilter}>
-              <SelectTrigger className="w-full md:w-48">
+              <SelectTrigger className="w-full md:w-48" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 <SelectValue placeholder="Filter by action" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent style={{ fontFamily: 'Poppins, sans-serif' }}>
                 <SelectItem value="all">All Actions</SelectItem>
                 <SelectItem value="user_suspended">User Suspended</SelectItem>
                 <SelectItem value="user_deleted">User Deleted</SelectItem>
@@ -193,10 +199,10 @@ const AuditLogs: React.FC = () => {
               </SelectContent>
             </Select>
             <Select value={severityFilter} onValueChange={setSeverityFilter}>
-              <SelectTrigger className="w-full md:w-48">
+              <SelectTrigger className="w-full md:w-48" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 <SelectValue placeholder="Filter by severity" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent style={{ fontFamily: 'Poppins, sans-serif' }}>
                 <SelectItem value="all">All Severities</SelectItem>
                 <SelectItem value="critical">Critical</SelectItem>
                 <SelectItem value="high">High</SelectItem>
@@ -205,10 +211,10 @@ const AuditLogs: React.FC = () => {
               </SelectContent>
             </Select>
             <Select value={dateFilter} onValueChange={setDateFilter}>
-              <SelectTrigger className="w-full md:w-48">
+              <SelectTrigger className="w-full md:w-48" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 <SelectValue placeholder="Filter by date" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent style={{ fontFamily: 'Poppins, sans-serif' }}>
                 <SelectItem value="all">All Time</SelectItem>
                 <SelectItem value="today">Today</SelectItem>
                 <SelectItem value="yesterday">Yesterday</SelectItem>
@@ -232,19 +238,19 @@ const AuditLogs: React.FC = () => {
                     <div className="flex items-center space-x-3 mb-2">
                       {getActionBadge(log.action)}
                       {getSeverityBadge(log.severity)}
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         {timestamp.date} at {timestamp.time}
                       </div>
                     </div>
                     
                     <div className="flex items-center space-x-4 mb-2">
                       <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-[#2B5A3D] rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                        <div className="w-8 h-8 bg-[#2B5A3D] rounded-full flex items-center justify-center text-white text-xs font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>
                           {log.performedBy.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{log.performedBy.name}</p>
-                          <p className="text-xs text-gray-500">{log.performedBy.email}</p>
+                          <p className="text-sm font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{log.performedBy.name}</p>
+                          <p className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>{log.performedBy.email}</p>
                         </div>
                       </div>
                       
@@ -252,21 +258,21 @@ const AuditLogs: React.FC = () => {
                         <>
                           <span className="text-gray-400">→</span>
                           <div className="flex items-center space-x-2">
-                            <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                            <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>
                               {log.targetUser.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-gray-900">{log.targetUser.name}</p>
-                              <p className="text-xs text-gray-500">{log.targetUser.email}</p>
+                              <p className="text-sm font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{log.targetUser.name}</p>
+                              <p className="text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>{log.targetUser.email}</p>
                             </div>
                           </div>
                         </>
                       )}
                     </div>
 
-                    <p className="text-sm text-gray-700 mb-2">{log.description}</p>
+                    <p className="text-sm text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>{log.description}</p>
 
-                    <div className="flex items-center space-x-6 text-xs text-gray-500">
+                    <div className="flex items-center space-x-6 text-xs text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       <span>IP: {log.ipAddress}</span>
                       <span title={log.userAgent} className="truncate max-w-xs">
                         UA: {log.userAgent.slice(0, 50)}...
@@ -275,7 +281,7 @@ const AuditLogs: React.FC = () => {
 
                     {log.metadata && Object.keys(log.metadata).length > 0 && (
                       <div className="mt-3 p-2 bg-gray-100 rounded text-xs">
-                        <p className="font-medium text-gray-700 mb-1">Metadata:</p>
+                        <p className="font-medium text-gray-700 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>Metadata:</p>
                         {formatMetadata(log.metadata)}
                       </div>
                     )}
@@ -294,16 +300,18 @@ const AuditLogs: React.FC = () => {
             onClick={() => setCurrentPage(currentPage - 1)}
             disabled={currentPage === 1}
             variant="outline"
+            style={{ fontFamily: 'Poppins, sans-serif' }}
           >
             Previous
           </Button>
-          <span className="flex items-center px-4 text-sm text-gray-600">
+          <span className="flex items-center px-4 text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
             Page {currentPage} of {totalPages}
           </span>
           <Button
             onClick={() => setCurrentPage(currentPage + 1)}
             disabled={currentPage === totalPages}
             variant="outline"
+            style={{ fontFamily: 'Poppins, sans-serif' }}
           >
             Next
           </Button>
@@ -313,7 +321,7 @@ const AuditLogs: React.FC = () => {
       {logs.length === 0 && !loading && (
         <Card>
           <CardContent className="p-8 text-center">
-            <p className="text-gray-500">No audit logs found for the selected filters.</p>
+            <p className="text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>No audit logs found for the selected filters.</p>
           </CardContent>
         </Card>
       )}

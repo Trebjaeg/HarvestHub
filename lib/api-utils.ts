@@ -52,7 +52,9 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
       authHeaders = {
         'Authorization': `Bearer ${token}`
       };
-      console.log('🔑 API Request: Adding Authorization header from localStorage');
+      if (process.env.NODE_ENV === 'development') {
+        
+      }
     }
   }
   
@@ -74,11 +76,15 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
     },
   };
 
-  console.log(`🌐 API Request: ${options.method || 'GET'} ${url}`);
+  if (process.env.NODE_ENV === 'development') {
+    
+  }
 
   try {
     const response = await fetch(url, mergedOptions);
-    console.log(`🌐 API Response: ${response.status} ${response.statusText}`);
+    if (process.env.NODE_ENV === 'development') {
+      
+    }
     return response;
   } catch (error) {
     console.error(`🌐 API Error: ${error}`);

@@ -8,6 +8,8 @@ export interface IProduct {
   unit: 'kg' | 'piece' | 'bunch' | 'gram' | 'liter';
   stock: number;
   imageUrl: string;
+  farmerId: string; // ID of the farmer/seller
+  farmerName?: string; // Name of the farmer/seller
   farmer: {
     name: string;
     location: string;

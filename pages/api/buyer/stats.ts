@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '../../../lib/mongodb';
 import User from '../../../models/User';
 import Order from '../../../models/Order';
+import Favorite from '../../../models/Favorite';
+import Review from '../../../models/Review';
 
 interface JWTPayload {
   userId: string;
@@ -35,21 +37,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
-    // Verify buyer exists and has buyer role
+    // Verify buyer exists and can access buyer features
     const buyer = await User.findById(decoded.userId);
-    if (!buyer || buyer.role !== 'buyer') {
-      return res.status(403).json({ error: 'Access denied. Buyer role required.' });
+    if (!buyer) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Block admin/superadmin from buyer endpoints
+    if (buyer.role === 'admin' || buyer.role === 'superadmin') {
+      return res.status(403).json({ error: 'Access denied. Admins should use admin endpoints.' });
     }
 
     // Fetch buyer statistics
-    // Note: Adjust these queries based on your Order model structure
     const orders = await Order.find({ buyerId: decoded.userId });
     
+    // Get favorites count
+    const favoritesCount = await Favorite.countDocuments({ 
+      buyerId: decoded.userId,
+      isActive: true 
+    });
+    
+    // Get reviews and calculate average rating given by buyer
+    const reviews = await Review.find({ 
+      buyerId: decoded.userId,
+      status: 'active'
+    });
+    
+    const averageRatingGiven = reviews.length > 0
+      ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+      : 0;
+    
+    // Only count completed/delivered orders for total spent
+    const completedOrders = orders.filter(order => 
+      order.status === 'completed' || order.status === 'delivered'
+    );
+    
     const stats = {
-      totalOrders: orders.length,
-      totalSpent: orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0),
-      favoriteProducts: 0, // You'll need to implement favorites functionality
-      averageRating: 0 // You'll need to implement rating functionality
+      totalOrders: completedOrders.length,
+      totalSpent: completedOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0),
+      favoriteProducts: favoritesCount,
+      averageRating: parseFloat(averageRatingGiven.toFixed(1)),
+      totalReviews: reviews.length
     };
 
     return res.status(200).json({

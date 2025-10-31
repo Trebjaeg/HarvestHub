@@ -400,7 +400,7 @@ export default function ShippingDeliveryHelp() {
                         </p>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-purple-600 font-medium">
-                            {guide.steps.length} points
+                            {guide.steps.length} steps
                           </span>
                           <div className="text-purple-600">
                             {selectedGuide === guide.id ? '−' : '+'}

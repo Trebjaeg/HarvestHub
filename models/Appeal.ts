@@ -7,6 +7,16 @@ const AppealSchema = new Schema({
     ref: 'User',
     required: true
   },
+  // Product (for listing_removal appeals)
+  productId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Product',
+    default: null
+  },
+  productName: {
+    type: String,
+    default: null
+  },
   // Appeal details
   type: {
     type: String,

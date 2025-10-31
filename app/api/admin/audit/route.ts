@@ -1,41 +1,77 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import AuditLog from '../../../../models/AuditLog';
-import { verifyAdminAuth } from '../../../../lib/admin-auth-server';
+import { verifyAdminAccess } from '@/lib/rbac';
 
 export async function GET(req: NextRequest) {
   try {
-    await verifyAdminAuth(req);
+    // Verify admin authentication
+    await verifyAdminAccess(req);
     await dbConnect();
     
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = parseInt(searchParams.get('limit') || '50');
     const action = searchParams.get('action') || '';
-    const adminEmail = searchParams.get('adminEmail') || '';
+    const severity = searchParams.get('severity') || '';
+    const dateFilter = searchParams.get('dateFilter') || '';
+    const search = searchParams.get('search') || '';
 
     const skip = (page - 1) * limit;
 
-    // Build query - only filter by fields that exist in the schema
+    // Build query
     const query: any = {};
-    if (action) query.action = { $regex: action, $options: 'i' };
-
-    const logs = await AuditLog.find(query)
-      .populate('performedBy', 'email firstName lastName')
-      .populate('targetUser', 'email firstName lastName')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    // If adminEmail filter is requested, filter after population
-    let filteredLogs = logs;
-    if (adminEmail) {
-      filteredLogs = logs.filter((log: any) => 
-        log.performedBy?.email?.toLowerCase().includes(adminEmail.toLowerCase())
-      );
+    if (action && action !== 'all') {
+      query.action = action;
+    }
+    if (severity && severity !== 'all') {
+      query.severity = severity;
+    }
+    if (dateFilter && dateFilter !== 'all') {
+      const now = new Date();
+      const filterDate = new Date();
+      switch (dateFilter) {
+        case 'today':
+          filterDate.setHours(0, 0, 0, 0);
+          query.createdAt = { $gte: filterDate };
+          break;
+        case 'week':
+          filterDate.setDate(now.getDate() - 7);
+          query.createdAt = { $gte: filterDate };
+          break;
+        case 'month':
+          filterDate.setMonth(now.getMonth() - 1);
+          query.createdAt = { $gte: filterDate };
+          break;
+      }
     }
 
+    // Get total count first
     const total = await AuditLog.countDocuments(query);
+
+    const logs = await AuditLog.find(query)
+      .populate('performedBy', 'name email role')
+      .populate('targetUser', 'name email role')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // If search filter is requested, filter after population
+    let filteredLogs = logs;
+    if (search) {
+      filteredLogs = logs.filter((log: any) => {
+        const searchLower = search.toLowerCase();
+        return (
+          log.performedBy?.email?.toLowerCase().includes(searchLower) ||
+          log.performedBy?.name?.toLowerCase().includes(searchLower) ||
+          log.targetUser?.email?.toLowerCase().includes(searchLower) ||
+          log.targetUser?.name?.toLowerCase().includes(searchLower) ||
+          log.action?.toLowerCase().includes(searchLower) ||
+          log.reason?.toLowerCase().includes(searchLower)
+        );
+      });
+    }
 
     return NextResponse.json({
       logs: filteredLogs,

@@ -272,6 +272,7 @@ export default function PaymentsBillingHelp() {
 
                   {/* Guides Grid */}
                   <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+                    {/* Active Guides - COD First */}
                     {currentSection.guides.map((guide) => (
                       <div
                         key={guide.id}
@@ -296,6 +297,57 @@ export default function PaymentsBillingHelp() {
                         </div>
                       </div>
                     ))}
+
+                    {/* Coming Soon Payment Methods - After COD */}
+                    {currentSection.id === 'payment-methods' && (
+                      <>
+                        {/* Digital Wallets & UPI - Coming Soon */}
+                        <div className="bg-white border border-gray-200 rounded-lg p-6 opacity-75 cursor-not-allowed">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-semibold text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                              Digital Wallets & UPI
+                            </h3>
+                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                              Coming Soon
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-400 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                            GCash, Maya, and other digital payment options
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-400 font-medium">
+                              Feature in development
+                            </span>
+                            <div className="text-gray-300">
+                              •••
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Credit/Debit Cards - Coming Soon */}
+                        <div className="bg-white border border-gray-200 rounded-lg p-6 opacity-75 cursor-not-allowed">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-semibold text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                              Credit/Debit Cards
+                            </h3>
+                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                              Coming Soon
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-400 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                            Visa, Mastercard, and other major card networks
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-400 font-medium">
+                              Feature in development
+                            </span>
+                            <div className="text-gray-300">
+                              •••
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Selected Guide Details */}

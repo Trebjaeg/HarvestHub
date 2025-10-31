@@ -50,18 +50,24 @@ const accountGuides: GuideSection[] = [
         id: 'create-account',
         title: 'How to Create a Seller Account',
         steps: [
-          'Go to harvesthubph.app/seller/register to start your application',
-          'Enter your business email address and create a strong password',
-          'Fill in your business information (business name, registration details)',
-          'Upload required documents: DTI/SEC registration, BIR registration, valid ID',
+          'Go to the HarvestHub Landing Page or Home Page',
+          'Click "Sign Up" if you don\'t have an account, or "Log In" if you already have one',
+          'During sign-up or after logging in, select "Seller" as your account role',
+          'Complete your basic account registration with email and password',
           'Verify your email address by clicking the link sent to your inbox',
+          'Once logged in, navigate to your "Seller Profile" section from the dashboard',
+          'In your Seller Profile, upload required business documents: DTI/SEC registration, BIR registration, and valid ID',
+          'Fill in your complete business information and contact details',
+          'Submit your verification documents for review',
           'Wait for account approval (typically 2-3 business days)',
-          'Complete your business profile and start selling!'
+          'Once approved, complete your business profile and start selling!'
         ],
         tips: [
-          'Ensure all business documents are clear and up-to-date',
+          'Role selection happens during the sign-up process, not on a separate registration page',
+          'Document upload is done within your Seller Profile after account creation',
+          'Ensure all business documents are clear and up-to-date for faster approval',
           'Use a professional business email address for verification',
-          'Complete your profile thoroughly for faster approval'
+          'Complete your profile thoroughly to improve approval chances'
         ]
       },
       {
@@ -69,7 +75,7 @@ const accountGuides: GuideSection[] = [
         title: 'How to Update Business Information',
         steps: [
           'Log in to your HarvestHub seller account',
-          'Go to "Seller Dashboard" from the main menu',
+          'Go to "Profile Dashboard" from the main menu',
           'Click "Store Settings" to modify your business information',
           'Update your business name, description, contact details, or address',
           'Upload new business documents if needed',
@@ -114,18 +120,18 @@ const accountGuides: GuideSection[] = [
         id: 'password-recovery',
         title: 'Password Recovery for Sellers',
         steps: [
-          'Go to the HarvestHub seller login page',
+          'Go to the HarvestHub login page',
           'Click "Forgot Password?" below the login form',
           'Enter the business email address associated with your seller account',
           'Check your email for a password reset link',
-          'Click the link in the email (valid for 24 hours)',
+          'Click the link in the email (valid for 15 minutes)',
           'Create a new strong password for your seller account',
           'Log in with your new password to access seller dashboard'
         ],
         tips: [
           'Use a unique password different from other business accounts',
           'Check your business email spam folder if reset email is delayed',
-          'The reset link expires after 24 hours for security reasons'
+          'The reset link expires after 15 minutes for security reasons'
         ]
       },
       {
@@ -159,12 +165,11 @@ const accountGuides: GuideSection[] = [
           'Be cautious of phishing emails claiming to be from HarvestHub',
           'Update your password regularly (every 3-6 months)',
           'Never share your seller login credentials with unauthorized personnel',
-          'Monitor team member access and permissions regularly'
         ],
         tips: [
           'HarvestHub will never ask for your password via email',
           'Use a business password manager for secure credential storage',
-          'Report suspicious seller account activity immediately',
+          'Report suspicious activity immediately',
           'Keep business devices and software updated for security'
         ]
       }
@@ -180,7 +185,7 @@ const accountGuides: GuideSection[] = [
         id: 'business-address',
         title: 'Managing Business and Return Addresses',
         steps: [
-          'Log in and go to "Seller Dashboard" > "Business Information"',
+          'Log in and go to "Seller Dashboard" > "Pickup Locations"',
           'Click "Manage Addresses" to view your address settings',
           'Update your primary business address used for verification',
           'Add a separate return address if different from business location',
@@ -220,14 +225,14 @@ const accountGuides: GuideSection[] = [
         id: 'seller-preferences',
         title: 'Configuring Seller Preferences',
         steps: [
-          'Navigate to "Seller Dashboard" > "Settings & Preferences"',
+          'Navigate to "Profile Dashboard" > "Edit Profile"',
           'Set your default business address for order fulfillment',
           'Choose your preferred payout method and schedule',
           'Configure your business hours and availability for orders',
           'Set notification preferences for new orders and messages',
           'Choose your preferred language for the seller interface',
           'Enable or disable promotional participation notifications',
-          'Save your preferences by clicking "Update Seller Settings"'
+          'Save your preferences by clicking "Save Changes"'
         ],
         tips: [
           'Default preferences streamline your daily seller operations',

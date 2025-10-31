@@ -157,26 +157,6 @@ const paymentGuides: GuideSection[] = [
           'Regular sellers may qualify for reduced holding periods'
         ]
       },
-      {
-        id: 'refunds-process',
-        title: 'Understanding Refunds and Chargebacks',
-        steps: [
-          'Refunds are automatically deducted from your next payout when approved',
-          'Customer payments are refunded directly by HarvestHub\'s payment processor',
-          'You\'ll receive notification when refunds are processed for your orders',
-          'Refund amounts include the product price plus any applicable fees',
-          'For orders not yet paid out, refunds reduce your pending balance',
-          'For already paid orders, refunds are deducted from future payouts',
-          'Dispute any incorrect refund deductions through your dashboard',
-          'Keep records of all refund-related communications for reference'
-        ],
-        tips: [
-          'Refunds don\'t affect your seller rating if processed properly',
-          'Quick response to customer issues can prevent chargebacks',
-          'Document quality issues to support your case in disputes',
-          'Proactive customer service reduces refund requests'
-        ]
-      }
     ]
   },
   {

@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import LoadingDots from '@/components/ui/LoadingDots';
 import { 
   Mail, 
   Search, 
-  Filter, 
   Clock, 
   AlertCircle, 
   Package, 
@@ -17,6 +17,22 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
+
+// Custom Filter Icon
+const Filter = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+    <path d="M14 6m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+    <path d="M4 6l8 0" />
+    <path d="M16 6l4 0" />
+    <path d="M8 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+    <path d="M4 12l2 0" />
+    <path d="M10 12l10 0" />
+    <path d="M17 18m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+    <path d="M4 18l11 0" />
+    <path d="M19 18l1 0" />
+  </svg>
+);
 
 interface MessageData {
   _id: string;
@@ -586,9 +602,9 @@ export default function MessagesPage() {
 
         {/* Content */}
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-            <span className="ml-3 text-gray-600">Loading messages...</span>
+          <div className="flex flex-col items-center justify-center py-12">
+            <LoadingDots size="lg" color="#103C2E" />
+            <span className="mt-4 text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Loading messages...</span>
           </div>
         ) : error ? (
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">

@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyBuyerAuth } from '@/lib/auth-middleware';
-import { connectToDatabase } from '@/lib/mongodb';
+import { verifyToken } from '@/lib/auth-middleware';
+import dbConnect from '@/lib/mongodb';
+import Favorite from '@/models/Favorite';
 import { ObjectId } from 'mongodb';
 
 export async function GET(request: NextRequest) {
   try {
     // Verify buyer authentication
-    const authResult = await verifyBuyerAuth(request);
+    const authResult = await verifyToken(request);
     if (!authResult.success) {
-      return NextResponse.json(authResult, { status: 401 });
+      return NextResponse.json({ success: false, error: authResult.error }, { status: 401 });
     }
 
-    const { db } = await connectToDatabase();
-    const userId = new ObjectId(authResult.userId);
+    await dbConnect();
+    const userId = authResult.user?.id;
 
     // Get current date info
     const currentDate = new Date();
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
       }
     ];
 
-    const favorites = await db.collection('favorites').aggregate(pipeline).toArray();
+    const favorites = await Favorite.aggregate(pipeline);
 
     // Calculate basic stats
     const totalFavorites = favorites.length;

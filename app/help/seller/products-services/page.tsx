@@ -60,7 +60,7 @@ const productGuides: GuideSection[] = [
         id: 'add-products',
         title: 'How to Add New Products',
         steps: [
-          'Navigate to your Seller Dashboard and click on "Product Management"',
+          'Navigate to your Seller Dashboard and click on "Product"',
           'Select "Add New Product" to start creating your listing',
           'Choose the appropriate product category (vegetables, fruits, grains, etc.)',
           'Upload high-quality photos showing the product from multiple angles',
@@ -80,7 +80,7 @@ const productGuides: GuideSection[] = [
         id: 'edit-listings',
         title: 'Editing Product Listings',
         steps: [
-          'Go to "Product Management" > "My Products" in your seller dashboard',
+          'Go to "Product" > "My Products" in your seller dashboard',
           'Find the product you want to edit and click on "Edit Product"',
           'Update product photos by uploading new images or rearranging existing ones',
           'Modify product descriptions to reflect seasonal changes or new information',
@@ -171,8 +171,6 @@ const productGuides: GuideSection[] = [
           'Analyze your product types to determine appropriate guarantee timeframes',
           'Fresh Leafy Vegetables: 24-48 hours quality guarantee from delivery',
           'Root Vegetables and Fruits: 3-5 days freshness guarantee',
-          'Processed/Packaged Goods: 7-15 days satisfaction guarantee',
-          'Frozen Products: Quality guarantee until expiration date on packaging',
           'Custom/Bulk Orders: Negotiate guarantee terms based on order specifics',
           'Seasonal Products: Adjust guarantee periods based on harvest timing',
           'Communicate guarantee periods clearly in product descriptions and checkout',

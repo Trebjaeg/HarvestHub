@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import Product from '@/models/Product';
 import User from '@/models/User';
 import { deleteFromSpaces } from '../../../../lib/digitalocean-spaces';
+import { generateSKU, isSKUUnique } from '@/lib/sku-generator';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query;
@@ -75,6 +76,18 @@ async function handlePUT(req: NextApiRequest, res: NextApiResponse, id: string) 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
     
+    // Check if user is suspended - sellers cannot edit products when suspended
+    const user = await User.findById(decoded.userId).select('status');
+    if (user?.status === 'suspended') {
+      return res.status(403).json({ 
+        error: 'Account suspended',
+        code: 'SUSPENDED',
+        message: 'Your account is suspended and you cannot edit products. You can view your account but selling is disabled. Please submit an appeal to request account restoration.',
+        canAppeal: true,
+        appealUrl: '/appeals/new'
+      });
+    }
+    
     const {
       name,
       description,
@@ -84,8 +97,22 @@ async function handlePUT(req: NextApiRequest, res: NextApiResponse, id: string) 
       unit,
       stock,
       images,
-      harvestDate
+      harvestDate,
+      sku
     } = req.body;
+
+    // Handle SKU update if provided
+    let productSKU = sku?.trim().toUpperCase();
+    if (productSKU) {
+      // Validate custom SKU uniqueness (excluding current product)
+      const isUnique = await isSKUUnique(productSKU, id as string);
+      if (!isUnique) {
+        return res.status(400).json({
+          error: 'SKU already exists',
+          message: 'This SKU is already in use by another product. Please use a different SKU.'
+        });
+      }
+    }
 
     // Find and update product
     const product = await Product.findOneAndUpdate(
@@ -106,6 +133,7 @@ async function handlePUT(req: NextApiRequest, res: NextApiResponse, id: string) 
           images 
         }),
         ...(harvestDate && { harvestDate: new Date(harvestDate) }),
+        ...(productSKU && { sku: productSKU }),
         updatedAt: new Date()
       },
       { new: true }
@@ -144,6 +172,18 @@ async function handleDELETE(req: NextApiRequest, res: NextApiResponse, id: strin
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    
+    // Check if user is suspended - sellers cannot delete products when suspended
+    const user = await User.findById(decoded.userId).select('status');
+    if (user?.status === 'suspended') {
+      return res.status(403).json({ 
+        error: 'Account suspended',
+        code: 'SUSPENDED',
+        message: 'Your account is suspended and you cannot delete products. You can view your account but selling is disabled. Please submit an appeal to request account restoration.',
+        canAppeal: true,
+        appealUrl: '/appeals/new'
+      });
+    }
     
     // Find product first to get image URLs before deletion
     const product = await Product.findOne({

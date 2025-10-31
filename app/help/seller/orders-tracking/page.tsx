@@ -58,15 +58,20 @@ const orderGuides: GuideSection[] = [
           'Log in to your Seller Dashboard and go to "Orders" section',
           'Review new orders in the "Pending Confirmation" tab',
           'Check order details: items, quantities, delivery address, and payment status',
-          'Accept the order by clicking "Confirm Order" within 24 hours',
-          'If you cannot fulfill the order, click "Reject Order" with a reason',
-          'Confirmed orders automatically move to "Processing" status',
-          'You\'ll receive email notifications for all order confirmations'
+          'Verify stock availability for all items in your inventory',
+          'Click "Confirm Order" to accept and verify you can fulfill the order',
+          'Order status automatically changes to "To Ship" after confirmation',
+          'Download or print the shipping label from the order details page',
+          'Prepare and pack the items securely for shipment',
+          'Mark the order as "Ready for Pickup" when package is prepared',
+          'Hand over the package to the courier and update status to "Shipped"',
+          'Order progresses to "In Transit" and eventually "Delivered" once completed'
         ],
         tips: [
-          'Respond to orders within 24 hours to maintain good seller ratings',
-          'Double-check inventory before confirming to avoid overselling',
-          'Provide clear rejection reasons to help customers understand'
+          'Confirm orders within 6-12 hours to avoid automatic cancellations',
+          'Double-check inventory levels before confirmation to prevent overselling',
+          'Prepare packages immediately after confirmation to maintain smooth operations',
+          'Keep shipping labels and tracking information readily accessible for customers'
         ]
       },
       {
@@ -89,26 +94,6 @@ const orderGuides: GuideSection[] = [
           'Ensure fresh products are properly refrigerated until pickup'
         ]
       },
-      {
-        id: 'preorder-settings',
-        title: 'Managing Pre-Order Settings',
-        steps: [
-          'Go to "Seller Dashboard" > "Product Management"',
-          'Select the product you want to set up for pre-orders',
-          'Click "Edit Product" and find the "Availability" section',
-          'Enable "Pre-Order" option and set the preparation time needed',
-          'Specify the expected shipping date for pre-ordered items',
-          'Add a clear description about the pre-order timeline',
-          'Save your changes and the product will show as "Pre-Order"',
-          'Customers will see the expected delivery date when ordering'
-        ],
-        tips: [
-          'Be realistic with preparation timelines to avoid customer disappointment',
-          'Communicate clearly about seasonal availability for agricultural products',
-          'Update pre-order status regularly based on harvest or stock schedules',
-          'Consider offering pre-order discounts to encourage early purchases'
-        ]
-      }
     ]
   },
   {
@@ -121,20 +106,20 @@ const orderGuides: GuideSection[] = [
         id: 'status-stages',
         title: 'Understanding Order Status Stages',
         steps: [
-          'Pending Confirmation: New orders waiting for your acceptance within 24 hours',
-          'Processing: Orders you\'ve confirmed and are preparing for shipment',
-          'Shipped: Orders that have been picked up by the courier and are in transit',
-          'Delivered: Orders successfully received by the customer',
-          'On Hold: Orders temporarily paused due to payment or inventory issues',
-          'Cancelled: Orders that have been cancelled by you, the customer, or system',
-          'Returned: Orders that have been sent back by the customer',
-          'Completed: Successfully delivered orders after the return period has passed'
+          'Pending Confirmation: New orders waiting for your acceptance within 6-12 hours',
+          'To Ship: Orders you\'ve confirmed and are preparing for shipment with printed labels',
+          'Ready for Pickup: Orders packed and ready for courier collection',
+          'Shipped/In Transit: Orders picked up by courier and currently being delivered',
+          'Delivered/Completed: Orders successfully received by the customer',
+          'On Hold: Orders temporarily paused due to payment, inventory, or other issues',
+          'Cancelled: Orders that have been cancelled before shipment by seller, customer, or system',
+          'Returned: Orders that have been sent back by the customer after delivery'
         ],
         tips: [
-          'Update order status promptly to keep customers informed',
-          'Each status change triggers automatic notifications to customers',
-          'Monitor orders in "On Hold" status and resolve issues quickly',
-          'Completed orders contribute to your seller performance metrics'
+          'Status automatically progresses after each confirmation action by the seller',
+          'Each status change triggers automatic notifications to customers via email/SMS',
+          'Monitor "To Ship" orders closely to maintain fast fulfillment times',
+          'Completed orders after the return period contribute to your seller performance metrics'
         ]
       },
       {
@@ -196,7 +181,7 @@ const orderGuides: GuideSection[] = [
           'Choose a cancellation reason from the dropdown menu',
           'Provide additional explanation in the comment field if needed',
           'Confirm the cancellation by clicking "Cancel Order"',
-          'The customer will be notified automatically and refund will be processed'
+          'The customer will be notified automatically'
         ],
         tips: [
           'Only cancel orders that haven\'t been shipped yet',
@@ -225,26 +210,6 @@ const orderGuides: GuideSection[] = [
           'Consider the cost implications of cancelling shipped orders'
         ]
       },
-      {
-        id: 'refund-process',
-        title: 'Understanding Refund Processing',
-        steps: [
-          'Refunds are automatically initiated when you cancel an order',
-          'Processing time varies by payment method: 1-3 days for digital wallets',
-          'Bank transfers and credit cards may take 5-7 business days',
-          'Customers receive email notifications when refunds are processed',
-          'Refund amounts include the full order total plus any delivery fees paid',
-          'For partial cancellations, only cancelled items are refunded',
-          'You can track refund status in your financial dashboard',
-          'Contact support if customers report refund delays beyond normal timeframes'
-        ],
-        tips: [
-          'Refund timelines start from order cancellation approval',
-          'Digital wallet refunds are typically faster than bank transfers',
-          'Keep customers informed about expected refund timeframes',
-          'Document refund confirmation numbers for customer inquiries'
-        ]
-      }
     ]
   },
   {

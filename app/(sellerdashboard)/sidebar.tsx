@@ -16,8 +16,11 @@ import {
   ArrowLeft,
   Menu,
   X,
+  MapPin,
+  FileText,
 } from "lucide-react";
 import Image from "next/image";
+import ConfirmationModal from "@/components/ui/ConfirmationModal";
 
 interface ProfileData {
   _id: string;
@@ -44,9 +47,19 @@ const menuItems = [
     href: "/products",
   },
   {
+    icon: FileText,
+    label: "Appeals",
+    href: "/my-appeals",
+  },
+  {
     icon: ShoppingCart,
     label: "Manage Orders",
     href: "/orders",
+  },
+  {
+    icon: MapPin,
+    label: "Pickup Locations",
+    href: "/pickup-locations",
   },
   {
     icon: BarChart3,
@@ -63,6 +76,12 @@ const menuItems = [
     label: "Message",
     href: "/message",
   },
+  {
+    icon: HelpCircle,
+    label: "Help Center",
+    href: "/help",
+    isExternal: true,
+  },
 ];
 
 export default function Sidebar() {
@@ -70,6 +89,7 @@ export default function Sidebar() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -92,14 +112,18 @@ export default function Sidebar() {
         setProfile(data.seller);
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      // Silent error handling
     } finally {
       setLoading(false);
     }
   };
 
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
   const handleLogout = async () => {
-    console.log('🚪 Starting logout process...');
+    setShowLogoutModal(false);
     try {
       // Call logout API to clear server-side session
       const response = await fetch('/api/auth/logout', {
@@ -109,8 +133,6 @@ export default function Sidebar() {
           'Content-Type': 'application/json',
         },
       });
-      
-      console.log('🚪 Logout API response:', response.status);
       
       // Clear ALL possible storage
       if (typeof window !== 'undefined') {
@@ -127,15 +149,11 @@ export default function Sidebar() {
         // Trigger logout event for other tabs
         localStorage.setItem('logout-event', Date.now().toString());
         localStorage.removeItem('logout-event');
-        
-        console.log('🚪 Cleared all storage');
       }
       
     } catch (error) {
-      console.error('🚪 Logout error:', error);
+      // Silent error handling
     } finally {
-      console.log('🚪 Redirecting to auth page...');
-      
       // Force a complete page reload to clear any cached state
       window.location.href = '/auth';
     }
@@ -293,7 +311,7 @@ export default function Sidebar() {
       {/* Logout Button - fixed at bottom, always visible */}
       <div className="p-4 border-t bg-white flex-shrink-0">
         <button
-          onClick={handleLogout}
+          onClick={handleLogoutClick}
           className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors font-medium"
           style={{ fontFamily: 'Poppins, sans-serif' }}
         >
@@ -307,6 +325,18 @@ export default function Sidebar() {
         </button>
       </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogout}
+        title="Confirm Logout"
+        description="Are you sure you want to logout? You will need to sign in again to access your seller dashboard."
+        confirmText="Logout"
+        cancelText="Cancel"
+        confirmVariant="destructive"
+      />
     </>
   );
 }

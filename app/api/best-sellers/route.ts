@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '../../../lib/mongodb';
 import Product from '../../../models/Product';
 import BestSellerConfig from '../../../models/BestSellerConfig';
+import { applyRateLimit, getRateLimitHeaders } from '@/lib/app-rate-limiter';
 
 // Cache for configuration and computed rankings
 let configCache: any = null;
@@ -10,6 +11,13 @@ let rankingsCache: any = null;
 let rankingsCacheTime = 0;
 
 export async function GET(request: NextRequest) {
+  // Apply rate limiting: 150 requests per 15 minutes for best-sellers browsing
+  const rateLimitResponse = await applyRateLimit(request, {
+    windowMs: 15 * 60 * 1000,
+    max: 150,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     await dbConnect();
 

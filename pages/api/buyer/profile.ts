@@ -41,9 +41,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Buyer not found' });
     }
 
-    // Check if user is a buyer
-    if (buyer.role !== 'buyer') {
-      return res.status(403).json({ error: 'Access denied. Buyer role required.' });
+    // Check if user can access buyer features (buyers, users, sellers can all access buyer features)
+    // Only block admin/superadmin from buyer endpoints
+    if (buyer.role === 'admin' || buyer.role === 'superadmin') {
+      return res.status(403).json({ error: 'Access denied. Admins should use admin endpoints.' });
     }
 
     // Split name into firstName and lastName for frontend compatibility
@@ -61,6 +62,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         email: buyer.email,
         phone: buyer.phone || null,
         address: buyer.address || null,
+        addresses: buyer.addresses || [], // Include saved addresses
         profileImage: buyer.profileImage || null,
         createdAt: buyer.createdAt,
         role: buyer.role

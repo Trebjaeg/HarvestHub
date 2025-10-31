@@ -32,6 +32,10 @@ export const useProducts = (initialOptions: UseProductsOptions = {}): UseProduct
     setLoading(true);
     setError(null);
 
+    // Create an AbortController for timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // Increased to 60 second timeout
+
     try {
       const params = new URLSearchParams();
       
@@ -58,9 +62,12 @@ export const useProducts = (initialOptions: UseProductsOptions = {}): UseProduct
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
         // Add caching for better performance
         next: { revalidate: 60 } // Revalidate every 60 seconds
       } as any);
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         throw new Error('Failed to fetch products');
@@ -92,7 +99,11 @@ export const useProducts = (initialOptions: UseProductsOptions = {}): UseProduct
       setProducts(productsData);
       setTotalPages(totalPagesFromResponse);
     } catch (err: any) {
-      setError(err.message || 'An error occurred while fetching products');
+      if (err.name === 'AbortError') {
+        setError('Request timeout. Please check your connection and try again.');
+      } else {
+        setError(err.message || 'An error occurred while fetching products');
+      }
       setProducts([]);
     } finally {
       setLoading(false);

@@ -63,7 +63,6 @@ const shippingGuides: GuideSection[] = [
           'Next-Day Delivery: Guaranteed delivery by next business day in major cities',
           'Bulk Shipping: Special rates for orders over 20kg or multiple items',
           'COD (Cash on Delivery): Available for all shipping options in eligible areas',
-          'Scheduled Delivery: Allows customers to choose specific delivery time slots',
           'Partner with LBC, J&T Express, Grab Express, and other reliable couriers'
         ],
         tips: [
@@ -80,7 +79,6 @@ const shippingGuides: GuideSection[] = [
           'Use sturdy, food-grade packaging materials for all agricultural products',
           'For fresh produce: Use breathable bags, ventilated boxes, or mesh containers',
           'Add ice packs or cooling gel for temperature-sensitive items like leafy greens',
-          'Wrap fragile items (eggs, glass containers) with bubble wrap or newspaper',
           'Use eco-friendly packaging materials to support sustainable practices',
           'Include absorbent materials for items that may release moisture',
           'Seal packages properly to prevent contamination during transport',
@@ -98,9 +96,6 @@ const shippingGuides: GuideSection[] = [
         title: 'Understanding Estimated Delivery Times',
         steps: [
           'Metro Manila: Same-day to 2 business days depending on shipping option',
-          'Major Cities (Cebu, Davao, Iloilo): 1-3 business days for express delivery',
-          'Provincial Areas: 2-5 business days for standard delivery options',
-          'Remote/Island Areas: 3-7 business days, subject to weather conditions',
           'Fresh Produce: Prioritized for fastest available shipping method',
           'Bulk Orders: May require additional 1-2 days for processing and packaging',
           'Holiday Seasons: Expect delays of 1-2 additional business days',

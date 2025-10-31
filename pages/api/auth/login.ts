@@ -63,16 +63,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Check if account is suspended or deleted
-    if (user.status === 'suspended') {
-      console.log('Login attempt for suspended account:', user.email);
-      return res.status(403).json({ 
-        message: 'Your account has been suspended. Please contact our help center for assistance.',
-        accountStatus: 'suspended',
-        contactEmail: 'support@harvesthubph.app' 
-      });
-    }
-
+    // Check if account is DELETED (deactivated) - BLOCK LOGIN
+    // SUSPENDED users CAN login but will have restricted access
     if (user.status === 'deleted') {
       console.log('Login attempt for deleted account:', user.email);
       return res.status(403).json({ 
@@ -148,6 +140,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       userId: user._id,
       email: user.email,
       role: user.role,
+      status: user.status, // Include status for suspension checks
+      sellerStatus: user.sellerStatus,
       iat: Math.floor(Date.now() / 1000),
       jti: Math.random().toString(36).substr(2, 9), // Unique token ID
     };

@@ -5,7 +5,7 @@ import { verifyToken } from '@/lib/auth-middleware';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
     await dbConnect();
@@ -13,11 +13,14 @@ export async function GET(
     // Verify authentication
     const authResult = await verifyToken(request);
     if (!authResult.success || !authResult.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ 
+        success: true, 
+        data: { isFavorite: false, favoriteId: null }
+      });
     }
 
     const userId = authResult.user.id;
-    const { productId } = params;
+    const { productId } = await params;
 
     if (!productId) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });

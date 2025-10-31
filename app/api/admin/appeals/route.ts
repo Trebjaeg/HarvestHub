@@ -1,36 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '../../../../models/User';
 import Appeal from '../../../../models/Appeal';
 import AuditLog from '../../../../models/AuditLog';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
-async function verifyAdmin(req: NextRequest) {
-  const token = req.cookies.get('auth-token')?.value;
-  if (!token) {
-    throw new Error('No token provided');
-  }
-
-  const decoded: any = jwt.verify(token, JWT_SECRET);
-  await dbConnect();
-  
-  const user = await User.findById(decoded.userId);
-  if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) {
-    throw new Error('Insufficient permissions');
-  }
-  
-  return user;
-}
+import { verifyAdminAccess } from '@/lib/rbac';
 
 export async function GET(req: NextRequest) {
+  console.log('=== Admin Appeals GET API Called ===');
+  
   try {
-    await verifyAdmin(req);
+    console.log('Step 1: Connecting to database...');
+    await dbConnect();
+    console.log('Step 2: Database connected successfully');
+
+    console.log('Step 3: Verifying admin authentication...');
+    let user;
+    try {
+      user = await verifyAdminAccess(req);
+      console.log('Step 4: Admin authenticated:', user.email, 'Role:', user.role);
+    } catch (authError: any) {
+      console.error('Step 4: Authentication failed:', authError.message);
+      return NextResponse.json({ 
+        success: false,
+        error: authError.message || 'Authentication failed'
+      }, { status: 401 });
+    }
     
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = parseInt(searchParams.get('limit') || '100');
     const status = searchParams.get('status') || '';
     const type = searchParams.get('type') || '';
 
@@ -41,37 +39,93 @@ export async function GET(req: NextRequest) {
     if (status) query.status = status;
     if (type) query.type = type;
 
-    const appeals = await Appeal.find(query)
-      .populate('userId', 'name email')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    console.log('Step 7: Query params:', { page, limit, skip, query });
+    console.log('Step 8: Fetching appeals from database...');
 
+    // Try without populate first to isolate the issue
+    let appeals;
+    try {
+      appeals = await Appeal.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean();
+      
+      console.log('Step 9: Raw appeals found:', appeals?.length || 0);
+      
+      // Now try to populate
+      if (appeals && appeals.length > 0) {
+        console.log('Step 10: Populating user references...');
+        appeals = await Appeal.find(query)
+          .populate('user', 'name email role status')
+          .populate('reviewedBy', 'name email')
+          .populate('originalActionBy', 'name email')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean();
+        console.log('Step 11: Appeals populated successfully');
+      }
+    } catch (dbError: any) {
+      console.error('Step 9-11 ERROR: Database query failed:', dbError.message);
+      throw dbError;
+    }
+
+    console.log('Step 12: Counting total documents...');
     const total = await Appeal.countDocuments(query);
+    console.log('Step 13: Total appeals:', total);
 
-    return NextResponse.json({
-      appeals,
+    const response = {
+      success: true,
+      appeals: appeals || [],
       pagination: {
         current: page,
         pages: Math.ceil(total / limit),
         total
       }
-    });
+    };
+    
+    console.log('Step 14: Returning response with', appeals?.length || 0, 'appeals');
+    return NextResponse.json(response);
 
-  } catch (error) {
-    console.error('Appeals API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('=== Appeals API CATCH Block ===');
+    console.error('Error name:', error?.name);
+    console.error('Error message:', error?.message);
+    console.error('Error stack:', error?.stack);
+    
+    const errorResponse = { 
+      success: false,
+      error: 'Internal server error',
+      details: error?.message || 'Unknown error',
+      errorType: error?.name || 'UnknownError'
+    };
+    
+    console.error('Returning error response:', errorResponse);
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const admin = await verifyAdmin(req);
+    await dbConnect();
+
+    // Verify admin authentication
+    let admin;
+    try {
+      admin = await verifyAdminAccess(req);
+    } catch (authError: any) {
+      return NextResponse.json({ 
+        success: false,
+        error: authError.message || 'Authentication failed'
+      }, { status: 401 });
+    }
+
     const body = await req.json();
     const { action, appealId, decision, adminNotes } = body;
 
     const appeal = await Appeal.findById(appealId)
-      .populate('userId', 'name email');
+      .populate('user', 'name email');
     
     if (!appeal) {
       return NextResponse.json({ error: 'Appeal not found' }, { status: 404 });
@@ -86,17 +140,23 @@ export async function POST(req: NextRequest) {
           appealId,
           {
             status: 'approved',
-            adminId: admin._id,
-            adminDecision: decision,
-            adminNotes: adminNotes,
+            reviewedBy: admin._id,
+            decision: decision,
+            reviewNotes: adminNotes,
             reviewedAt: new Date()
           },
           { new: true }
-        ).populate('userId', 'name email');
+        ).populate('user', 'name email');
         
         // If appeal is approved, reactivate the user
-        if (appeal.userId) {
-          await User.findByIdAndUpdate(appeal.userId._id, { status: 'active' });
+        if (appeal.user) {
+          await User.findByIdAndUpdate(appeal.user._id, { 
+            status: 'active',
+            suspendReason: null,
+            suspendedAt: null,
+            suspendedBy: null,
+            suspensionExpiresAt: null
+          });
         }
         
         auditAction = 'APPEAL_APPROVED';
@@ -107,13 +167,13 @@ export async function POST(req: NextRequest) {
           appealId,
           {
             status: 'rejected',
-            adminId: admin._id,
-            adminDecision: decision,
-            adminNotes: adminNotes,
+            reviewedBy: admin._id,
+            decision: decision,
+            reviewNotes: adminNotes,
             reviewedAt: new Date()
           },
           { new: true }
-        ).populate('userId', 'name email');
+        ).populate('user', 'name email');
         
         auditAction = 'APPEAL_REJECTED';
         break;
@@ -131,7 +191,7 @@ export async function POST(req: NextRequest) {
       targetId: appealId,
       details: {
         appealType: appeal.type,
-        userEmail: appeal.userId?.email,
+        userEmail: appeal.user?.email,
         decision: decision,
         adminNotes: adminNotes
       }
@@ -139,8 +199,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(updatedAppeal);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Appeal action API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error.message 
+    }, { status: 500 });
   }
 }

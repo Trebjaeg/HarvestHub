@@ -17,7 +17,7 @@ export interface AuthenticatedUser {
   id: string;
   email: string;
   name: string;
-  role: 'buyer' | 'seller' | 'admin' | 'superadmin';
+  role: 'buyer' | 'seller' | 'farmer' | 'admin' | 'superadmin';
   sellerStatus: 'none' | 'pending' | 'verified' | 'rejected';
   status: 'active' | 'suspended' | 'deleted';
   profileImage?: string;
@@ -27,13 +27,14 @@ export interface AuthenticatedUser {
  * Role hierarchy definition:
  * - Superadmin: Full access to everything
  * - Admin: Full admin access, can manage users and content
- * - Seller: Can access seller dashboard + buyer dashboard (union access)
+ * - Seller/Farmer: Can access seller dashboard + buyer dashboard (union access)
  * - Buyer: Can only access buyer dashboard
  */
 export class RoleHierarchy {
   private static readonly ROLE_LEVELS = {
     'buyer': 1,
     'seller': 2,
+    'farmer': 2,    // Farmer is same as seller
     'admin': 3,
     'superadmin': 4
   };
@@ -49,27 +50,28 @@ export class RoleHierarchy {
 
   /**
    * Check if user can access seller dashboard
-   * Any user with seller role can access the dashboard (to see verification status, etc.)
+   * Any user with seller/farmer role can access the dashboard (to see verification status, etc.)
    */
   static canAccessSellerDashboard(user: AuthenticatedUser): boolean {
-    return user.role === 'seller' || user.role === 'admin' || user.role === 'superadmin';
+    return user.role === 'seller' || user.role === 'farmer' || user.role === 'admin' || user.role === 'superadmin';
   }
 
   /**
    * Check if user can access seller features (listing products, managing inventory, etc.)
-   * Seller role must be 'seller' AND sellerStatus must be 'verified'
+   * Seller/Farmer role must be 'seller' or 'farmer' AND sellerStatus must be 'verified'
    */
   static canAccessSellerFeatures(user: AuthenticatedUser): boolean {
-    return (user.role === 'seller' || user.role === 'admin' || user.role === 'superadmin') 
+    return (user.role === 'seller' || user.role === 'farmer' || user.role === 'admin' || user.role === 'superadmin') 
            && user.sellerStatus === 'verified';
   }
 
   /**
    * Check if user can access buyer features
-   * All roles can access buyer features (seller has union access)
+   * All roles except admin/superadmin can access buyer features
+   * Sellers and farmers have union access (can buy AND sell)
    */
   static canAccessBuyerFeatures(user: AuthenticatedUser): boolean {
-    return user.role === 'buyer' || user.role === 'seller' || user.role === 'admin' || user.role === 'superadmin';
+    return user.role === 'buyer' || user.role === 'seller' || user.role === 'farmer';
   }
 
   /**
@@ -93,9 +95,9 @@ export class RoleHierarchy {
     if (user.role === 'admin' || user.role === 'superadmin') {
       return '/admin';
     }
-    // Sellers go to seller profile (route group makes it /profile, not /sellerdashboard/profile)
+    // Sellers/Farmers go to seller profile (route group makes it /profile, not /sellerdashboard/profile)
     // They may need to complete verification, but that's handled within the profile
-    if (user.role === 'seller') {
+    if (user.role === 'seller' || user.role === 'farmer') {
       return '/profile';
     }
     return '/buyer-profile';
@@ -170,8 +172,9 @@ export async function verifyAuthAndFetchUser(req: NextRequest): Promise<Authenti
       throw new Error('User not found');
     }
 
-    if (user.status !== 'active') {
-      throw new Error('User account is not active');
+    // Only block DELETED users - suspended users can access but with restrictions
+    if (user.status === 'deleted') {
+      throw new Error('User account has been deleted');
     }
 
     return user;

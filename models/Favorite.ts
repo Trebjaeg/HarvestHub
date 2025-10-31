@@ -72,5 +72,7 @@ FavoriteSchema.index({ buyerId: 1, productId: 1 }, { unique: true });
 FavoriteSchema.index({ buyerId: 1, dateAdded: -1 });
 FavoriteSchema.index({ buyerId: 1, productPrice: 1 });
 FavoriteSchema.index({ buyerId: 1, productCategory: 1 });
+FavoriteSchema.index({ buyerId: 1, isActive: 1, dateAdded: -1 }); // Compound for active favorites sorted by date
+FavoriteSchema.index({ productId: 1, isActive: 1 }); // For checking if product is in favorites
 
 export default mongoose.models.Favorite || mongoose.model<IFavorite>('Favorite', FavoriteSchema);
