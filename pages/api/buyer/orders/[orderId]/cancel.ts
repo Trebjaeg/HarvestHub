@@ -50,89 +50,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-<<<<<<< HEAD
-    // Buyer can cancel if status is 'pending' or 'confirmed' (with different restrictions)
-    if (!['pending', 'confirmed'].includes(order.status)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: order.status === 'preparing' || order.status === 'shipped' || order.status === 'delivered'
-          ? 'Order has been confirmed by seller and is being processed - cannot be cancelled'
-          : 'Order cannot be cancelled at this stage',
-=======
     // Check if order can be cancelled
     if (order.status === 'cancelled' || order.status === 'completed') {
       return res.status(400).json({ 
         success: false, 
         message: `Order is already ${order.status}`,
->>>>>>> origin/IOS28
         locked: true
       });
     }
 
-<<<<<<< HEAD
-    // For confirmed orders, add additional restrictions
-    if (order.status === 'confirmed') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Order has been confirmed by seller and cannot be cancelled',
-=======
     // Check if there's already a pending cancellation request
     if (order.cancellationRequest && order.cancellationRequest.status === 'pending') {
       return res.status(400).json({
         success: false,
         message: 'A cancellation request is already pending for this order',
->>>>>>> origin/IOS28
         locked: true
       });
     }
 
-<<<<<<< HEAD
-    // Prepare inventory items from order (if inventory management is available)
-    let inventoryItems = [];
-    if (order.products && Array.isArray(order.products)) {
-      inventoryItems = order.products.map((p: any) => ({
-        productId: p.productId,
-        quantity: p.quantity
-      }));
-    }
-
-    // Start transaction for atomic cancel + inventory release (if inventory manager is available)
-    let session = null;
-    try {
-      session = await mongoose.startSession();
-      session.startTransaction();
-
-      // Try to release reserved inventory back to available (if inventory manager exists)
-      if (inventoryItems.length > 0 && inventoryManager) {
-        try {
-          const releaseResult = await inventoryManager.releaseReservedInventory(inventoryItems, session);
-          
-          if (!releaseResult.success) {
-            console.warn('Failed to release some inventory items:', releaseResult.failedItems);
-            // Continue with cancellation even if inventory release partially fails
-          }
-        } catch (inventoryError) {
-          console.warn('Inventory release failed, continuing with order cancellation:', inventoryError);
-          // Continue with cancellation even if inventory system fails
-        }
-      }
-
-      // Update order status to cancelled
-      const updatedOrder = await Order.findByIdAndUpdate(
-        orderId,
-        { 
-          status: 'cancelled',
-          updatedAt: new Date()
-        },
-        { new: true, session }
-      ).lean();
-=======
     // Get cancellation reason from request body
     const { reason } = req.body || {};
 
-    // ALWAYS create a cancellation request - buyer cannot cancel directly
-    // Seller must approve all cancellations
-    if (false && order.status === 'pending') {
+    // For pending orders, allow direct cancellation
+    if (order.status === 'pending') {
       // Prepare inventory items from order
       const inventoryItems = order.products.map((p: any) => ({
         productId: p.productId,
@@ -156,7 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           });
         }
 
-        // Update order status to cancelled and refund payment
+        // Update order status to cancelled
         const updatedOrderResult = await Order.findByIdAndUpdate(
           orderId,
           { 
@@ -175,102 +115,93 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           });
         }
 
-      const orderData: any = updatedOrderResult;
->>>>>>> origin/IOS28
+        const orderData: any = updatedOrderResult;
 
-      // Commit transaction
-      await session.commitTransaction();
+        // Commit transaction
+        await session.commitTransaction();
 
-      // Send notifications about cancellation (asynchronous)
-      if (orderData) {
-        
-        // Create notification for buyer (confirmation)
-        createNotification({
-          userId: buyerId,
-          userRole: 'buyer',
-          type: 'order_cancelled',
-          title: 'Order Cancelled',
-          message: `Your order ${orderData.orderNumber} has been cancelled successfully`,
-          orderId: orderData._id.toString(),
-          orderNumber: orderData.orderNumber,
-          metadata: {
-            cancelledBy: 'buyer',
-            actionUrl: `/orders/${orderData._id.toString()}`
-          }
-        }).catch(err => console.error('Error sending buyer notification:', err));
+        // Send notifications about cancellation (asynchronous)
+        if (orderData) {
+          // Create notification for buyer (confirmation)
+          createNotification({
+            userId: buyerId,
+            userRole: 'buyer',
+            type: 'order_cancelled',
+            title: 'Order Cancelled',
+            message: `Your order ${orderData.orderNumber} has been cancelled successfully`,
+            orderId: orderData._id.toString(),
+            orderNumber: orderData.orderNumber,
+            metadata: {
+              cancelledBy: 'buyer',
+              actionUrl: `/orders/${orderData._id.toString()}`
+            }
+          }).catch(err => console.error('Error sending buyer notification:', err));
 
-        // Create notification for seller
-        createNotification({
-          userId: orderData.sellerId,
-          userRole: 'seller',
-          type: 'order_cancelled',
-          title: 'Order Cancelled by Buyer',
-          message: `${orderData.buyerName || 'Buyer'} cancelled order ${orderData.orderNumber}`,
-          orderId: orderData._id.toString(),
-          orderNumber: orderData.orderNumber,
-          relatedUserId: buyerId,
-          relatedUserName: orderData.buyerName || 'Buyer',
-          metadata: {
-            cancelledBy: 'buyer',
-            actionUrl: `/seller/orders/${orderData._id.toString()}`
-          }
-        }).catch(err => console.error('Error sending seller notification:', err));
+          // Create notification for seller
+          createNotification({
+            userId: orderData.sellerId,
+            userRole: 'seller',
+            type: 'order_cancelled',
+            title: 'Order Cancelled by Buyer',
+            message: `${orderData.buyerName || 'Buyer'} cancelled order ${orderData.orderNumber}`,
+            orderId: orderData._id.toString(),
+            orderNumber: orderData.orderNumber,
+            relatedUserId: buyerId,
+            relatedUserName: orderData.buyerName || 'Buyer',
+            metadata: {
+              cancelledBy: 'buyer',
+              actionUrl: `/seller/orders/${orderData._id.toString()}`
+            }
+          }).catch(err => console.error('Error sending seller notification:', err));
 
-        // Send automatic chat message to seller about cancellation
-        const conversationId = generateConversationId(orderData.sellerId, buyerId);
-        ChatMessage.create({
-          conversationId,
-          senderId: buyerId,
-          senderName: orderData.buyerName || 'Buyer',
-          senderRole: 'buyer',
-          receiverId: orderData.sellerId,
-          receiverName: orderData.sellerName || 'Seller',
-          receiverRole: 'seller',
-          message: `I have cancelled order ${orderData.orderNumber}. The reserved inventory has been released back to your stock.`,
-          isRead: false,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        })
-        .then(async (msg) => {
-          const messageData = {
-            _id: msg._id.toString(),
-            conversationId: msg.conversationId,
-            senderId: msg.senderId,
-            senderName: msg.senderName,
-            senderRole: msg.senderRole,
-            receiverId: msg.receiverId,
-            receiverName: msg.receiverName,
-            receiverRole: msg.receiverRole,
-            message: msg.message,
-            isRead: msg.isRead,
-            createdAt: msg.createdAt.toISOString(),
-          };
+          // Send automatic chat message to seller about cancellation
+          const conversationId = generateConversationId(orderData.sellerId, buyerId);
+          ChatMessage.create({
+            conversationId,
+            senderId: buyerId,
+            senderName: orderData.buyerName || 'Buyer',
+            senderRole: 'buyer',
+            receiverId: orderData.sellerId,
+            receiverName: orderData.sellerName || 'Seller',
+            receiverRole: 'seller',
+            message: `I have cancelled order ${orderData.orderNumber}. The reserved inventory has been released back to your stock.`,
+            isRead: false,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+          .then(async (msg) => {
+            const messageData = {
+              _id: msg._id.toString(),
+              conversationId: msg.conversationId,
+              senderId: msg.senderId,
+              senderName: msg.senderName,
+              senderRole: msg.senderRole,
+              receiverId: msg.receiverId,
+              receiverName: msg.receiverName,
+              receiverRole: msg.receiverRole,
+              message: msg.message,
+              isRead: msg.isRead,
+              createdAt: msg.createdAt.toISOString(),
+            };
 
-          // Emit to seller
-          await emitNewMessage(orderData.sellerId, messageData);
-          // Emit to buyer (for their own chat view)
-          await emitNewMessage(buyerId, messageData);
-        })
-        .catch(err => console.error('Error creating cancellation chat message:', err));
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: 'Order cancelled successfully' + (inventoryItems.length > 0 ? '. Inventory has been released.' : ''),
-        order: {
-          _id: orderData._id.toString(),
-          orderNumber: orderData.orderNumber,
-          status: orderData.status
+            // Emit to seller
+            await emitNewMessage(orderData.sellerId, messageData);
+            // Emit to buyer (for their own chat view)
+            await emitNewMessage(buyerId, messageData);
+          })
+          .catch(err => console.error('Error creating cancellation chat message:', err));
         }
-      });
 
-<<<<<<< HEAD
-    } catch (transactionError) {
-      if (session) {
-        await session.abortTransaction();
-      }
-      console.error('Transaction error:', transactionError);
-=======
+        return res.status(200).json({
+          success: true,
+          message: 'Order cancelled successfully. Inventory has been released.',
+          order: {
+            _id: orderData._id.toString(),
+            orderNumber: orderData.orderNumber,
+            status: orderData.status
+          }
+        });
+
       } catch (transactionError) {
         await session.abortTransaction();
         console.error('Transaction error:', transactionError);
@@ -299,18 +230,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     );
 
     if (!updatedOrder) {
->>>>>>> origin/IOS28
       return res.status(500).json({
         success: false,
         message: 'Failed to create cancellation request'
       });
-<<<<<<< HEAD
-    } finally {
-      if (session) {
-        session.endSession();
-      }
-=======
->>>>>>> origin/IOS28
     }
 
     // Notify seller about cancellation request

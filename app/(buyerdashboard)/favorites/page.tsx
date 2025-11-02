@@ -1,34 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-<<<<<<< HEAD
 import { Heart, BarChart3, RefreshCw, Search, Filter, ShoppingCart, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
-import FavoritesAnalytics from '@/components/FavoritesAnalytics';
-import Image from 'next/image';
-
-=======
-import { Heart, BarChart3, RefreshCw, Search, ShoppingCart, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import FavoritesAnalytics from '@/components/FavoritesAnalytics';
 import LoadingDots from '@/components/ui/LoadingDots';
 import Image from 'next/image';
 
-// Custom Filter Icon
-const Filter = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-    <path d="M14 6m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-    <path d="M4 6l8 0" />
-    <path d="M16 6l4 0" />
-    <path d="M8 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-    <path d="M4 12l2 0" />
-    <path d="M10 12l10 0" />
-    <path d="M17 18m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
-    <path d="M4 18l11 0" />
-    <path d="M19 18l1 0" />
-  </svg>
-);
-
->>>>>>> origin/IOS28
 interface ProductDetails {
   _id: string;
   name: string;
@@ -273,11 +250,7 @@ export default function FavoritesPage() {
           <h3 className="font-semibold text-lg text-gray-900 mb-1">
             {product?.name || favorite.productName}
           </h3>
-<<<<<<< HEAD
-          <p className="text-green-600 font-bold text-xl mb-2">
-=======
           <p className="text-[#4A7C59] font-bold text-xl mb-2">
->>>>>>> origin/IOS28
             ₱{(product?.price || favorite.productPrice).toFixed(2)}
           </p>
           <p className="text-sm text-gray-600 mb-2">
@@ -289,11 +262,7 @@ export default function FavoritesPage() {
           {product?.availability && (
             <div className={`inline-block px-2 py-1 rounded text-xs mb-3 ${
               product.availability === 'Available' 
-<<<<<<< HEAD
-                ? 'bg-green-100 text-green-800' 
-=======
                 ? 'bg-[#4A7C59]/10 text-[#4A7C59]' 
->>>>>>> origin/IOS28
                 : 'bg-red-100 text-red-800'
             }`}>
               {product.availability}
@@ -304,11 +273,7 @@ export default function FavoritesPage() {
             <button
               onClick={() => addToCart(favorite.productId)}
               disabled={product?.availability !== 'Available'}
-<<<<<<< HEAD
-              className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-=======
               className="flex-1 flex items-center justify-center gap-2 bg-[#4A7C59] text-white px-4 py-2 rounded-lg hover:bg-[#3d6549] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
->>>>>>> origin/IOS28
             >
               <ShoppingCart className="w-4 h-4" />
               Add to Cart
@@ -348,11 +313,7 @@ export default function FavoritesPage() {
                 onClick={() => setShowAnalytics(!showAnalytics)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
                   showAnalytics 
-<<<<<<< HEAD
-                    ? 'bg-green-600 text-white' 
-=======
                     ? 'bg-[#4A7C59] text-white' 
->>>>>>> origin/IOS28
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
                 style={{ fontFamily: 'Poppins, sans-serif' }}
@@ -457,11 +418,7 @@ export default function FavoritesPage() {
               <div className="flex gap-2">
                 <button
                   onClick={handleSearch}
-<<<<<<< HEAD
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-=======
                   className="flex items-center gap-2 px-4 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6549] transition-colors"
->>>>>>> origin/IOS28
                 >
                   <Search className="w-4 h-4" />
                   Search
@@ -480,15 +437,9 @@ export default function FavoritesPage() {
 
         {/* Content */}
         {loading ? (
-<<<<<<< HEAD
-          <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-green-600" />
-            <span className="ml-3 text-gray-600">Loading favorites...</span>
-=======
           <div className="flex flex-col items-center justify-center py-12">
             <LoadingDots size="lg" color="#103C2E" />
             <span className="mt-4 text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Loading favorites...</span>
->>>>>>> origin/IOS28
           </div>
         ) : error ? (
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">
@@ -500,11 +451,7 @@ export default function FavoritesPage() {
               <p className="text-gray-600 mb-4">{error}</p>
               <button
                 onClick={refreshFavorites}
-<<<<<<< HEAD
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-=======
                 className="px-6 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6549] transition-colors"
->>>>>>> origin/IOS28
               >
                 Try Again
               </button>
@@ -519,11 +466,7 @@ export default function FavoritesPage() {
             </p>
             <a
               href="/shop"
-<<<<<<< HEAD
-              className="inline-block px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-=======
               className="inline-block px-6 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6549] transition-colors"
->>>>>>> origin/IOS28
             >
               Browse Products
             </a>
@@ -566,11 +509,7 @@ export default function FavoritesPage() {
                             onClick={() => goToPage(page)}
                             className={`px-3 py-2 rounded-lg ${
                               page === pagination.currentPage
-<<<<<<< HEAD
-                                ? 'bg-green-600 text-white'
-=======
                                 ? 'bg-[#4A7C59] text-white'
->>>>>>> origin/IOS28
                                 : 'border border-gray-300 hover:bg-gray-50'
                             }`}
                           >

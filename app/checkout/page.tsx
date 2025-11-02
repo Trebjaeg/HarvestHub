@@ -36,8 +36,21 @@ interface SavedAddress {
   city: string;
   province: string;
   zipCode?: string;
+  latitude?: number;
+  longitude?: number;
   isDefault: boolean;
   type: 'delivery' | 'pickup' | 'both';
+}
+
+interface LalamoveQuotation {
+  quotationId: string;
+  deliveryFee: number;
+  currency: string;
+  expiresAt: string;
+  distance?: {
+    value: number;
+    unit: string;
+  };
 }
 
 export default function CheckoutPage() {
@@ -49,6 +62,9 @@ export default function CheckoutPage() {
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [useNewAddress, setUseNewAddress] = useState(false);
+  const [quotation, setQuotation] = useState<LalamoveQuotation | null>(null);
+  const [fetchingQuotation, setFetchingQuotation] = useState(false);
+  const [quotationError, setQuotationError] = useState<string | null>(null);
   
   // Form data
   const [shippingAddress, setShippingAddress] = useState({
@@ -57,9 +73,11 @@ export default function CheckoutPage() {
     street: '',
     city: '',
     province: '',
-    zipCode: ''
+    zipCode: '',
+    latitude: 0,
+    longitude: 0
   });
-  const [paymentMethod, setPaymentMethod] = useState('cod'); // cod, gcash, paymaya
+  const [paymentMethod, setPaymentMethod] = useState('cod');
 
   useEffect(() => {
     // Check authentication
@@ -88,6 +106,20 @@ export default function CheckoutPage() {
     // Fetch saved addresses
     fetchSavedAddresses();
   }, [isAuthenticated, router]);
+
+  // Fetch quotation when address is complete
+  useEffect(() => {
+    const isAddressComplete = shippingAddress.fullName && 
+                              shippingAddress.phone && 
+                              shippingAddress.street && 
+                              shippingAddress.city && 
+                              shippingAddress.province;
+
+    if (isAddressComplete && checkoutData) {
+      fetchLalamoveQuotation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shippingAddress, checkoutData]);
 
   const fetchSavedAddresses = async () => {
     const controller = new AbortController();
@@ -118,15 +150,17 @@ export default function CheckoutPage() {
             street: defaultAddr.street,
             city: defaultAddr.city,
             province: defaultAddr.province,
-            zipCode: defaultAddr.zipCode || ''
+            zipCode: defaultAddr.zipCode || '',
+            latitude: defaultAddr.latitude || 0,
+            longitude: defaultAddr.longitude || 0
           });
         } else if (deliveryAddresses.length === 0) {
           setUseNewAddress(true);
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         console.error('Request timed out fetching addresses');
       } else {
         console.error('Error fetching addresses:', error);
@@ -146,9 +180,88 @@ export default function CheckoutPage() {
         street: selected.street,
         city: selected.city,
         province: selected.province,
-        zipCode: selected.zipCode || ''
+        zipCode: selected.zipCode || '',
+        latitude: selected.latitude || 0,
+        longitude: selected.longitude || 0
       });
       setUseNewAddress(false);
+    }
+  };
+
+  const fetchLalamoveQuotation = async () => {
+    setFetchingQuotation(true);
+    setQuotationError(null);
+
+    try {
+      // Get seller location (assume first item's seller for now)
+      const firstSeller = checkoutData?.items[0]?.sellerId;
+      if (!firstSeller) return;
+
+      // Fetch seller details to get pickup location
+      const sellerResponse = await fetch(`/api/sellers/${firstSeller}`);
+      if (!sellerResponse.ok) {
+        throw new Error('Failed to fetch seller details');
+      }
+      const sellerData = await sellerResponse.json();
+
+      // Build quotation request
+      const quotationPayload = {
+        pickupLocation: {
+          lat: sellerData.latitude?.toString() || '14.5995',
+          lng: sellerData.longitude?.toString() || '120.9842',
+          address: sellerData.address || 'Seller Location, Manila, PH'
+        },
+        pickupContact: {
+          name: sellerData.fullName || sellerData.shopName || 'Seller',
+          phone: sellerData.phone || '+639123456789'
+        },
+        dropoffLocation: {
+          lat: shippingAddress.latitude?.toString() || '14.5995',
+          lng: shippingAddress.longitude?.toString() || '120.9842',
+          address: `${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.province}, PH`
+        },
+        dropoffContact: {
+          name: shippingAddress.fullName,
+          phone: shippingAddress.phone
+        },
+        serviceType: 'MOTORCYCLE'
+      };
+
+      const response = await fetch('/api/lalamove/quotation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(quotationPayload)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to get quotation');
+      }
+
+      const data = await response.json();
+      setQuotation(data);
+
+      // Update checkout data with dynamic delivery fee
+      if (checkoutData) {
+        setCheckoutData({
+          ...checkoutData,
+          shippingFee: data.deliveryFee,
+          total: checkoutData.subtotal + data.deliveryFee
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching quotation:', error);
+      setQuotationError(error instanceof Error ? error.message : 'Failed to fetch quotation');
+      // Fallback to zero shipping fee on error
+      if (checkoutData) {
+        setCheckoutData({
+          ...checkoutData,
+          shippingFee: 0,
+          total: checkoutData.subtotal
+        });
+      }
+    } finally {
+      setFetchingQuotation(false);
     }
   };
 
@@ -160,10 +273,22 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Wait for quotation if still loading
+    if (fetchingQuotation) {
+      alert('Please wait for delivery fee calculation to complete');
+      return;
+    }
+
+    // Ensure we have a valid quotation
+    if (!quotation) {
+      alert('Unable to calculate delivery fee. Please check your address and try again.');
+      return;
+    }
+
     setPlacing(true);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout for order creation
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
 
     try {
       const response = await fetch('/api/orders/create', {
@@ -183,8 +308,9 @@ export default function CheckoutPage() {
           shippingAddress,
           paymentMethod,
           subtotal: checkoutData?.subtotal,
-          shippingFee: checkoutData?.shippingFee,
-          total: checkoutData?.total
+          shippingFee: quotation.deliveryFee,
+          total: checkoutData?.total,
+          lalamoveQuotationId: quotation.quotationId
         })
       });
 
@@ -202,10 +328,10 @@ export default function CheckoutPage() {
         const errorData = await response.json();
         alert(errorData.message || 'Failed to place order');
       }
-    } catch (error: any) {
+    } catch (error) {
       clearTimeout(timeoutId);
       console.error('Error placing order:', error);
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         alert('Request timed out. Please check your connection and try again.');
       } else {
         alert('An error occurred while placing your order');
@@ -295,7 +421,9 @@ export default function CheckoutPage() {
                         street: '',
                         city: '',
                         province: '',
-                        zipCode: ''
+                        zipCode: '',
+                        latitude: 0,
+                        longitude: 0
                       });
                     }}
                     className="mt-3 text-[#4A7C59] hover:underline text-sm font-medium"
@@ -478,9 +606,21 @@ export default function CheckoutPage() {
                   <span className="font-medium">₱{checkoutData.subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Shipping Fee</span>
-                  <span className="font-medium">₱{checkoutData.shippingFee.toFixed(2)}</span>
+                  <span className="text-gray-600">Delivery Fee</span>
+                  {fetchingQuotation ? (
+                    <span className="text-gray-500 text-xs">Calculating...</span>
+                  ) : quotationError ? (
+                    <span className="text-red-500 text-xs">Error</span>
+                  ) : (
+                    <span className="font-medium">₱{checkoutData.shippingFee.toFixed(2)}</span>
+                  )}
                 </div>
+                {quotation?.distance && (
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>Distance</span>
+                    <span>{quotation.distance.value} {quotation.distance.unit}</span>
+                  </div>
+                )}
               </div>
 
               {/* Total */}
@@ -489,16 +629,30 @@ export default function CheckoutPage() {
                 <span className="text-2xl font-bold text-[#4A7C59]">₱{checkoutData.total.toFixed(2)}</span>
               </div>
 
+              {/* Quotation Status */}
+              {quotationError && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    ⚠️ Unable to calculate delivery fee. Please check your address.
+                  </p>
+                </div>
+              )}
+
               {/* Place Order Button */}
               <button
                 onClick={handlePlaceOrder}
-                disabled={placing}
+                disabled={placing || fetchingQuotation || !quotation}
                 className="w-full bg-[#4A7C59] hover:bg-[#3d6549] text-white py-3 rounded-lg font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
               >
                 {placing ? (
                   <>
                     <LoadingDots size="sm" color="#ffffff" />
                     <span>Placing order...</span>
+                  </>
+                ) : fetchingQuotation ? (
+                  <>
+                    <LoadingDots size="sm" color="#ffffff" />
+                    <span>Calculating delivery...</span>
                   </>
                 ) : (
                   'Place Order'

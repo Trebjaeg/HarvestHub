@@ -360,7 +360,8 @@ export default function CartPage() {
   // Only count available items in totals
   const availableItems = cartItems.filter(item => item.isAvailable !== false);
   const totalAmount = availableItems.reduce((sum, item) => sum + item.totalPrice, 0);
-  const shippingFee = availableItems.length > 0 ? 90 : 0;
+  // REMOVED hardcoded ₱90 fee - will be fetched dynamically from Lalamove quotation at checkout
+  const shippingFee = 0; // Shipping fee will be calculated at checkout
   const totalWithShipping = totalAmount + shippingFee;
 
   // ==================== CHECKBOX LOGIC ====================

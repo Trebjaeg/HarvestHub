@@ -7,7 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
 export const config = {
   api: {
-    responseLimit: false,
+    responseLimit: '10mb',
   },
 };
 

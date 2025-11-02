@@ -16,13 +16,14 @@ interface TicketUpdate {
 // GET /api/admin/support/[id] - Get specific ticket with user details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await verifyAdminAuth(request);
     await dbConnect();
 
-    const ticket = await SupportTicket.findById(params.id).lean();
+    const { id } = await params;
+    const ticket = await SupportTicket.findById(id).lean();
     if (!ticket) {
       return NextResponse.json(
         { success: false, message: 'Ticket not found' },
@@ -52,7 +53,7 @@ export async function GET(
 // PATCH /api/admin/support/[id] - Update ticket
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const admin = await verifyAdminAuth(request);
@@ -61,7 +62,8 @@ export async function PATCH(
     const body = await request.json();
     const { status, priority, assignedTo, tags, flagged, flagReason } = body;
 
-    const ticket = await SupportTicket.findById(params.id);
+    const { id } = await params;
+    const ticket = await SupportTicket.findById(id);
     if (!ticket) {
       return NextResponse.json(
         { success: false, message: 'Ticket not found' },
@@ -102,7 +104,7 @@ export async function PATCH(
     }
 
     const updatedTicket = await SupportTicket.findByIdAndUpdate(
-      params.id,
+      id,
       { 
         ...updates,
         updatedAt: new Date()
@@ -130,13 +132,14 @@ export async function PATCH(
 // DELETE /api/admin/support/[id] - Delete ticket (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const admin = await verifyAdminAuth(request);
     await dbConnect();
 
-    const ticket = await SupportTicket.findById(params.id);
+    const { id } = await params;
+    const ticket = await SupportTicket.findById(id);
     if (!ticket) {
       return NextResponse.json(
         { success: false, message: 'Ticket not found' },
@@ -144,7 +147,7 @@ export async function DELETE(
       );
     }
 
-    await SupportTicket.findByIdAndDelete(params.id);
+    await SupportTicket.findByIdAndDelete(id);
 
     // Log admin action
     console.log(`Admin ${admin.name} deleted ticket ${ticket.ticketNumber}`);

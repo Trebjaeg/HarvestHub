@@ -23,6 +23,10 @@ export interface IOrder {
     city: string;
     province: string;
     zipCode: string;
+    fullName?: string;
+    phone?: string;
+    latitude?: number;
+    longitude?: number;
   };
   status: 'pending' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled' | 'completed';
   paymentMethod: string;
@@ -39,6 +43,12 @@ export interface IOrder {
     requestedAt: Date;
     status: 'pending' | 'approved' | 'rejected';
   };
+  // Lalamove delivery fields
+  delivery_provider?: 'lalamove' | 'manual';
+  lalamove_order_id?: string;
+  lalamove_quotation_id?: string;
+  delivery_status?: string;
+  delivery_eta?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -124,6 +134,18 @@ const OrderSchema = new mongoose.Schema<IOrder>({
     zipCode: {
       type: String,
       required: true
+    },
+    fullName: {
+      type: String
+    },
+    phone: {
+      type: String
+    },
+    latitude: {
+      type: Number
+    },
+    longitude: {
+      type: Number
     }
   },
   status: {
@@ -186,6 +208,24 @@ const OrderSchema = new mongoose.Schema<IOrder>({
       }
     },
     required: false
+  },
+  // Lalamove delivery fields
+  delivery_provider: {
+    type: String,
+    enum: ['lalamove', 'manual'],
+    default: 'lalamove'
+  },
+  lalamove_order_id: {
+    type: String
+  },
+  lalamove_quotation_id: {
+    type: String
+  },
+  delivery_status: {
+    type: String
+  },
+  delivery_eta: {
+    type: Date
   }
 }, {
   timestamps: true

@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 // PATCH /api/admin/farmers/[farmerId]/toggle-status
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { farmerId: string } }
+  { params }: { params: Promise<{ farmerId: string }> }
 ) {
   try {
     // Verify admin authentication
@@ -31,7 +31,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    const { farmerId } = params;
+    const { farmerId } = await params;
     const body = await req.json();
     const { status } = body;
 

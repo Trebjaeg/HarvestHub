@@ -6,7 +6,7 @@ import { verifyAdminAuth } from '../../../../../../lib/admin-auth-server';
 // POST /api/admin/support/[id]/respond - Admin responds to ticket
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const admin = await verifyAdminAuth(request);
@@ -21,7 +21,8 @@ export async function POST(
       );
     }
 
-    const ticket = await SupportTicket.findById(params.id);
+    const { id } = await params;
+    const ticket = await SupportTicket.findById(id);
     if (!ticket) {
       return NextResponse.json(
         { success: false, message: 'Ticket not found' },

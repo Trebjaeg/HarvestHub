@@ -49,7 +49,7 @@ async function verifyAuth(request: NextRequest) {
 // GET /api/support/[id] - Get specific ticket details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authResult = await verifyAuth(request);
@@ -63,7 +63,8 @@ export async function GET(
 
     await dbConnect();
 
-    const ticket = await SupportTicket.findById(params.id).lean();
+    const { id } = await params;
+    const ticket = await SupportTicket.findById(id).lean();
     
     if (!ticket) {
       return NextResponse.json(
@@ -109,7 +110,7 @@ export async function GET(
 // PATCH /api/support/[id] - Update ticket (add message, change status, rate, etc.)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authResult = await verifyAuth(request);
@@ -126,7 +127,8 @@ export async function PATCH(
     const body = await request.json();
     const { action } = body;
 
-    const ticket = await SupportTicket.findById(params.id);
+    const { id } = await params;
+    const ticket = await SupportTicket.findById(id);
     
     if (!ticket) {
       return NextResponse.json(
@@ -300,7 +302,7 @@ export async function PATCH(
     }
 
     // Return updated ticket
-    const updatedTicket = await SupportTicket.findById(params.id).lean();
+    const updatedTicket = await SupportTicket.findById(id).lean();
     
     const filteredTicket = {
       ...updatedTicket,
@@ -331,7 +333,7 @@ export async function PATCH(
 // DELETE /api/support/[id] - Delete ticket (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authResult = await verifyAuth(request);
@@ -353,7 +355,8 @@ export async function DELETE(
 
     await dbConnect();
 
-    const ticket = await SupportTicket.findById(params.id);
+    const { id } = await params;
+    const ticket = await SupportTicket.findById(id);
     
     if (!ticket) {
       return NextResponse.json(
@@ -362,7 +365,7 @@ export async function DELETE(
       );
     }
 
-    await SupportTicket.findByIdAndDelete(params.id);
+    await SupportTicket.findByIdAndDelete(id);
 
     return NextResponse.json({
       success: true,
