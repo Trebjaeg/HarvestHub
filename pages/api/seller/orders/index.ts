@@ -81,8 +81,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Add text search
-    if (search && search.trim()) {
-      const searchTerm = search.toString().trim();
+    const searchStr: string = Array.isArray(search) ? search[0] : (search || '');
+    if (searchStr && searchStr.trim()) {
+      const searchTerm = searchStr.trim();
       filter.$or = [
         { orderNumber: { $regex: searchTerm, $options: 'i' } },
         { buyerName: { $regex: searchTerm, $options: 'i' } },
@@ -92,17 +93,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Build sort
     const validSortFields = ['orderDate', 'finalAmount', 'status', 'orderNumber'];
-    const sortField = validSortFields.includes(sortBy as string) ? sortBy : 'orderDate';
+    const sortFieldStr = String(validSortFields.includes(sortBy as string) ? sortBy : 'orderDate');
     const sortDirection = sortOrder === 'asc' ? 1 : -1;
-    const sort: any = { [sortField]: sortDirection };
+    const sort: any = { [sortFieldStr]: sortDirection };
 
     // Execute queries in parallel
     const [orders, totalOrders] = await Promise.all([
       Order.find(filter)
-        .sort(sort)
+        .sort(sort as any)
         .skip(skip)
         .limit(limitNum)
-        .select('orderNumber orderDate buyerName buyerEmail products totalAmount deliveryFee finalAmount status paymentStatus deliveryAddress estimatedDelivery actualDelivery')
+        .select('orderNumber orderDate buyerName buyerEmail products totalAmount deliveryFee finalAmount status paymentStatus deliveryAddress estimatedDelivery actualDelivery cancellationRequest')
         .lean()
         .exec(),
       Order.countDocuments(filter).exec()
@@ -114,13 +115,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const hasPrevPage = pageNum > 1;
 
     // Format orders
-    const formattedOrders = orders.map(order => ({
-      _id: order._id.toString(),
+    const formattedOrders = orders.map((order: any) => ({
+      _id: String(order._id),
       orderNumber: order.orderNumber,
       orderDate: order.orderDate.toISOString(),
       buyerName: order.buyerName,
       buyerEmail: order.buyerEmail,
-      products: order.products.map(product => ({
+      products: order.products.map((product: any) => ({
         productId: product.productId,
         productName: product.productName,
         quantity: product.quantity,
@@ -133,14 +134,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       status: order.status,
       paymentStatus: order.paymentStatus,
       deliveryAddress: order.deliveryAddress,
+      cancellationRequest: order.cancellationRequest ? {
+        requestedBy: order.cancellationRequest.requestedBy,
+        reason: order.cancellationRequest.reason,
+        requestedAt: order.cancellationRequest.requestedAt.toISOString(),
+        status: order.cancellationRequest.status
+      } : undefined,
       estimatedDelivery: order.estimatedDelivery ? order.estimatedDelivery.toISOString() : null,
       actualDelivery: order.actualDelivery ? order.actualDelivery.toISOString() : null,
-      totalItems: order.products.reduce((sum, p) => sum + p.quantity, 0),
-      canConfirm: order.status === 'pending',
-      canPrepare: order.status === 'confirmed',
+      totalItems: order.products.reduce((sum: number, p: any) => sum + p.quantity, 0),
+      canPrepare: order.status === 'pending',
       canShip: order.status === 'preparing',
       canComplete: order.status === 'delivered',
-      canCancel: ['pending', 'confirmed'].includes(order.status)
+      canCancel: ['pending'].includes(order.status)
     }));
 
     res.status(200).json({
@@ -162,7 +168,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           startDate: startDate || null,
           endDate: endDate || null,
           search: search || '',
-          sortBy: sortField,
+          sortBy: sortFieldStr,
           sortOrder: sortOrder || 'desc'
         }
       }

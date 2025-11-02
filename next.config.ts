@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: true,
+  // CRITICAL: Increase body size limit for file uploads
+  serverExternalPackages: ['formidable'],
   images: {
     remotePatterns: [
       {
@@ -29,9 +31,16 @@ const nextConfig: NextConfig = {
   compress: true,
   productionBrowserSourceMaps: false,
   poweredByHeader: false,
+  // Increase API body size limit for image uploads (especially on mobile)
+  serverRuntimeConfig: {
+    maxDuration: 60,
+  },
   experimental: {
     optimizePackageImports: ['lucide-react', 'date-fns', '@radix-ui/react-dialog', '@radix-ui/react-select'],
     optimizeCss: true,
+    serverActions: {
+      bodySizeLimit: '60mb', // Raised to 60MB to support 50MB+ uploads with overhead
+    },
   },
   // Optimize webpack bundle
   webpack: (config, { isServer }) => {

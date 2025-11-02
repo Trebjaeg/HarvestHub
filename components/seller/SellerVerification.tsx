@@ -335,10 +335,10 @@ export default function SellerVerification({
                     <label className="cursor-pointer">
                       <Upload className="w-12 h-12 mx-auto text-gray-400 mb-2" />
                       <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                      <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP or PDF (max 10MB)</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP, HEIC or PDF (max 50MB)</p>
                       <input
                         type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                        accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,application/pdf"
                         onChange={(e) => handleFileSelect(e, 'gov_id_front')}
                         className="hidden"
                       />
@@ -392,10 +392,10 @@ export default function SellerVerification({
                     <label className="cursor-pointer">
                       <Upload className="w-12 h-12 mx-auto text-gray-400 mb-2" />
                       <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                      <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP or PDF (max 10MB)</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP, HEIC or PDF (max 50MB)</p>
                       <input
                         type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                        accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,application/pdf"
                         onChange={(e) => handleFileSelect(e, 'gov_id_back')}
                         className="hidden"
                       />
@@ -449,10 +449,10 @@ export default function SellerVerification({
                     <label className="cursor-pointer">
                       <Upload className="w-12 h-12 mx-auto text-gray-400 mb-2" />
                       <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                      <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP or PDF (max 10MB)</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP, HEIC or PDF (max 50MB)</p>
                       <input
                         type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                        accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,application/pdf"
                         onChange={(e) => handleFileSelect(e, 'bir')}
                         className="hidden"
                       />

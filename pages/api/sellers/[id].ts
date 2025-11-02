@@ -166,8 +166,10 @@ async function getSeller(req: NextApiRequest, res: NextApiResponse, sellerId: st
     }
 
     // Calculate response rate and format response time
-    const formatResponseTime = (minutes: number | null): string => {
-      if (minutes === null || minutes === undefined) return null as any;
+    const formatResponseTime = (minutes: number | null, totalMessages: number = 0): string => {
+      if (minutes === null || minutes === undefined) {
+        return totalMessages === 0 ? 'New Seller' : null as any;
+      }
       if (minutes < 60) return `${Math.round(minutes)} min${Math.round(minutes) !== 1 ? 's' : ''}`;
       if (minutes < 1440) return `${Math.round(minutes / 60)} hour${Math.round(minutes / 60) !== 1 ? 's' : ''}`;
       return `${Math.round(minutes / 1440)} day${Math.round(minutes / 1440) !== 1 ? 's' : ''}`;
@@ -196,7 +198,7 @@ async function getSeller(req: NextApiRequest, res: NextApiResponse, sellerId: st
           totalProducts,
           // Response metrics from database (null if not yet tracked)
           responseRate: seller.responseRate !== null && seller.responseRate !== undefined ? seller.responseRate : null,
-          responseTime: formatResponseTime(seller.averageResponseTime),
+          responseTime: formatResponseTime(seller.averageResponseTime, seller.totalMessagesReceived || 0),
           // Raw metrics for frontend to use if needed
           averageResponseTimeMinutes: seller.averageResponseTime || null,
           totalMessagesReceived: seller.totalMessagesReceived || 0,

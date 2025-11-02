@@ -12,7 +12,7 @@ interface Farmer {
   lastName?: string;
   email: string;
   role: string;
-  isActive: boolean;
+  status: 'active' | 'suspended' | 'deleted';
   createdAt: string;
   farmerVerification?: {
     status: 'pending' | 'approved' | 'rejected';
@@ -63,15 +63,16 @@ const FarmerManagement: React.FC = () => {
     }
   };
 
-  const toggleFarmerStatus = async (farmerId: string, isActive: boolean) => {
+  const toggleFarmerStatus = async (farmerId: string, currentStatus: string) => {
     try {
+      const newStatus = currentStatus === 'active' ? 'deleted' : 'active';
       const response = await fetch(`/api/admin/farmers/${farmerId}/toggle-status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         },
-        body: JSON.stringify({ isActive: !isActive })
+        body: JSON.stringify({ status: newStatus })
       });
 
       if (!response.ok) {
@@ -231,11 +232,13 @@ const FarmerManagement: React.FC = () => {
                     </td>
                     <td className="py-3 px-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        farmer.isActive 
+                        farmer.status === 'active' 
                           ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
+                          : farmer.status === 'suspended'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-gray-100 text-gray-800'
                       }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        {farmer.isActive ? 'Active' : 'Inactive'}
+                        {farmer.status === 'active' ? 'Active' : farmer.status === 'suspended' ? 'Suspended' : 'Deactivated'}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -243,13 +246,14 @@ const FarmerManagement: React.FC = () => {
                     </td>
                     <td className="py-3 px-4">
                       <Button
-                        onClick={() => toggleFarmerStatus(farmer._id, farmer.isActive)}
+                        onClick={() => toggleFarmerStatus(farmer._id, farmer.status)}
                         variant="outline"
                         size="sm"
-                        className={farmer.isActive ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}
+                        className={farmer.status === 'active' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}
                         style={{ fontFamily: 'Poppins, sans-serif' }}
+                        disabled={farmer.status === 'suspended'}
                       >
-                        {farmer.isActive ? 'Deactivate' : 'Activate'}
+                        {farmer.status === 'active' ? 'Deactivate' : farmer.status === 'suspended' ? 'Suspended' : 'Reactivate'}
                       </Button>
                     </td>
                   </tr>
@@ -272,11 +276,13 @@ const FarmerManagement: React.FC = () => {
                         <p className="text-sm text-gray-600 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>{farmer.email}</p>
                       </div>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        farmer.isActive 
+                        farmer.status === 'active' 
                           ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
+                          : farmer.status === 'suspended'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-gray-100 text-gray-800'
                       }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        {farmer.isActive ? 'Active' : 'Inactive'}
+                        {farmer.status === 'active' ? 'Active' : farmer.status === 'suspended' ? 'Suspended' : 'Deactivated'}
                       </span>
                     </div>
                     
@@ -288,13 +294,14 @@ const FarmerManagement: React.FC = () => {
                     </div>
 
                     <Button
-                      onClick={() => toggleFarmerStatus(farmer._id, farmer.isActive)}
+                      onClick={() => toggleFarmerStatus(farmer._id, farmer.status)}
                       variant="outline"
                       size="sm"
-                      className={`w-full ${farmer.isActive ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}`}
+                      className={`w-full ${farmer.status === 'active' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}`}
                       style={{ fontFamily: 'Poppins, sans-serif' }}
+                      disabled={farmer.status === 'suspended'}
                     >
-                      {farmer.isActive ? 'Deactivate' : 'Activate'}
+                      {farmer.status === 'active' ? 'Deactivate' : farmer.status === 'suspended' ? 'Suspended' : 'Reactivate'}
                     </Button>
                   </div>
                 </CardContent>

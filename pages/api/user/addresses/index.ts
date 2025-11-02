@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!res.headersSent) {
       res.status(408).json({ message: 'Request timeout' });
     }
-  }, 8000);
+  }, 15000); // Increase to 15 seconds
 
   try {
     // Get user from auth token
@@ -43,7 +43,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (req.method === 'GET') {
       // Get all addresses for the user - optimized query
-      const user = await User.findById(userId).select('addresses').lean().exec();
+      const user = await User.findById(userId)
+        .select('addresses')
+        .maxTimeMS(5000) // Add 5 second timeout
+        .lean()
+        .exec();
       
       if (!user) {
         clearTimeout(timeoutId);
@@ -101,7 +105,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       };
 
       if (!user.addresses) {
-        user.addresses = [];
+        user.addresses = [] as any;
       }
       
       user.addresses.push(newAddress);

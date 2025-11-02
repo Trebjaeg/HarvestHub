@@ -51,6 +51,8 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
 
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string>('');
+  const [uploadError, setUploadError] = useState<string>('');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [autoGenerateSKU, setAutoGenerateSKU] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -105,56 +107,104 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
+    // Clear previous errors
+    setUploadError('');
     setUploading(true);
     const uploadedUrls: string[] = [];
+    const failedFiles: string[] = [];
 
     try {
+      const totalFiles = files.length;
+      
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        setUploadProgress(`Uploading ${i + 1} of ${totalFiles}...`);
         
-        if (!file.type.startsWith('image/')) {
-          alert('Please select only image files');
+        // Validate file type - be permissive for mobile camera uploads
+        const lowerName = file.name.toLowerCase();
+        const isImageFile = file.type.startsWith('image/') || 
+                           lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg') ||
+                           lowerName.endsWith('.png') || lowerName.endsWith('.webp') ||
+                           lowerName.endsWith('.heic') || lowerName.endsWith('.heif');
+        
+        if (!isImageFile) {
+          failedFiles.push(`${file.name}: Not an image file`);
           continue;
         }
 
-        if (file.size > 35 * 1024 * 1024) {
-          alert('Image size should be less than 35MB');
+        // Validate file size (50MB limit for reliable upload)
+        if (file.size > 50 * 1024 * 1024) {
+          failedFiles.push(`${file.name}: File too large (max 50MB)`);
           continue;
         }
 
-        // Upload to DigitalOcean Spaces
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('folder', 'products');
+        try {
+          // Upload via backend API with proper streaming
+            const formData = new FormData();
+            // Preserve original filename when appending
+            formData.append('file', file, file.name);
+          formData.append('folder', 'products');
 
-        const response = await fetch('/api/upload/product-image', {
-          method: 'POST',
-          body: formData,
-          credentials: 'include'
-        });
+          const response = await fetch('/api/upload/product-image', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+          });
 
-        if (response.ok) {
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+            throw new Error(errorData.message || errorData.error || `Upload failed (${response.status})`);
+          }
+
           const data = await response.json();
-          uploadedUrls.push(data.url);
-        } else {
-          const error = await response.json();
-          alert(error.message || 'Failed to upload image');
+          
+          if (data.url) {
+            uploadedUrls.push(data.url);
+          } else {
+            throw new Error(data.message || data.error || 'No URL returned from upload');
+          }
+        } catch (fileError: any) {
+          console.error('Upload error for file:', file.name, fileError);
+          const errorMsg = fileError.message || 'Network error';
+          failedFiles.push(`${file.name}: ${errorMsg}`);
         }
       }
 
-      // Add uploaded URLs to images
-      setPreviewImages(prev => [...prev, ...uploadedUrls]);
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, ...uploadedUrls]
-      }));
+      // Add successfully uploaded URLs to images
+      if (uploadedUrls.length > 0) {
+        setPreviewImages(prev => [...prev, ...uploadedUrls]);
+        setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, ...uploadedUrls]
+        }));
+      }
+
+      // Show results
+      if (failedFiles.length > 0) {
+        setUploadError(`Failed to upload ${failedFiles.length} file(s):\n${failedFiles.join('\n')}`);
+      }
+      
+      if (uploadedUrls.length > 0) {
+        setUploadProgress(`✓ Successfully uploaded ${uploadedUrls.length} image(s)`);
+        setTimeout(() => setUploadProgress(''), 3000);
+      } else if (failedFiles.length > 0) {
+        setUploadProgress('');
+      }
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
     } catch (error) {
-      console.error('Error uploading images:', error);
-      alert('Failed to upload images');
+      setUploadError('An unexpected error occurred while uploading images. Please try again.');
     } finally {
       setUploading(false);
+      if (!uploadedUrls.length && !failedFiles.length) {
+        setUploadProgress('');
+      }
     }
   };
 
@@ -186,16 +236,16 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
     }
 
     // Check if price is empty or invalid
-    if (!formData.price || formData.price === '' || formData.price <= 0) {
+    if (!formData.price || (formData.price as any) === '' || formData.price <= 0) {
       errors.price = 'Please enter a valid price greater than 0';
     }
 
     // Check if stock is empty or invalid
-    if (formData.stock === undefined || formData.stock === null || formData.stock === '' || formData.stock < 0) {
+    if (formData.stock === undefined || formData.stock === null || (formData.stock as any) === '' || formData.stock < 0) {
       errors.stock = 'Please enter a valid stock quantity (0 or more)';
     }
 
-    if (formData.lowStockAlert !== undefined && formData.lowStockAlert !== '' && formData.lowStockAlert < 0) {
+    if (formData.lowStockAlert !== undefined && (formData.lowStockAlert as any) !== '' && formData.lowStockAlert < 0) {
       errors.lowStockAlert = 'Low stock alert must be 0 or greater';
     }
 
@@ -274,9 +324,9 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-xl max-h-[90vh] overflow-y-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
-        <DialogHeader className="pb-6 border-b border-gray-200">
-          <DialogTitle className="text-2xl font-bold text-[#103C2E] text-center">
+      <DialogContent className="fixed left-[50%] top-[50%] z-50 grid w-[95vw] sm:w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white p-3 sm:p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-xl max-h-[90vh] overflow-y-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        <DialogHeader className="pb-3 sm:pb-6 border-b border-gray-200">
+          <DialogTitle className="text-xl sm:text-2xl font-bold text-[#103C2E] text-center">
             {product ? 'Edit Product' : 'Add New Product'}
           </DialogTitle>
         </DialogHeader>
@@ -287,11 +337,11 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
             <h3 className="text-lg font-semibold text-[#103C2E] border-b border-gray-200 pb-2 font-poppins">
               Product Images
             </h3>
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-              <div className="flex gap-4">
+            <div className="bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-200">
+              <div className="flex flex-col sm:flex-row gap-4">
                 {/* Main Image Upload Area */}
                 <div 
-                  className={`w-48 h-48 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center transition-all duration-300 bg-white ${
+                  className={`w-full sm:w-48 h-48 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center transition-all duration-300 bg-white ${
                     verificationError ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-green-500'
                   }`}
                   onClick={() => !verificationError && fileInputRef.current?.click()}
@@ -316,19 +366,20 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
                       </button>
                     </div>
                   ) : (
-                    <div className="text-center">
+                    <div className="text-center px-4">
                       <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-600 font-medium mb-1 font-poppins">Upload Product Image</p>
-                      <p className="text-sm text-gray-500">PNG, JPG up to 35MB</p>
+                      <p className="text-gray-600 font-medium mb-1 font-poppins text-sm sm:text-base">Upload Product Image</p>
+                      <p className="text-xs sm:text-sm text-gray-500">PNG, JPG, WEBP, HEIC up to 50MB</p>
+                      <p className="text-xs text-gray-400 mt-1">Tap to take photo or choose file</p>
                     </div>
                   )}
                 </div>
 
                 {/* Additional Images */}
-                <div className="flex-1">
-                  <div className="grid grid-cols-3 gap-3">
+                <div className="flex-1 w-full">
+                  <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 sm:gap-3">
                     {previewImages.slice(1).map((image, index) => (
-                      <div key={index + 1} className="relative w-20 h-20 border border-gray-200 rounded-lg overflow-hidden">
+                      <div key={index + 1} className="relative w-full aspect-square border border-gray-200 rounded-lg overflow-hidden">
                         <Image
                           src={image}
                           alt={`Product preview ${index + 2}`}
@@ -352,16 +403,59 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
                       className="mt-3 border-green-500 text-green-600 hover:bg-green-50"
-                      disabled={uploading}
+                      disabled={uploading || !!verificationError}
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      Add More Images
+                      {uploading ? 'Uploading...' : 'Add More Images'}
                     </Button>
                   )}
                 </div>
               </div>
+
+              {/* Upload Progress */}
+              {uploadProgress && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-shrink-0 mt-0.5">
+                      {uploading ? (
+                        <svg className="animate-spin w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                    <p className="text-sm text-blue-700 font-poppins">{uploadProgress}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Upload Error */}
+              {uploadError && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-red-700 font-poppins whitespace-pre-line">{uploadError}</p>
+                      <button 
+                        onClick={() => setUploadError('')}
+                        className="text-xs text-red-600 hover:text-red-800 mt-2 underline"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               
-              {/* Image Upload Error */}
+              {/* Validation Error */}
               {validationErrors.images && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                   <div className="flex items-start gap-2">
@@ -378,7 +472,7 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,.heic,.heif"
                 multiple
                 onChange={handleImageUpload}
                 className="hidden"

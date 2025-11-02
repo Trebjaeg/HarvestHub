@@ -3,7 +3,6 @@ import dbConnect from '@/lib/mongodb';
 import CartItem from '@/models/CartItem';
 import Product from '@/models/Product';
 import { verifyToken } from '@/lib/auth-middleware';
-import { cache, cacheKeys } from '@/lib/redis';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,29 +33,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
     }
 
-    // Try to get product from cache first
-    let product = await cache.get(cacheKeys.product(productId));
+    // Get product details from database - always fetch fresh data for cart operations
+    const product = await Product.findById(productId)
+      .select('_id name price unit stock inventory_available isActive farmerId farmerName image imageUrl images')
+      .maxTimeMS(2000)
+      .lean()
+      .exec();
     
     if (!product) {
-      // Get product details from database - use lean() for faster reads
-      product = await Product.findById(productId)
-        .select('_id name price unit stock isActive farmerId farmerName image imageUrl images')
-        .maxTimeMS(2000)
-        .lean();
-      
-      if (!product) {
-        return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-      }
-      
-      // Cache product for 10 minutes
-      await cache.set(cacheKeys.product(productId), product, 600).catch(() => {});
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
     // Use inventory_available for stock checks (real-time availability)
-    const availableStock = product.inventory_available ?? product.stock ?? 0;
+    const availableStock = (product as any).inventory_available || (product as any).stock || 0;
 
     // Check if product is available (using status field and inventory_available)
-    if (!product.isActive || availableStock <= 0) {
+    if (!(product as any).isActive || availableStock <= 0) {
       return NextResponse.json({ error: 'Product is not available' }, { status: 400 });
     }
 
@@ -101,15 +93,17 @@ export async function POST(request: NextRequest) {
       // Get total cart count
       const totalCount = await CartItem.countDocuments({ userId }).maxTimeMS(2000);
 
-      // Invalidate cart cache (don't wait for completion)
-      cache.del(cacheKeys.cart(userId)).catch(() => {});
-      cache.del(cacheKeys.cartCount(userId)).catch(() => {});
-
       return NextResponse.json({
         success: true,
         message: 'Cart updated successfully',
         data: existingCartItem,
         count: totalCount
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
     } else {
       // Check if requested quantity exceeds available stock for new items
@@ -123,16 +117,16 @@ export async function POST(request: NextRequest) {
       }
 
       // Get seller name from User model if product.farmerName is missing or "Unknown"
-      let sellerName = product.farmerName;
+      let sellerName = (product as any).farmerName;
       if (!sellerName || sellerName === 'Unknown Farmer' || sellerName === 'Unknown Seller') {
         try {
           const User = (await import('@/models/User')).default;
-          const seller = await User.findById(product.farmerId)
+          const seller = await User.findById((product as any).farmerId)
             .select('name firstName lastName')
             .maxTimeMS(1500)
             .lean();
           if (seller) {
-            sellerName = seller.name || `${seller.firstName || ''} ${seller.lastName || ''}`.trim() || 'Seller';
+            sellerName = (seller as any).name || `${(seller as any).firstName || ''} ${(seller as any).lastName || ''}`.trim() || 'Seller';
           }
         } catch (err) {
           console.error('Error fetching seller name:', err);
@@ -144,12 +138,12 @@ export async function POST(request: NextRequest) {
       const cartItem = new CartItem({
         userId: userId,
         productId: productId,
-        productName: product.name,
+        productName: (product as any).name,
         quantity: quantity,
-        price: product.price,
-        unit: product.unit || 'kg',
-        imageUrl: product.image || product.images?.[0] || product.imageUrl,
-        sellerId: product.farmerId,
+        price: (product as any).price,
+        unit: (product as any).unit || 'kg',
+        imageUrl: (product as any).image || (product as any).images?.[0] || (product as any).imageUrl,
+        sellerId: (product as any).farmerId,
         sellerName: sellerName
       });
 
@@ -158,15 +152,17 @@ export async function POST(request: NextRequest) {
       // Get total cart count
       const totalCount = await CartItem.countDocuments({ userId }).maxTimeMS(2000);
 
-      // Invalidate cart cache (don't wait for completion)
-      cache.del(cacheKeys.cart(userId)).catch(() => {});
-      cache.del(cacheKeys.cartCount(userId)).catch(() => {});
-
       return NextResponse.json({
         success: true,
         message: 'Product added to cart successfully',
         data: cartItem,
         count: totalCount
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
     }
 

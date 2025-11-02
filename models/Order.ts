@@ -30,7 +30,15 @@ export interface IOrder {
   orderDate: Date;
   estimatedDelivery?: Date;
   actualDelivery?: Date;
-  notes?: string;
+  notes?: string | { text: string; createdAt: Date }[];
+  refusalReason?: string;
+  refusalDate?: Date;
+  cancellationRequest?: {
+    requestedBy: 'buyer';
+    reason?: string;
+    requestedAt: Date;
+    status: 'pending' | 'approved' | 'rejected';
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -121,7 +129,7 @@ const OrderSchema = new mongoose.Schema<IOrder>({
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'preparing', 'shipped', 'delivered', 'cancelled', 'completed'],
-    default: 'pending'
+    default: 'preparing'
   },
   paymentMethod: {
     type: String,
@@ -144,8 +152,40 @@ const OrderSchema = new mongoose.Schema<IOrder>({
     type: Date
   },
   notes: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+  },
+  refusalReason: {
     type: String,
-    maxlength: [500, 'Notes cannot exceed 500 characters']
+    maxlength: [1000, 'Refusal reason cannot exceed 1000 characters']
+  },
+  refusalDate: {
+    type: Date
+  },
+  cancellationRequest: {
+    type: {
+      requestedBy: {
+        type: String,
+        enum: ['buyer'],
+        required: true
+      },
+      reason: {
+        type: String,
+        maxlength: [500, 'Cancellation reason cannot exceed 500 characters']
+      },
+      requestedAt: {
+        type: Date,
+        required: true,
+        default: Date.now
+      },
+      status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        required: true,
+        default: 'pending'
+      }
+    },
+    required: false
   }
 }, {
   timestamps: true

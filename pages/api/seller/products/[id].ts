@@ -114,33 +114,60 @@ async function handlePUT(req: NextApiRequest, res: NextApiResponse, id: string) 
       }
     }
 
+    // Prepare update data
+    const updateData: any = {
+      ...(name && { name }),
+      ...(description && { description }),
+      ...(price && { price: parseFloat(price) }),
+      ...(category && { category }),
+      ...(status && { status }),
+      ...(unit && { unit }),
+      ...(images && { 
+        image: images[0],
+        images 
+      }),
+      ...(harvestDate && { harvestDate: new Date(harvestDate) }),
+      ...(productSKU && { sku: productSKU }),
+      updatedAt: new Date()
+    };
+
+    // If stock is being updated, update all inventory fields
+    if (stock !== undefined) {
+      const stockValue = parseInt(stock);
+      const existingProduct = await Product.findById(id).select('inventory_reserved inventory_committed');
+      const reserved = existingProduct?.inventory_reserved || 0;
+      const committed = existingProduct?.inventory_committed || 0;
+      
+      updateData.stock = stockValue;
+      updateData.inventory_on_hand = stockValue;
+      updateData.inventory_available = Math.max(0, stockValue - reserved - committed);
+    }
+
     // Find and update product
     const product = await Product.findOneAndUpdate(
       {
         _id: id,
         farmerId: decoded.userId
       },
-      {
-        ...(name && { name }),
-        ...(description && { description }),
-        ...(price && { price: parseFloat(price) }),
-        ...(category && { category }),
-        ...(status && { status }),
-        ...(unit && { unit }),
-        ...(stock !== undefined && { stock: parseInt(stock) }),
-        ...(images && { 
-          image: images[0],
-          images 
-        }),
-        ...(harvestDate && { harvestDate: new Date(harvestDate) }),
-        ...(productSKU && { sku: productSKU }),
-        updatedAt: new Date()
-      },
+      updateData,
       { new: true }
     );
 
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
+    }
+
+    // Invalidate product list cache to ensure updates show immediately
+    try {
+      const memoryCache = (await import('../../../../lib/memory-cache')).default;
+      const { cache } = await import('../../../../lib/redis');
+      
+      // Clear all product list caches
+      memoryCache.clear('products:');
+      await cache.del('products:*');
+      console.log('✅ Product cache cleared after update');
+    } catch (cacheError) {
+      console.log('⚠️ Failed to clear cache, but product was updated:', cacheError);
     }
 
     return res.status(200).json({
@@ -221,6 +248,19 @@ async function handleDELETE(req: NextApiRequest, res: NextApiResponse, id: strin
         console.error('Error deleting image from Spaces:', error);
         // Continue with other deletions even if one fails
       }
+    }
+
+    // Invalidate product list cache to ensure deletion reflects immediately
+    try {
+      const memoryCache = (await import('../../../../lib/memory-cache')).default;
+      const { cache } = await import('../../../../lib/redis');
+      
+      // Clear all product list caches
+      memoryCache.clear('products:');
+      await cache.del('products:*');
+      console.log('✅ Product cache cleared after deletion');
+    } catch (cacheError) {
+      console.log('⚠️ Failed to clear cache, but product was deleted:', cacheError);
     }
 
     return res.status(200).json({

@@ -62,7 +62,8 @@ const CartItemSchema = new mongoose.Schema<ICartItem>({
   timestamps: true
 });
 
-// Compound index for faster queries
+// Compound indexes for faster queries
 CartItemSchema.index({ userId: 1, productId: 1 }, { unique: true });
+CartItemSchema.index({ userId: 1, createdAt: -1 }); // For sorted cart retrieval
 
 export default mongoose.models.CartItem || mongoose.model<ICartItem>('CartItem', CartItemSchema);

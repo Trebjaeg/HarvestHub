@@ -35,6 +35,10 @@ interface Product {
   harvestDate?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  inventory_available?: number;
+  inventory_reserved?: number;
+  inventory_committed?: number;
+  inventory_on_hand?: number;
 }
 
 interface Appeal {
@@ -310,20 +314,20 @@ export default function Products() {
       : 'bg-red-100 text-red-800';
   };
 
-  const getStockStatus = (stock: number, lowStockAlert: number) => {
-    if (stock === 0) return { label: 'Out of Stock', color: 'bg-red-100 text-red-800' };
-    if (stock <= lowStockAlert) return { label: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
+  const getStockStatus = (availableStock: number, lowStockAlert: number) => {
+    if (availableStock === 0) return { label: 'Out of Stock', color: 'bg-red-100 text-red-800' };
+    if (availableStock <= lowStockAlert) return { label: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
     return { label: 'In Stock', color: 'bg-green-100 text-green-800' };
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen p-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
+    <div className="bg-gray-50 min-h-screen p-3 sm:p-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Package className="w-8 h-8 text-[#103C2E]" />
-            <h1 className="text-2xl font-bold text-[#103C2E]">
+        <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Package className="w-6 h-6 sm:w-8 sm:h-8 text-[#103C2E] flex-shrink-0" />
+            <h1 className="text-lg sm:text-2xl font-bold text-[#103C2E] truncate">
               Products
             </h1>
           </div>
@@ -336,52 +340,56 @@ export default function Products() {
               }
               setShowAddModal(true);
             }}
-            className="bg-[#103C2E] hover:bg-[#0d2e23] text-white" 
+            className="bg-[#103C2E] hover:bg-[#0d2e23] text-white text-sm sm:text-base whitespace-nowrap flex-shrink-0" 
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Product
+            <Plus className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Add Product</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
 
         {/* Filters and Search */}
-        <Card className="p-4 lg:p-6 mb-6 bg-white border border-gray-200">
-          <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 lg:gap-4">
+        <Card className="p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6 bg-white border border-gray-200">
+          <div className="flex flex-col gap-3 sm:gap-4">
             {/* Search Bar */}
-            <div className="flex-1 relative">
+            <div className="w-full relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 font-poppins w-full"
+                className="pl-10 font-poppins w-full text-sm sm:text-base"
               />
             </div>
 
-            {/* Category Filter */}
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-full lg:w-48 font-poppins">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent className="font-poppins">
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(category => (
-                  <SelectItem key={category} value={category}>{category}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Filters Row */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              {/* Category Filter */}
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-full sm:flex-1 font-poppins text-sm sm:text-base">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent className="font-poppins">
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(category => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            {/* Status Filter */}
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-full lg:w-48 font-poppins">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent className="font-poppins">
-                <SelectItem value="all">All Status</SelectItem>
-                {statusOptions.map(status => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {/* Status Filter */}
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-full sm:flex-1 font-poppins text-sm sm:text-base">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent className="font-poppins">
+                  <SelectItem value="all">All Status</SelectItem>
+                  {statusOptions.map(status => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </Card>
 
@@ -484,7 +492,19 @@ export default function Products() {
                           <p className="text-gray-900">₱{product.price}</p>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-gray-900">{product.stock}</p>
+                          <div className="text-gray-900">
+                            <p className="font-medium">{product.inventory_available ?? product.stock}</p>
+                            {(product.inventory_reserved || 0) > 0 && (
+                              <p className="text-xs text-yellow-600">
+                                {product.inventory_reserved} reserved
+                              </p>
+                            )}
+                            {(product.inventory_committed || 0) > 0 && (
+                              <p className="text-xs text-blue-600">
+                                {product.inventory_committed} committed
+                              </p>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <Badge className={getStatusColor(product.status || 'Available')}>
@@ -522,7 +542,7 @@ export default function Products() {
             </Card>
 
             {/* Mobile Card View (hidden on desktop) */}
-            <div className="md:hidden space-y-4">
+            <div className="md:hidden space-y-3">
               {filteredProducts.map((product) => {
                 const productAppeal = appeals.find(
                   (appeal) => appeal.productId === product._id && appeal.type === 'listing_removal'
@@ -532,10 +552,10 @@ export default function Products() {
 
                 return (
                   <Card key={product._id} className={`border border-gray-200 overflow-hidden ${isDeactivated ? 'bg-red-50 border-red-300' : 'bg-white'}`}>
-                    <div className="p-4">
-                      <div className="flex gap-4">
+                    <div className="p-3">
+                      <div className="flex gap-3">
                         {/* Product Image */}
-                        <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                           {product.images && product.images.length > 0 ? (
                             <Image
                               src={product.images[0]}
@@ -546,62 +566,68 @@ export default function Products() {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <Package className="w-8 h-8 text-gray-400" />
+                              <Package className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
                             </div>
                           )}
                         </div>
 
                         {/* Product Info */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 mb-1 truncate">
+                          <h3 className="font-semibold text-sm sm:text-base text-gray-900 mb-1 line-clamp-2 break-words">
                             {product.name}
                           </h3>
                           {isDeactivated && (
-                            <div className="flex flex-col gap-1 mb-2">
-                              <Badge className="bg-red-100 text-red-800 w-fit text-xs">
-                                Deactivated by Admin
+                            <div className="flex flex-col gap-1 mb-1.5">
+                              <Badge className="bg-red-100 text-red-800 w-fit text-[10px] sm:text-xs px-1.5 py-0.5">
+                                Deactivated
                               </Badge>
                               {productAppeal && (
-                                <span className="text-xs font-medium" style={{
+                                <span className="text-[10px] sm:text-xs font-medium break-words" style={{
                                   color: productAppeal.status === 'pending' ? '#FFA726' :
                                          productAppeal.status === 'under_review' ? '#42A5F5' :
                                          productAppeal.status === 'approved' ? '#4A7C59' : '#EF5350'
                                 }}>
                                   Appeal: {productAppeal.status === 'pending' ? 'Pending' :
-                                          productAppeal.status === 'under_review' ? 'Under Review' :
+                                          productAppeal.status === 'under_review' ? 'Review' :
                                           productAppeal.status === 'approved' ? 'Approved' : 'Rejected'}
                                 </span>
                               )}
                             </div>
                           )}
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-lg font-bold text-[#103C2E]">₱{product.price}</span>
-                            <Badge className={getStatusColor(product.status || 'Available')}>
+                          <div className="flex items-center flex-wrap gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                            <span className="text-base sm:text-lg font-bold text-[#103C2E]">₱{product.price}</span>
+                            <Badge className={`${getStatusColor(product.status || 'Available')} text-[10px] sm:text-xs px-1.5 py-0.5`}>
                               {product.status || 'Available'}
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-600">
-                            Stock: <span className="font-medium">{product.stock}</span>
-                          </p>
+                          <div className="text-xs sm:text-sm text-gray-600 space-y-0.5">
+                            <p className="break-words">Available: <span className="font-medium text-green-600">{product.inventory_available ?? product.stock}</span></p>
+                            {(product.inventory_reserved || 0) > 0 && (
+                              <p className="text-[10px] sm:text-xs text-yellow-600">Reserved: {product.inventory_reserved}</p>
+                            )}
+                            {(product.inventory_committed || 0) > 0 && (
+                              <p className="text-[10px] sm:text-xs text-blue-600">Committed: {product.inventory_committed}</p>
+                            )}
+                          </div>
                         </div>
                       </div>
 
                       {/* Actions - Only show for active products */}
                       {!isDeactivated && (
-                        <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
+                        <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
                           <button
                             onClick={() => setEditingProduct(product)}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-[#103C2E] bg-green-50 hover:bg-green-100 rounded-lg transition-colors font-medium"
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-[#103C2E] bg-green-50 hover:bg-green-100 rounded-lg transition-colors font-medium"
                           >
-                            <Edit className="w-4 h-4" />
-                            Edit
+                            <Edit className="w-3.5 h-3.5" />
+                            <span>Edit</span>
                           </button>
                           <button
                             onClick={() => handleDeleteProduct(product._id!)}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors font-medium"
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors font-medium"
                           >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
                           </button>
                         </div>
                       )}

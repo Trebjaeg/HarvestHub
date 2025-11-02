@@ -4,12 +4,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Star, MapPin, ShoppingCart, Share2, ChevronLeft, ChevronRight, Check, X, ShieldAlert } from 'lucide-react';
+import { Star, MapPin, ShoppingCart, Share2, ChevronLeft, ChevronRight, Check, X, ShieldAlert, MessageCircle } from 'lucide-react';
 import LoadingDots from '@/components/ui/LoadingDots';
 import { useAuthUserData } from '@/hooks/useAuthUserData';
 import { useAuth } from '@/contexts/AuthContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import FavoriteButton from '@/components/FavoriteButton';
+import ReviewItem from '@/components/ReviewItem';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -32,6 +33,8 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewPage, setReviewPage] = useState(1);
   const [reviewsPagination, setReviewsPagination] = useState<any>(null);
+  const [reviewSort, setReviewSort] = useState<'recent' | 'helpful' | 'high' | 'low'>('recent');
+  const [starFilter, setStarFilter] = useState<number | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const imageRef = useRef<HTMLDivElement>(null);
   const [cartCount, setCartCount] = useState(initialCartCount);
@@ -45,6 +48,7 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
   const [reportInfo, setReportInfo] = useState<any>(null);
   const [takingDown, setTakingDown] = useState(false);
   const [showTakedownDialog, setShowTakedownDialog] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const reportId = searchParams?.get('reportId');
@@ -167,10 +171,22 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
     }
   };
 
-  const fetchReviews = async (page = 1) => {
+  const fetchReviews = async (page = 1, sort?: string, star?: number | null) => {
     try {
       setReviewsLoading(true);
-      const response = await fetch(`/api/products/${productId}/reviews?page=${page}&limit=10`);
+      const sortParam = sort !== undefined ? sort : reviewSort;
+      const starParam = star !== undefined ? star : starFilter;
+      
+      let url = `/api/products/${productId}/reviews?page=${page}&limit=10&sort=${sortParam}`;
+      if (starParam !== null) {
+        url += `&star=${starParam}`;
+      }
+      
+      console.log('Fetching reviews with:', { page, sortParam, starParam, url });
+      
+      const response = await fetch(url, {
+        cache: 'no-store'
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch reviews');
@@ -189,6 +205,61 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
     }
   };
 
+  const handleSortChange = (newSort: 'recent' | 'helpful' | 'high' | 'low') => {
+    setReviewSort(newSort);
+    setReviewPage(1);
+    fetchReviews(1, newSort, starFilter);
+  };
+
+  const handleStarFilter = (star: number | null) => {
+    setStarFilter(star);
+    setReviewPage(1);
+    fetchReviews(1, reviewSort, star);
+  };
+
+  const handleChatWithSeller = async () => {
+    if (!seller) return;
+    
+    if (!isAuthenticated) {
+      router.push('/auth/login');
+      return;
+    }
+    
+    setStartingChat(true);
+    
+    try {
+      // Check if conversation already exists
+      const response = await fetch('/api/chat/conversations', {
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Look for existing conversation with this seller
+        const existingConversation = data.conversations?.find(
+          (conv: any) => conv.userId === seller.id
+        );
+
+        if (existingConversation) {
+          // Navigate to existing conversation
+          router.push(`/inbox?userId=${seller.id}`);
+        } else {
+          // No existing conversation, open inbox to start new chat
+          router.push(`/inbox?userId=${seller.id}`);
+        }
+      } else {
+        // If can't fetch conversations, just open inbox
+        router.push(`/inbox?userId=${seller.id}`);
+      }
+    } catch (error) {
+      // Fallback to just opening inbox
+      router.push(`/inbox?userId=${seller.id}`);
+    } finally {
+      setStartingChat(false);
+    }
+  };
+
   const handleAddToCart = async () => {
     // Check if product is available (has stock and is active)
     if (!product || product.stock <= 0 || !product.isActive) return;
@@ -196,11 +267,69 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
     // Don't allow multiple clicks during animation
     if (isAnimating) return;
     
+    // Start animation immediately for instant feedback
+    setIsAnimating(true);
+    
+    // Get cart icon position early
+    const isMobile = window.innerWidth < 768;
+    let cartIcon: Element | null = null;
+    
+    if (isMobile) {
+      cartIcon = document.getElementById('mobile-cart-icon');
+    } else {
+      cartIcon = document.getElementById('desktop-cart-icon');
+    }
+    
+    const imageElement = imageRef.current;
+    
+    // Start visual animation immediately
+    if (cartIcon && imageElement) {
+      const imageRect = imageElement.getBoundingClientRect();
+      const cartRect = cartIcon.getBoundingClientRect();
+      
+      const deltaX = (cartRect.left + cartRect.width / 2) - (imageRect.left + imageRect.width / 2);
+      const deltaY = (cartRect.top + cartRect.height / 2) - (imageRect.top + imageRect.height / 2);
+      
+      const clone = imageElement.cloneNode(true) as HTMLElement;
+      clone.style.position = 'fixed';
+      clone.style.left = imageRect.left + 'px';
+      clone.style.top = imageRect.top + 'px';
+      clone.style.width = imageRect.width + 'px';
+      clone.style.height = imageRect.height + 'px';
+      clone.style.zIndex = '9999';
+      clone.style.transition = 'all 0.8s cubic-bezier(0.4, 0.0, 0.2, 1)';
+      clone.style.pointerEvents = 'none';
+      clone.style.borderRadius = '12px';
+      clone.style.boxShadow = '0 10px 40px rgba(0,0,0,0.3)';
+      document.body.appendChild(clone);
+      
+      setTimeout(() => {
+        clone.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.15)`;
+        clone.style.opacity = '0.3';
+      }, 10);
+      
+      setTimeout(() => {
+        if (document.body.contains(clone)) {
+          document.body.removeChild(clone);
+        }
+        if (cartIcon) {
+          cartIcon.classList.add('animate-shake');
+          setTimeout(() => cartIcon.classList.remove('animate-shake'), 500);
+        }
+      }, 850);
+    }
+    
     try {
+      // Make API call in parallel with animation
       const response = await fetch('/api/cart/add', {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        },
         body: JSON.stringify({ 
           productId: product._id, 
           quantity 
@@ -210,77 +339,24 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
       const data = await response.json();
 
       if (response.ok) {
-        // Start jump animation
-        setIsAnimating(true);
+        // Update cart count via custom event
+        window.dispatchEvent(new CustomEvent('cart-updated', { 
+          detail: { count: data.count || data.cartCount }
+        }));
         
-        // Get cart icon position - find the cart button/link
-        const isMobile = window.innerWidth < 768;
-        let cartIcon: Element | null = null;
-        
-        if (isMobile) {
-          // On mobile, find the cart link by ID
-          cartIcon = document.getElementById('mobile-cart-icon');
-        } else {
-          // On desktop, find the Link by ID
-          cartIcon = document.getElementById('desktop-cart-icon');
+        // Broadcast to other tabs
+        try {
+          const channel = new BroadcastChannel('cart-sync');
+          channel.postMessage({ type: 'cart-changed' });
+          channel.close();
+        } catch (e) {
+          // BroadcastChannel not supported
         }
         
-        const imageElement = imageRef.current;
-        
-        if (cartIcon && imageElement) {
-          // Get positions
-          const imageRect = imageElement.getBoundingClientRect();
-          const cartRect = cartIcon.getBoundingClientRect();
-          
-          // Calculate the distance to travel to center of cart icon
-          const deltaX = (cartRect.left + cartRect.width / 2) - (imageRect.left + imageRect.width / 2);
-          const deltaY = (cartRect.top + cartRect.height / 2) - (imageRect.top + imageRect.height / 2);
-          
-          // Create clone for animation
-          const clone = imageElement.cloneNode(true) as HTMLElement;
-          clone.style.position = 'fixed';
-          clone.style.left = imageRect.left + 'px';
-          clone.style.top = imageRect.top + 'px';
-          clone.style.width = imageRect.width + 'px';
-          clone.style.height = imageRect.height + 'px';
-          clone.style.zIndex = '9999';
-          clone.style.transition = 'all 1.2s cubic-bezier(0.4, 0.0, 0.2, 1)';
-          clone.style.pointerEvents = 'none';
-          clone.style.borderRadius = '12px';
-          clone.style.boxShadow = '0 10px 40px rgba(0,0,0,0.3)';
-          document.body.appendChild(clone);
-          
-          // Trigger animation after a small delay
-          setTimeout(() => {
-            clone.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.15)`;
-            clone.style.opacity = '0.3';
-          }, 50);
-          
-          // Remove clone and trigger cart shake
-          setTimeout(() => {
-            document.body.removeChild(clone);
-            setIsAnimating(false);
-            
-            // Trigger cart shake animation
-            if (cartIcon) {
-              cartIcon.classList.add('animate-shake');
-              setTimeout(() => {
-                cartIcon.classList.remove('animate-shake');
-              }, 500);
-            }
-            
-            // Update cart count via custom event
-            window.dispatchEvent(new CustomEvent('cart-updated', { 
-              detail: { count: data.count || data.cartCount }
-            }));
-          }, 1250); // Wait for jump animation to complete
-        } else {
-          // Fallback if cart icon not found
-          setIsAnimating(false);
-          window.dispatchEvent(new CustomEvent('cart-updated', { 
-            detail: { count: data.count || data.cartCount }
-          }));
-        }
+        setTimeout(() => setIsAnimating(false), 900);
+      } else {
+        setIsAnimating(false);
+        // Handle error if needed
       }
     } catch (error) {
       setIsAnimating(false);
@@ -303,25 +379,22 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
     setIsBuyingNow(true);
 
     try {
-      // Add to cart first with timeout protection
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
+      // Add to cart with optimized request
       const response = await fetch('/api/cart/add', {
         method: 'POST',
         credentials: 'include',
+        cache: 'no-store',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
         },
         body: JSON.stringify({
           productId: product._id,
           quantity,
           farmerId: product.farmerId
-        }),
-        signal: controller.signal
+        })
       });
-
-      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
@@ -330,6 +403,15 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
         window.dispatchEvent(new CustomEvent('cart-updated', {
           detail: { count: data.count || data.cartCount }
         }));
+        
+        // Broadcast to other tabs
+        try {
+          const channel = new BroadcastChannel('cart-sync');
+          channel.postMessage({ type: 'cart-changed' });
+          channel.close();
+        } catch (e) {
+          // BroadcastChannel not supported
+        }
 
         // Navigate to cart for checkout
         router.push('/cart');
@@ -361,22 +443,12 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
       }
     } catch (error: any) {
       setIsBuyingNow(false);
-      
-      if (error.name === 'AbortError') {
-        // Request timed out - show message but DON'T retry automatically
-        setErrorModal({
-          show: true,
-          title: 'Request Timeout',
-          message: 'Request timed out. Please check your cart to see if the item was added before trying again.'
-        });
-      } else {
-        console.error('Error during buy now:', error);
-        setErrorModal({
-          show: true,
-          title: 'Network Error',
-          message: 'Network error. Please check your connection and try again.'
-        });
-      }
+      console.error('Error during buy now:', error);
+      setErrorModal({
+        show: true,
+        title: 'Network Error',
+        message: 'Network error. Please check your connection and try again.'
+      });
     }
   };
 
@@ -1029,13 +1101,40 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
                     </p>
                   </div>
                 </div>
-                <Link
-                  href={`/seller/${seller.id}`}
-                  className="inline-block bg-gray-100 text-gray-900 px-6 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
-                  style={{ fontFamily: 'Poppins, sans-serif' }}
-                >
-                  Visit Store
-                </Link>
+                <div className="flex gap-3">
+                  <Link
+                    href={`/seller/${seller.id}`}
+                    className="flex-1 bg-gray-100 text-gray-900 px-6 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors text-center"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                  >
+                    Visit Store
+                  </Link>
+                  {isAuthenticated && (user?.role === 'user' || user?.role === 'admin') && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleChatWithSeller();
+                      }}
+                      disabled={startingChat}
+                      className="flex items-center justify-center gap-2 bg-[#40613D] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#2d4429] transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10 cursor-pointer"
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                      type="button"
+                    >
+                      {startingChat ? (
+                        <>
+                          <LoadingDots size="sm" color="#FFFFFF" />
+                          <span>Opening...</span>
+                        </>
+                      ) : (
+                        <>
+                          <MessageCircle className="w-5 h-5" />
+                          <span>Chat</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -1117,13 +1216,22 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
                 </div>
               </div>
 
-              {/* Rating Distribution */}
+              {/* Rating Distribution - Clickable to filter */}
               <div className="flex-1">
                 {[5, 4, 3, 2, 1].map((rating) => {
                   const count = product.ratingDistribution?.[rating] || 0;
                   const percentage = product.reviewCount > 0 ? (count / product.reviewCount) * 100 : 0;
+                  const isActive = starFilter === rating;
                   return (
-                    <div key={rating} className="flex items-center gap-3 mb-2">
+                    <button
+                      key={rating}
+                      onClick={() => handleStarFilter(isActive ? null : rating)}
+                      className={`flex items-center gap-3 mb-2 w-full rounded-lg p-2 transition-all ${
+                        isActive 
+                          ? 'bg-green-50 border-2 border-green-500 shadow-sm' 
+                          : 'hover:bg-gray-50 border-2 border-transparent'
+                      }`}
+                    >
                       <span className="text-sm font-medium w-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         {rating}
                       </span>
@@ -1137,7 +1245,7 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
                       <span className="text-sm text-gray-600 w-12 text-right" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         ({count})
                       </span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -1191,99 +1299,92 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
 
           {/* Reviews List */}
           <div className="pt-6 border-t border-gray-300">
+            {/* Filter and Sort Controls */}
+            <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="flex items-center gap-4 flex-wrap">
+                {/* Star Filter Status */}
+                {starFilter && (
+                  <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-sm border border-green-200">
+                    <span style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      {starFilter} star reviews
+                    </span>
+                    <button
+                      onClick={() => handleStarFilter(null)}
+                      className="hover:text-green-900"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+                
+                {/* View All Button */}
+                {(starFilter || reviewSort !== 'recent') && (
+                  <button
+                    onClick={() => {
+                      setStarFilter(null);
+                      setReviewSort('recent');
+                      fetchReviews(1, 'recent', null);
+                    }}
+                    className="text-sm text-gray-600 hover:text-gray-900 underline"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                  >
+                    View All Reviews
+                  </button>
+                )}
+              </div>
+
+              {/* Sort Dropdown */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Sort by:
+                </span>
+                <select
+                  value={reviewSort}
+                  onChange={(e) => handleSortChange(e.target.value as any)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                >
+                  <option value="recent">Most Recent</option>
+                  <option value="helpful">Most Helpful</option>
+                  <option value="high">Highest Rating</option>
+                  <option value="low">Lowest Rating</option>
+                </select>
+              </div>
+            </div>
+
             {reviewsLoading ? (
               <div className="flex items-center justify-center py-12">
                 <LoadingDots size="md" color="#40613D" />
               </div>
             ) : reviews.length > 0 ? (
               <div className="space-y-6">
-              {reviews.map((review) => (
-                <div key={review.id} className="border-b pb-6 last:border-0">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-                      {review.buyer.profileImage ? (
-                        <Image
-                          src={review.buyer.profileImage}
-                          alt={review.buyer.name}
-                          width={48}
-                          height={48}
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-lg font-bold text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          {review.buyer.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="font-semibold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          {review.buyer.name}
-                        </span>
-                        {review.verified && (
-                          <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                            Verified Purchase
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mb-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className={`w-4 h-4 ${
-                              star <= review.rating
-                                ? 'text-yellow-400 fill-yellow-400'
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                        <span className="text-sm text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          {new Date(review.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      {review.title && (
-                        <h4 className="font-semibold text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          {review.title}
-                        </h4>
-                      )}
-                      <p className="text-gray-600 mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        {review.comment}
-                      </p>
-                      {review.images && review.images.length > 0 && (
-                        <div className="flex gap-2 mb-3">
-                          {review.images.map((img: string, idx: number) => (
-                            <div key={idx} className="w-20 h-20 rounded-lg overflow-hidden">
-                              <Image
-                                src={img}
-                                alt={`Review image ${idx + 1}`}
-                                width={80}
-                                height={80}
-                                className="object-cover"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {review.sellerResponse && (
-                        <div className="bg-gray-50 rounded-lg p-4 mt-3">
-                          <p className="text-sm font-semibold text-gray-900 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                            Seller Response
-                          </p>
-                          <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                            {review.sellerResponse.comment}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+              {reviews.map((review) => {
+                const userId = (user as any)?._id?.toString() || (user as any)?.id?.toString();
+                const reviewBuyerId = review.buyerId?.toString();
+                const sellerId = seller?._id?.toString() || seller?.id?.toString();
+                
+                const isBuyerOwnReview = !!(userId && reviewBuyerId && userId === reviewBuyerId);
+                const isSellerView = !!(userId && sellerId && userId === sellerId && !isBuyerOwnReview);
+                
+                return (
+                  <ReviewItem 
+                    key={review.id} 
+                    review={review} 
+                    isSellerView={isSellerView}
+                    isBuyerOwnReview={isBuyerOwnReview}
+                    onReplySubmitted={() => {
+                      fetchReviews(reviewPage, reviewSort, starFilter);
+                      fetchProductDetails();
+                    }}
+                  />
+                );
+              })}
 
               {/* Pagination */}
               {reviewsPagination && reviewsPagination.totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 pt-6">
                   <button
-                    onClick={() => fetchReviews(reviewPage - 1)}
+                    onClick={() => fetchReviews(reviewPage - 1, reviewSort, starFilter)}
                     disabled={reviewPage === 1}
                     className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                   >
@@ -1293,7 +1394,7 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
                     Page {reviewPage} of {reviewsPagination.totalPages}
                   </span>
                   <button
-                    onClick={() => fetchReviews(reviewPage + 1)}
+                    onClick={() => fetchReviews(reviewPage + 1, reviewSort, starFilter)}
                     disabled={!reviewsPagination.hasMore}
                     className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                   >
@@ -1307,9 +1408,24 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
               <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Star className="w-10 h-10 text-gray-400" />
               </div>
-              <p className="text-gray-500 text-lg font-medium mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                No reviews yet
-              </p>
+              {starFilter ? (
+                <>
+                  <p className="text-gray-500 text-lg font-medium mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    No {starFilter} star reviews found
+                  </p>
+                  <button
+                    onClick={() => handleStarFilter(null)}
+                    className="text-green-600 hover:text-green-700 underline text-sm"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                  >
+                    View all reviews
+                  </button>
+                </>
+              ) : (
+                <p className="text-gray-500 text-lg font-medium mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  No reviews yet
+                </p>
+              )}
               <p className="text-gray-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Be the first to review this product
               </p>

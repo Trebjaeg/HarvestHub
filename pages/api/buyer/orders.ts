@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '../../../lib/mongodb';
 import Order from '../../../models/Order';
+import Review from '../../../models/Review';
 import jwt from 'jsonwebtoken';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -52,7 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Add status filter
     if (status && status !== 'all') {
-      const validStatuses = ['pending', 'confirmed', 'preparing', 'shipped', 'delivered', 'cancelled', 'completed'];
+      const validStatuses = ['preparing', 'shipped', 'delivered', 'cancelled', 'completed'];
       if (validStatuses.includes(status as string)) {
         filter.status = status;
       }
@@ -83,8 +84,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Add text search filter with indexed fields
-    if (search && search.trim()) {
-      const searchTerm = search.toString().trim();
+    const searchStr: string = Array.isArray(search) ? search[0] : (search || '');
+    if (searchStr && typeof searchStr === 'string' && searchStr.trim()) {
+      const searchTerm = searchStr.trim();
       filter.$or = [
         { orderNumber: { $regex: searchTerm, $options: 'i' } },
         { sellerName: { $regex: searchTerm, $options: 'i' } },
@@ -94,17 +96,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Build sort object with validation
     const validSortFields = ['orderDate', 'finalAmount', 'status', 'orderNumber'];
-    const sortField = validSortFields.includes(sortBy as string) ? sortBy : 'orderDate';
+    const sortFieldStr = String(validSortFields.includes(sortBy as string) ? sortBy : 'orderDate');
     const sortDirection = sortOrder === 'asc' ? 1 : -1;
-    const sort: any = { [sortField]: sortDirection };
+    const sort: any = { [sortFieldStr]: sortDirection };
 
     // Execute optimized queries in parallel
     const [orders, totalOrders] = await Promise.all([
       Order.find(filter)
-        .sort(sort)
+        .sort(sort as any)
         .skip(skip)
         .limit(limitNum)
-        .select('orderNumber orderDate products totalAmount deliveryFee finalAmount status paymentStatus estimatedDelivery actualDelivery sellerName')
+        .select('orderNumber orderDate products totalAmount deliveryFee finalAmount status paymentStatus estimatedDelivery actualDelivery sellerName cancellationRequest')
         .lean()
         .exec(),
       Order.countDocuments(filter).exec()
@@ -115,32 +117,67 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const hasNextPage = pageNum < totalPages;
     const hasPrevPage = pageNum > 1;
 
+    // Get all product IDs from orders to check for reviews
+    const productIds = orders.flatMap((order: any) => 
+      order.products.map((p: any) => p.productId)
+    );
+
+    // Fetch all reviews for these products by this buyer in one query
+    const existingReviews = await Review.find({
+      buyerId,
+      productId: { $in: productIds },
+      status: { $ne: 'removed' }
+    })
+      .select('productId')
+      .lean()
+      .exec();
+
+    // Create a Set of reviewed product IDs for fast lookup
+    const reviewedProductIds = new Set(
+      existingReviews.map((review: any) => String(review.productId))
+    );
+
     // Format orders for frontend consumption
-    const formattedOrders = orders.map(order => ({
-      _id: order._id.toString(),
-      orderNumber: order.orderNumber,
-      orderDate: order.orderDate.toISOString(),
-      products: order.products.map(product => ({
-        productId: product.productId,
-        productName: product.productName,
-        quantity: product.quantity,
-        price: product.price,
-        unit: product.unit,
-        category: product.category || 'general'
-      })),
-      totalAmount: order.totalAmount,
-      deliveryFee: order.deliveryFee,
-      finalAmount: order.finalAmount,
-      status: order.status,
-      paymentStatus: order.paymentStatus,
-      estimatedDelivery: order.estimatedDelivery ? order.estimatedDelivery.toISOString() : null,
-      actualDelivery: order.actualDelivery ? order.actualDelivery.toISOString() : null,
-      sellerName: order.sellerName,
-      // Computed fields for frontend
-      totalItems: order.products.reduce((sum, p) => sum + p.quantity, 0),
-      canCancel: ['pending', 'confirmed'].includes(order.status),
-      canTrack: ['confirmed', 'preparing', 'shipped'].includes(order.status)
-    }));
+    const formattedOrders = orders.map((order: any) => {
+      // Check if any product in this order has been reviewed
+      const hasReview = order.products.some((p: any) => 
+        reviewedProductIds.has(String(p.productId))
+      );
+
+      return {
+        _id: String(order._id),
+        orderNumber: order.orderNumber,
+        orderDate: order.orderDate.toISOString(),
+        products: order.products.map((product: any) => ({
+          productId: product.productId,
+          productName: product.productName,
+          quantity: product.quantity,
+          price: product.price,
+          unit: product.unit,
+          category: product.category || 'general',
+          hasReview: reviewedProductIds.has(String(product.productId))
+        })),
+        totalAmount: order.totalAmount,
+        deliveryFee: order.deliveryFee,
+        finalAmount: order.finalAmount,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        estimatedDelivery: order.estimatedDelivery ? order.estimatedDelivery.toISOString() : null,
+        actualDelivery: order.actualDelivery ? order.actualDelivery.toISOString() : null,
+        sellerName: order.sellerName,
+        cancellationRequest: order.cancellationRequest ? {
+          requestedBy: order.cancellationRequest.requestedBy,
+          reason: order.cancellationRequest.reason,
+          requestedAt: order.cancellationRequest.requestedAt.toISOString(),
+          status: order.cancellationRequest.status
+        } : undefined,
+        // Computed fields for frontend
+        totalItems: order.products.reduce((sum: number, p: any) => sum + p.quantity, 0),
+        canCancel: ['preparing'].includes(order.status) && !order.cancellationRequest,
+        canTrack: ['preparing', 'shipped'].includes(order.status),
+        hasReview
+      };
+    });
 
     // Enhanced response with metadata
     res.status(200).json({
@@ -163,7 +200,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           startDate: startDate || null,
           endDate: endDate || null,
           search: search || '',
-          sortBy: sortField,
+          sortBy: sortFieldStr,
           sortOrder: sortOrder || 'desc'
         },
         meta: {
@@ -189,12 +226,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       statusCode = 401;
     }
 
+    const err = error as any;
     res.status(statusCode).json({ 
       success: false, 
       message: errorMessage,
       error: process.env.NODE_ENV === 'development' ? {
-        message: error.message,
-        stack: error.stack
+        message: err?.message,
+        stack: err?.stack
       } : undefined
     });
   }

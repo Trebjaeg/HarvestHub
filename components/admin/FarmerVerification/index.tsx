@@ -463,33 +463,47 @@ const FarmerVerification: React.FC = () => {
                                   )}
 
                                   <div className="flex gap-3">
-                                    <Button
-                                      onClick={() => setReviewAction('approve')}
-                                      className="bg-green-600 hover:bg-green-700"
-                                      disabled={reviewAction === 'approve'}
-                                    >
-                                      {reviewAction === 'approve' ? 'Approving...' : 'Approve Farmer'}
-                                    </Button>
-                                    <Button
-                                      onClick={() => setReviewAction('reject')}
-                                      variant="destructive"
-                                      disabled={reviewAction === 'reject'}
-                                    >
-                                      Reject Application
-                                    </Button>
+                                    {!reviewAction && (
+                                      <>
+                                        <Button
+                                          onClick={() => setReviewAction('approve')}
+                                          className="bg-green-600 hover:bg-green-700"
+                                        >
+                                          Approve Farmer
+                                        </Button>
+                                        <Button
+                                          onClick={() => setReviewAction('reject')}
+                                          variant="destructive"
+                                        >
+                                          Reject Application
+                                        </Button>
+                                      </>
+                                    )}
                                     {reviewAction && (
-                                      <Button
-                                        onClick={() => {
-                                          if (reviewAction === 'reject' && !rejectionReason.trim()) {
-                                            alert('Please provide a rejection reason');
-                                            return;
-                                          }
-                                          handleReview(selectedFarmer._id, reviewAction);
-                                        }}
-                                        variant="outline"
-                                      >
-                                        Confirm {reviewAction === 'approve' ? 'Approval' : 'Rejection'}
-                                      </Button>
+                                      <>
+                                        <Button
+                                          onClick={() => {
+                                            if (reviewAction === 'reject' && !rejectionReason.trim()) {
+                                              alert('Please provide a rejection reason');
+                                              return;
+                                            }
+                                            handleReview(selectedFarmer._id, reviewAction);
+                                          }}
+                                          className={reviewAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : ''}
+                                          variant={reviewAction === 'approve' ? 'default' : 'destructive'}
+                                        >
+                                          Confirm {reviewAction === 'approve' ? 'Approval' : 'Rejection'}
+                                        </Button>
+                                        <Button
+                                          onClick={() => {
+                                            setReviewAction(null);
+                                            setRejectionReason('');
+                                          }}
+                                          variant="outline"
+                                        >
+                                          Cancel
+                                        </Button>
+                                      </>
                                     )}
                                   </div>
                                 </div>

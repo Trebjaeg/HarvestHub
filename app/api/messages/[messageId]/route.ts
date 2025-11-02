@@ -5,7 +5,7 @@ import { verifyToken } from '@/lib/auth-middleware';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { messageId: string } }
+  { params }: { params: Promise<{ messageId: string }> }
 ) {
   try {
     await dbConnect();
@@ -17,7 +17,7 @@ export async function GET(
     }
 
     const userId = authResult.user.id;
-    const { messageId } = params;
+    const { messageId } = await params;
 
     if (!messageId) {
       return NextResponse.json({ error: 'Message ID is required' }, { status: 400 });
@@ -50,7 +50,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { messageId: string } }
+  { params }: { params: Promise<{ messageId: string }> }
 ) {
   try {
     await dbConnect();
@@ -62,7 +62,7 @@ export async function PATCH(
     }
 
     const userId = authResult.user.id;
-    const { messageId } = params;
+    const { messageId } = await params;
     const body = await request.json();
     const { action } = body;
 
@@ -132,7 +132,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { messageId: string } }
+  { params }: { params: Promise<{ messageId: string }> }
 ) {
   try {
     await dbConnect();
@@ -144,7 +144,7 @@ export async function DELETE(
     }
 
     const userId = authResult.user.id;
-    const { messageId } = params;
+    const { messageId } = await params;
 
     if (!messageId) {
       return NextResponse.json({ error: 'Message ID is required' }, { status: 400 });

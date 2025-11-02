@@ -88,11 +88,26 @@ async function handleGET(req: NextApiRequest, res: NextApiResponse, userId: stri
       .limit(limitNum)
       .lean();
 
+    // Transform products to include real-time available stock
+    const transformedProducts = products.map(product => {
+      // Calculate available stock (total - reserved - committed)
+      const inventory_available = product.inventory_available ?? 
+        (product.stock - (product.inventory_reserved || 0) - (product.inventory_committed || 0));
+      
+      return {
+        ...product,
+        inventory_available,
+        inventory_reserved: product.inventory_reserved || 0,
+        inventory_committed: product.inventory_committed || 0,
+        inventory_on_hand: product.inventory_on_hand || product.stock
+      };
+    });
+
     // Get total count for pagination
     const total = await Product.countDocuments(query);
 
     return res.status(200).json({
-      products,
+      products: transformedProducts,
       pagination: {
         current: pageNum,
         total: Math.ceil(total / limitNum),
@@ -172,6 +187,7 @@ async function handlePOST(req: NextApiRequest, res: NextApiResponse, userId: str
     });
 
     // Create product
+    const stockValue = parseInt(stock);
     const product = new Product({
       name,
       description,
@@ -179,7 +195,11 @@ async function handlePOST(req: NextApiRequest, res: NextApiResponse, userId: str
       category,
       status: status || 'Available',
       unit,
-      stock: parseInt(stock),
+      stock: stockValue,
+      inventory_on_hand: stockValue, // Set inventory fields
+      inventory_available: stockValue, // Available = on_hand initially (no reservations)
+      inventory_reserved: 0,
+      inventory_committed: 0,
       lowStockAlert: lowStockAlert ? parseInt(lowStockAlert) : 10,
       image: images?.[0] || '/images/products/default.png',
       images: images || [],
@@ -196,6 +216,19 @@ async function handlePOST(req: NextApiRequest, res: NextApiResponse, userId: str
     console.log('Attempting to save product to database...');
     await product.save();
     console.log('Product created successfully:', product._id);
+
+    // Invalidate product list cache to ensure new product shows immediately
+    try {
+      const memoryCache = (await import('../../../lib/memory-cache')).default;
+      const { cache, cacheKeys } = await import('../../../lib/redis');
+      
+      // Clear all product list caches (different filters/pages)
+      memoryCache.clear();
+      await cache.del('products:*');
+      console.log('✅ Product cache cleared for real-time updates');
+    } catch (cacheError) {
+      console.log('⚠️ Failed to clear cache, but product was created:', cacheError);
+    }
 
     return res.status(201).json({
       message: 'Product created successfully',

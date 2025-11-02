@@ -10,7 +10,7 @@ import cache from '@/lib/memory-cache';
 // PATCH /api/admin/appeals/[id] - Review an appeal (Admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
@@ -27,7 +27,7 @@ export async function PATCH(
     }
 
     const adminId = admin.id;
-    const appealId = params.id;
+    const { id: appealId } = await params;
     const body = await request.json();
 
     const { decision, reviewNotes, decisionReason } = body;
@@ -131,10 +131,10 @@ export async function PATCH(
         }
 
         // Verify the update actually worked
-        const verifyProduct = await Product.findById(appeal.productId).lean();
+        const verifyProduct: any = await Product.findById(appeal.productId).lean();
         
         // CRITICAL: Verify the product is actually active
-        if (!verifyProduct?.isActive || verifyProduct.status !== 'Available') {
+        if (!verifyProduct?.isActive || verifyProduct?.status !== 'Available') {
           return NextResponse.json({
             error: 'Failed to reactivate product',
             details: {

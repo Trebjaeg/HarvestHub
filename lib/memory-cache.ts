@@ -181,7 +181,15 @@ export const cache = {
 /**
  * Cache key builders for consistent naming
  */
-export const cacheKeys = {
+export const cacheKeys: {
+  product: (id: string) => string;
+  products: (filters: string) => string;
+  cart: (userId: string) => string;
+  cartCount: (userId: string) => string;
+  popularProducts: () => string;
+  featuredProducts: () => string;
+  categoryProducts: (category: string, page: number) => string;
+} = {
   product: (id: string) => `product:${id}`,
   products: (filters: string) => `products:${filters}`,
   cart: (userId: string) => `cart:${userId}`,

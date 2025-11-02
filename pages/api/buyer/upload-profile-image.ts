@@ -56,7 +56,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Parse form data
     const form = new IncomingForm({
-      maxFileSize: 5 * 1024 * 1024, // 5MB
+      maxFileSize: 60 * 1024 * 1024, // 60MB server-side limit
       keepExtensions: true,
     });
 

@@ -68,7 +68,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
     // Parse multipart form data
     const form = new IncomingForm({
-      maxFileSize: 10 * 1024 * 1024, // 10MB
+      maxFileSize: 60 * 1024 * 1024, // 60MB server-side limit
       keepExtensions: true,
     });
 
@@ -98,8 +98,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
-    if (!allowedTypes.includes(file.mimetype || '')) {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'];
+    const lowerName = (file.originalFilename || '').toLowerCase();
+    const looksLikeHeic = lowerName.endsWith('.heic') || lowerName.endsWith('.heif');
+    if (!(allowedTypes.includes(file.mimetype || '') || looksLikeHeic)) {
       return res.status(400).json({
         error: 'Invalid file type',
         message: 'Only JPEG, PNG, WEBP images and PDF files are allowed',

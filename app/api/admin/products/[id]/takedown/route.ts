@@ -29,7 +29,7 @@ async function verifyAdmin(req: NextRequest) {
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const adminUser = await verifyAdmin(req);
@@ -42,7 +42,7 @@ export async function PATCH(
 
     await dbConnect();
 
-    const productId = params.id;
+    const { id: productId } = await params;
 
     // Find and deactivate the product
     const product = await Product.findByIdAndUpdate(

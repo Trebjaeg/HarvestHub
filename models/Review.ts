@@ -5,6 +5,7 @@ export interface IReview extends Document {
   productId: mongoose.Types.ObjectId;
   orderId: mongoose.Types.ObjectId;
   buyerId: mongoose.Types.ObjectId;
+  buyerName: string;
   sellerId: mongoose.Types.ObjectId;
   rating: number; // 1-5
   title?: string;
@@ -16,6 +17,10 @@ export interface IReview extends Document {
     comment: string;
     respondedAt: Date;
   };
+  followUpReviews?: Array<{
+    comment: string;
+    createdAt: Date;
+  }>;
   status: 'active' | 'flagged' | 'removed';
   createdAt: Date;
   updatedAt: Date;
@@ -39,6 +44,10 @@ const ReviewSchema = new Schema<IReview>(
       ref: 'User',
       required: true,
       index: true,
+    },
+    buyerName: {
+      type: String,
+      required: true,
     },
     sellerId: {
       type: Schema.Types.ObjectId,
@@ -89,6 +98,20 @@ const ReviewSchema = new Schema<IReview>(
       },
       respondedAt: Date,
     },
+    followUpReviews: [
+      {
+        comment: {
+          type: String,
+          required: true,
+          trim: true,
+          maxlength: 500,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     status: {
       type: String,
       enum: ['active', 'flagged', 'removed'],

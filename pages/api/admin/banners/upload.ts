@@ -33,7 +33,7 @@ export default async function handler(
 
     // Parse form data
     const form = formidable({
-      maxFileSize: 5 * 1024 * 1024, // 5MB max
+      maxFileSize: 60 * 1024 * 1024, // 60MB server-side limit
       keepExtensions: true,
     });
 
@@ -52,11 +52,13 @@ export default async function handler(
       return res.status(400).json({ message: 'No image file provided' });
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(uploadedFile.mimetype || '')) {
+    // Validate file type (allow HEIC/HEIF by mimetype or extension)
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+    const lowerName = (uploadedFile.originalFilename || '').toLowerCase();
+    const looksLikeHeic = lowerName.endsWith('.heic') || lowerName.endsWith('.heif');
+    if (!(allowedTypes.includes(uploadedFile.mimetype || '') || looksLikeHeic)) {
       return res.status(400).json({
-        message: 'Invalid file type. Only JPG, PNG, and WebP are allowed.',
+        message: 'Invalid file type. Only JPG, PNG, WebP, and HEIC/HEIF are allowed.',
       });
     }
 

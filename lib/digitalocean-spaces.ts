@@ -10,7 +10,12 @@ const s3 = new AWS.S3({
   region: process.env.DO_SPACES_REGION || 'nyc3',
   // Required for DigitalOcean Spaces
   s3ForcePathStyle: false,
-  signatureVersion: 'v4'
+  signatureVersion: 'v4',
+  // Configure for large file uploads
+  httpOptions: {
+    timeout: 300000, // 5 minute timeout for large files
+    connectTimeout: 60000 // 1 minute connection timeout
+  }
 });
 
 const BUCKET_NAME = process.env.DO_SPACES_BUCKET || 'harvesthub-storage';
@@ -23,6 +28,21 @@ export const uploadToSpaces = async (
   folder: string = 'uploads'
 ): Promise<string> => {
   try {
+    // Validate inputs
+    if (!file || file.length === 0) {
+      throw new Error('File buffer is empty');
+    }
+
+    if (!fileName || fileName.trim() === '') {
+      throw new Error('File name is required');
+    }
+
+    // Validate environment variables
+    if (!process.env.DO_SPACES_KEY || !process.env.DO_SPACES_SECRET) {
+      console.error('Missing DigitalOcean Spaces credentials');
+      throw new Error('Storage configuration error. Please contact support.');
+    }
+
     const key = `${folder}/${fileName}`;
     
     const uploadParams = {
@@ -34,13 +54,32 @@ export const uploadToSpaces = async (
       CacheControl: 'max-age=31536000', // 1 year cache
     };
 
-    const result = await s3.upload(uploadParams).promise();
+    // Use multipart upload for files > 5MB (automatic by AWS SDK)
+    // This streams the file in chunks, avoiding memory issues
+    const result = await s3.upload(uploadParams, {
+      partSize: 10 * 1024 * 1024, // 10MB parts
+      queueSize: 4, // Upload 4 parts concurrently
+    }).promise();
     
     // Return CDN URL for better performance
     return `${CDN_URL}/${key}`;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error uploading to DigitalOcean Spaces:', error);
-    throw new Error('Failed to upload file to storage');
+    
+    // Provide more specific error messages
+    if (error.code === 'NetworkingError' || error.code === 'ECONNREFUSED') {
+      throw new Error('Unable to connect to storage service. Please try again later.');
+    } else if (error.code === 'InvalidAccessKeyId') {
+      throw new Error('Storage authentication failed. Please contact support.');
+    } else if (error.code === 'NoSuchBucket') {
+      throw new Error('Storage bucket not found. Please contact support.');
+    } else if (error.message?.includes('File buffer is empty')) {
+      throw new Error('File is empty or corrupted. Please try uploading again.');
+    } else if (error.message?.includes('configuration error')) {
+      throw error; // Re-throw configuration errors as-is
+    }
+    
+    throw new Error('Failed to upload file to storage. Please try again.');
   }
 };
 

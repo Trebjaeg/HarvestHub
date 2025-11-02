@@ -9,7 +9,7 @@ import {
   ShoppingCart,
   BarChart3,
   Star,
-  MessageSquare,
+  MessageCircle,
   HelpCircle,
   User,
   Home,
@@ -72,8 +72,8 @@ const menuItems = [
     href: "/reviews",
   },
   {
-    icon: MessageSquare,
-    label: "Message",
+    icon: MessageCircle,
+    label: "Messages",
     href: "/message",
   },
 ];

@@ -427,7 +427,7 @@ function BuyerProfile() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,.heic,.heif"
                 onChange={handleImageUpload}
                 className="hidden"
               />
@@ -752,26 +752,17 @@ function BuyerProfile() {
                         </div>
                       </div>
 
-                      {review.status === 'active' && (
+                      {review.status === 'active' && review.productId && (
                         <div className="flex gap-2 justify-end">
-                          <Button
-                            onClick={() => handleEditReview(review)}
-                            variant="outline"
-                            size="sm"
-                            className="text-[#4A7C59] border-[#4A7C59] hover:bg-[#4A7C59]/10"
-                          >
-                            <Pencil className="w-4 h-4 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            onClick={() => handleDeleteReview(review._id)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 border-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Delete
-                          </Button>
+                          <Link href={`/product/${review.productId}`}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-[#4A7C59] border-[#4A7C59] hover:bg-[#4A7C59]/10"
+                            >
+                              View Product & Add Follow-up
+                            </Button>
+                          </Link>
                         </div>
                       )}
                     </div>

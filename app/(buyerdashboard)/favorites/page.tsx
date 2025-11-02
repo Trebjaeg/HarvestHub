@@ -155,8 +155,11 @@ export default function FavoritesPage() {
     try {
       const response = await fetch('/api/cart/add', {
         method: 'POST',
+        cache: 'no-store',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
         },
         body: JSON.stringify({ productId, quantity: 1 })
       });
@@ -169,6 +172,20 @@ export default function FavoritesPage() {
       
       if (result.success) {
         alert('Product added to cart successfully!');
+        
+        // Broadcast cart change to other tabs
+        try {
+          const channel = new BroadcastChannel('cart-sync');
+          channel.postMessage({ type: 'cart-changed' });
+          channel.close();
+        } catch (e) {
+          // BroadcastChannel not supported, skip
+        }
+        
+        // Dispatch custom event for cart update
+        window.dispatchEvent(new CustomEvent('cart-updated', { 
+          detail: { count: result.count } 
+        }));
       } else {
         throw new Error(result.error || 'Failed to add to cart');
       }

@@ -248,7 +248,7 @@ const AdminProfilePage = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,.heic,.heif"
                 onChange={handleImageUpload}
                 className="hidden"
               />

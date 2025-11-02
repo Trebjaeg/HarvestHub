@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     const farmers = await User.find({
       role: { $in: ['farmer', 'seller'] }
     })
-      .select('firstName lastName name email role status isActive createdAt sellerStatus')
+      .select('firstName lastName name email role status createdAt sellerStatus')
       .sort({ createdAt: -1 })
       .lean();
 
