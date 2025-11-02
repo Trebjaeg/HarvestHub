@@ -195,10 +195,20 @@ export default function CheckoutPage() {
     try {
       // Get seller location (assume first item's seller for now)
       const firstSeller = checkoutData?.items[0]?.sellerId;
-      if (!firstSeller) return;
+      if (!firstSeller) {
+        throw new Error('No seller found');
+      }
+
+      // Add timeout for seller fetch
+      const sellerController = new AbortController();
+      const sellerTimeout = setTimeout(() => sellerController.abort(), 5000);
 
       // Fetch seller details to get pickup location
-      const sellerResponse = await fetch(`/api/sellers/${firstSeller}`);
+      const sellerResponse = await fetch(`/api/sellers/${firstSeller}`, {
+        signal: sellerController.signal
+      });
+      clearTimeout(sellerTimeout);
+
       if (!sellerResponse.ok) {
         throw new Error('Failed to fetch seller details');
       }
@@ -227,11 +237,18 @@ export default function CheckoutPage() {
         serviceType: 'MOTORCYCLE'
       };
 
+      // Add timeout for quotation request
+      const quotationController = new AbortController();
+      const quotationTimeout = setTimeout(() => quotationController.abort(), 10000); // 10 seconds
+
       const response = await fetch('/api/lalamove/quotation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(quotationPayload)
+        body: JSON.stringify(quotationPayload),
+        signal: quotationController.signal
       });
+
+      clearTimeout(quotationTimeout);
 
       if (!response.ok) {
         const error = await response.json();
@@ -251,13 +268,25 @@ export default function CheckoutPage() {
       }
     } catch (error) {
       console.error('Error fetching quotation:', error);
-      setQuotationError(error instanceof Error ? error.message : 'Failed to fetch quotation');
-      // Fallback to zero shipping fee on error
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch quotation';
+      setQuotationError(errorMessage);
+      
+      // FALLBACK: Use fixed delivery fee when Lalamove fails
+      const FALLBACK_DELIVERY_FEE = 50; // ₱50 fixed delivery fee
+      const fallbackQuotation: LalamoveQuotation = {
+        quotationId: `fallback-${Date.now()}`,
+        deliveryFee: FALLBACK_DELIVERY_FEE,
+        currency: 'PHP',
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      };
+      
+      setQuotation(fallbackQuotation);
+      
       if (checkoutData) {
         setCheckoutData({
           ...checkoutData,
-          shippingFee: 0,
-          total: checkoutData.subtotal
+          shippingFee: FALLBACK_DELIVERY_FEE,
+          total: checkoutData.subtotal + FALLBACK_DELIVERY_FEE
         });
       }
     } finally {

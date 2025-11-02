@@ -22,14 +22,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const clientIP = getClientIP(req);
   
-  // Rate limiting for production
-  if (!rateLimiter.check(`login:${clientIP}`, RATE_LIMITS.login)) {
-    return res.status(429).json({ 
-      message: 'Too many login attempts. Please try again later.',
-      retryAfter: Math.ceil(RATE_LIMITS.login.windowMs / 1000)
-    });
-  }
-
   let { email, password } = req.body;
 
   // Input validation and sanitization
@@ -38,6 +30,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   email = sanitizeInput(email).toLowerCase();
+  
+  // Rate limiting per email+IP combination (not just IP)
+  // This prevents one account's failed attempts from blocking other accounts on the same device
+  const rateLimitKey = `login:${email}:${clientIP}`;
+  if (!rateLimiter.check(rateLimitKey, RATE_LIMITS.login)) {
+    return res.status(429).json({ 
+      message: 'Too many login attempts for this account. Please try again later.',
+      retryAfter: Math.ceil(RATE_LIMITS.login.windowMs / 1000)
+    });
+  }
   
   if (password.length < 8 || password.length > 128) {
     return res.status(400).json({ message: 'Invalid credentials' });

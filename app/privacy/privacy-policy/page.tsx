@@ -226,13 +226,13 @@ export default function PrivacyPolicy() {
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <ul className="list-disc list-inside space-y-2 ml-4">
                     <li>
-                      <a href="mailto:privacy@harvesthub.com" className="text-green-600 hover:text-green-800 underline">
-                        privacy@harvesthub.com
+                      <a href="mailto:admin@harvesthubph.app" className="text-green-600 hover:text-green-800 underline">
+                        admin@harvesthubph.app
                       </a>
                     </li>
                     <li>
-                      <a href="mailto:support@harvesthub.com" className="text-green-600 hover:text-green-800 underline">
-                        support@harvesthub.com
+                      <a href="mailto:support@harvesthubph.app" className="text-green-600 hover:text-green-800 underline">
+                        support@harvesthubph.app
                       </a>
                     </li>
                   </ul>

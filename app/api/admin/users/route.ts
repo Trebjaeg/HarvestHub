@@ -106,6 +106,7 @@ export async function POST(req: NextRequest) {
         break;
 
       case 'activate':
+        // Clear all login attempt tracking when reactivating
         updatedUser = await User.findByIdAndUpdate(
           userId, 
           { 
@@ -113,7 +114,11 @@ export async function POST(req: NextRequest) {
             suspendReason: null,
             suspendedAt: null,
             suspendedBy: null,
-            suspensionExpiresAt: null
+            suspensionExpiresAt: null,
+            // Clear login attempt tracking
+            failedLoginAttempts: 0,
+            accountLocked: false,
+            lockUntil: null
           }, 
           { new: true }
         ).select('-password');
