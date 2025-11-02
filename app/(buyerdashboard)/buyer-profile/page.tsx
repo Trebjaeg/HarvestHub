@@ -233,42 +233,28 @@ function BuyerProfile() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image size should be less than 5MB');
-      return;
-    }
-
     setUploadingImage(true);
 
     try {
-      const formData = new FormData();
-      formData.append('profileImage', file);
-
-      // Don't try to get token from localStorage - rely on HttpOnly cookies
-      const response = await fetch('/api/buyer/upload-profile-image', {
-        method: 'POST',
-        credentials: 'include', // This ensures cookies are sent
-        body: formData
+      const { uploadProfileImage } = await import('@/lib/image-upload');
+      
+      const result = await uploadProfileImage(file, (progress) => {
+        console.log('Upload progress:', progress);
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setProfile(prev => prev ? { ...prev, profileImage: data.imageUrl } : null);
+      if (result.success && result.imageUrl) {
+        setProfile(prev => prev ? { ...prev, profileImage: result.imageUrl! } : null);
       } else {
-        alert('Failed to upload image');
+        alert(result.error || 'Failed to upload image');
       }
     } catch (error) {
       console.error('Error uploading image:', error);
-      alert('Error uploading image');
+      alert(error instanceof Error ? error.message : 'Error uploading image');
     } finally {
       setUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 

@@ -8,6 +8,14 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: true,
+
+  // Support for large file uploads (50MB)
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
+  },
+
   images: {
     remotePatterns: [
       {
@@ -18,6 +26,16 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'barn.sgp1.digitaloceanspaces.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'harvesthub-storage.nyc3.cdn.digitaloceanspaces.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'harvesthub-storage.nyc3.digitaloceanspaces.com',
         pathname: '/**',
       },
     ],
@@ -33,6 +51,7 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react', 'date-fns', '@radix-ui/react-dialog', '@radix-ui/react-select'],
     optimizeCss: true,
   },
+
   // Optimize webpack bundle
   webpack: (config, { isServer }) => {
     if (!isServer) {

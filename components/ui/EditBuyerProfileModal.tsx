@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useRef, useEffect } from 'react';
-import { Upload, Camera, User } from 'lucide-react';
+import { Upload, Camera, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Image from 'next/image';
+import { uploadProfileImage, UploadProgress } from '@/lib/image-upload';
 
 interface BuyerProfileData {
   _id: string;
@@ -38,11 +39,11 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
   });
 
   const [previewImage, setPreviewImage] = useState<string | null>(profile?.profileImage || null);
-  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress>({ progress: 0, status: 'idle' });
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<BuyerProfileData>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset form data and errors when profile changes or modal opens
   useEffect(() => {
     if (profile) {
       setFormData({
@@ -61,28 +62,25 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
 
   const handleInputChange = (field: keyof BuyerProfileData, value: string) => {
     let filteredValue = value;
-    
-    // Special handling for phone number - only allow digits and limit to 11
+
     if (field === 'phone') {
       filteredValue = value.replace(/\D/g, '');
       if (filteredValue.length > 11) {
-        return; // Don't update if more than 11 digits
+        return;
       }
     }
-    
-    // Special handling for names - only allow letters and spaces
+
     if (field === 'firstName' || field === 'lastName') {
       if (!/^[a-zA-Z\s]*$/.test(value)) {
-        return; // Don't update if contains invalid characters
+        return;
       }
     }
-    
+
     setFormData(prev => ({
       ...prev,
       [field]: filteredValue
     }));
 
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -94,7 +92,6 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
   const validateForm = () => {
     const newErrors: Partial<BuyerProfileData> = {};
 
-    // Required fields validation
     if (!formData.firstName.trim()) {
       newErrors.firstName = 'First name is required';
     } else if (!/^[a-zA-Z\s]+$/.test(formData.firstName.trim())) {
@@ -117,7 +114,6 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
       newErrors.email = 'Please enter a valid email address';
     }
 
-    // Phone number validation - must be exactly 11 digits
     if (formData.phone && !/^\d{11}$/.test(formData.phone.replace(/\s/g, ''))) {
       newErrors.phone = 'Phone number must be exactly 11 digits';
     }
@@ -130,41 +126,71 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image size should be less than 5MB');
-      return;
-    }
-
-    setUploading(true);
+    setUploadError(null);
+    setUploadProgress({ progress: 0, status: 'idle' });
 
     try {
-      const formDataUpload = new FormData();
-      formDataUpload.append('profileImage', file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
 
-      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
-      const response = await fetch('/api/buyer/upload-profile-image', {
-        method: 'POST',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        body: formDataUpload
+      const result = await uploadProfileImage(file, (progress) => {
+        setUploadProgress(progress);
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setPreviewImage(data.imageUrl);
-        setFormData(prev => ({ ...prev, profileImage: data.imageUrl }));
+      if (result.success && result.imageUrl) {
+        setFormData(prev => ({ ...prev, profileImage: result.imageUrl! }));
+        setPreviewImage(result.imageUrl);
+        setUploadError(null);
+
+        setTimeout(() => {
+          setUploadProgress({ progress: 0, status: 'idle' });
+        }, 2000);
       } else {
-        alert('Failed to upload image');
+        setUploadError(result.error || 'Failed to upload image');
+        setUploadProgress({ progress: 0, status: 'error', error: result.error });
+        setPreviewImage(profile?.profileImage || null);
       }
     } catch (error) {
       console.error('Error uploading image:', error);
-      alert('Error uploading image');
-    } finally {
-      setUploading(false);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload image';
+      setUploadError(errorMessage);
+      setUploadProgress({ progress: 0, status: 'error', error: errorMessage });
+      setPreviewImage(profile?.profileImage || null);
+    }
+
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  const getUploadStatusMessage = () => {
+    switch (uploadProgress.status) {
+      case 'converting':
+        return 'Converting image format...';
+      case 'compressing':
+        return 'Compressing image...';
+      case 'uploading':
+        return 'Uploading...';
+      case 'success':
+        return 'Upload successful!';
+      case 'error':
+        return uploadProgress.error || 'Upload failed';
+      default:
+        return '';
+    }
+  };
+
+  const getUploadStatusColor = () => {
+    switch (uploadProgress.status) {
+      case 'success':
+        return 'text-green-600';
+      case 'error':
+        return 'text-red-600';
+      default:
+        return 'text-blue-600';
     }
   };
 
@@ -199,7 +225,6 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
   };
 
   const handleCancel = () => {
-    // Reset form to original profile data
     setFormData({
       _id: profile?._id || '',
       firstName: profile?.firstName || '',
@@ -224,10 +249,8 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
         </DialogHeader>
 
         <div className="space-y-6 py-6">
-          {/* Profile Image Section */}
           <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm transform transition-all duration-500 ease-in-out opacity-0 animate-fade-in-up" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
             <div className="flex items-center gap-6">
-              {/* Profile Avatar */}
               <div className="relative group">
                 <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 transition-all duration-300 ease-in-out group-hover:border-green-300 flex items-center justify-center">
                   {previewImage ? (
@@ -248,13 +271,12 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
                   )}
                 </div>
                 
-                {/* Upload Button */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="absolute bottom-0 right-0 w-8 h-8 bg-green-600 hover:bg-green-700 rounded-full flex items-center justify-center text-white shadow-lg disabled:opacity-50"
+                  disabled={uploadProgress.status === 'uploading' || uploadProgress.status === 'compressing' || uploadProgress.status === 'converting'}
+                  className="absolute bottom-0 right-0 w-8 h-8 bg-green-600 hover:bg-green-700 rounded-full flex items-center justify-center text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {uploading ? (
+                  {uploadProgress.status === 'uploading' || uploadProgress.status === 'compressing' || uploadProgress.status === 'converting' ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
                     <Camera className="w-4 h-4" />
@@ -264,35 +286,70 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
+                  capture="environment"
                   onChange={handleImageUpload}
                   className="hidden"
                 />
               </div>
               
-              {/* Profile Info */}
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   Profile Photo
                 </h3>
                 <p className="text-gray-600 text-sm mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  Update your profile photo. Recommended size: 400x400px
+                  Upload JPEG, PNG, WEBP, or HEIC (max 50 MB)
                 </p>
+
+                {uploadProgress.status !== 'idle' && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-sm font-medium ${getUploadStatusColor()}`} style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {getUploadStatusMessage()}
+                      </span>
+                      {uploadProgress.status === 'success' && (
+                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                      )}
+                      {uploadProgress.status === 'error' && (
+                        <AlertCircle className="w-4 h-4 text-red-600" />
+                      )}
+                    </div>
+                    {uploadProgress.status !== 'error' && uploadProgress.status !== 'success' && (
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress.progress}%` }}
+                        ></div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {uploadError && (
+                  <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      {uploadError}
+                    </p>
+                  </div>
+                )}
+
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
+                  disabled={uploadProgress.status === 'uploading' || uploadProgress.status === 'compressing' || uploadProgress.status === 'converting'}
                   className="transition-all duration-200 ease-in-out transform hover:scale-105"
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {uploading ? 'Uploading...' : 'Upload New Photo'}
+                  {uploadProgress.status === 'uploading' || uploadProgress.status === 'compressing' || uploadProgress.status === 'converting' 
+                    ? 'Uploading...' 
+                    : 'Upload New Photo'}
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Basic Information */}
           <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm transform transition-all duration-500 ease-in-out opacity-0 animate-fade-in-up" style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}>
             <h3 className="text-lg font-semibold mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
               Basic Information
@@ -400,7 +457,6 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 transform transition-all duration-500 ease-in-out opacity-0 animate-fade-in-up" style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}>
           <Button 
             variant="outline" 

@@ -7,6 +7,7 @@ import Link from 'next/link';
 interface Testimonial {
   _id: string;
   productId: string;
+  buyerId: string; // Added for profile linking
   rating: number;
   title?: string;
   comment: string;
@@ -34,6 +35,22 @@ const BuyerTestimonials: React.FC<BuyerTestimonialsProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+
+  // Default avatar SVG component
+  const DefaultAvatar = () => (
+    <svg
+      viewBox="0 0 100 100"
+      className="w-full h-full"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle cx="50" cy="50" r="50" fill="#E5E7EB" />
+      <circle cx="50" cy="38" r="18" fill="#9CA3AF" />
+      <path
+        d="M 20 85 Q 20 60, 50 60 Q 80 60, 80 85 Z"
+        fill="#9CA3AF"
+      />
+    </svg>
+  );
 
   // Fetch testimonials from API
   const fetchTestimonials = useCallback(async () => {
@@ -106,15 +123,6 @@ const BuyerTestimonials: React.FC<BuyerTestimonialsProps> = ({
         behavior: 'smooth'
       });
     }
-  };
-
-  // Auto-generate initials from full name
-  const getInitials = (fullName: string): string => {
-    const names = fullName.trim().split(' ');
-    if (names.length >= 2) {
-      return (names[0][0] + names[names.length - 1][0]).toUpperCase();
-    }
-    return fullName.substring(0, 2).toUpperCase();
   };
 
   // Render star rating
@@ -292,35 +300,42 @@ const BuyerTestimonials: React.FC<BuyerTestimonialsProps> = ({
                 style={{ width: '233px', height: '276px' }}
               >
                 <div className="flex flex-col items-center p-6 h-full">
-                  {/* Avatar - 60px circular */}
+                  {/* Avatar - 60px circular - Not clickable */}
                   <div className="relative w-[60px] h-[60px] mb-3 flex-shrink-0">
-                    <div className="w-full h-full rounded-full overflow-hidden bg-gray-200 border-2 border-gray-100">
+                    <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200">
                       {testimonial.avatarUrl ? (
                         <Image
                           src={testimonial.avatarUrl}
-                          alt={`${testimonial.fullName}'s avatar`}
+                          alt={`Profile photo of ${testimonial.fullName}`}
                           fill
-                          className="object-cover"
+                          className="object-cover rounded-full"
                           sizes="60px"
                           loading="lazy"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
                             const parent = target.parentElement;
                             if (parent) {
-                              parent.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-400 to-green-600 text-white text-xl font-bold">${getInitials(testimonial.fullName)}</div>`;
+                              target.style.display = 'none';
+                              const defaultAvatarDiv = document.createElement('div');
+                              defaultAvatarDiv.className = 'w-full h-full';
+                              defaultAvatarDiv.innerHTML = `
+                                <svg viewBox="0 0 100 100" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                                  <circle cx="50" cy="50" r="50" fill="#E5E7EB" />
+                                  <circle cx="50" cy="38" r="18" fill="#9CA3AF" />
+                                  <path d="M 20 85 Q 20 60, 50 60 Q 80 60, 80 85 Z" fill="#9CA3AF" />
+                                </svg>
+                              `;
+                              parent.appendChild(defaultAvatarDiv);
                             }
                           }}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-400 to-green-600 text-white text-xl font-bold">
-                          {getInitials(testimonial.fullName)}
-                        </div>
+                        <DefaultAvatar />
                       )}
                     </div>
                   </div>
 
-                  {/* Full Name - Bold */}
+                  {/* Full Name - Bold - Not clickable */}
                   <div className="flex items-center gap-1.5 mb-1 flex-shrink-0">
                     <h3
                       className="font-bold text-base leading-tight text-center"

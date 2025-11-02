@@ -3,11 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-<<<<<<< HEAD
-=======
 import LoadingDots from '@/components/ui/LoadingDots';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
->>>>>>> origin/IOS28
 import { 
   ArrowLeft, 
   Package, 
@@ -119,8 +116,6 @@ export default function OrderDetailsPage() {
   const [cancelling, setCancelling] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-<<<<<<< HEAD
-=======
   // Cancel confirmation dialog state
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   
@@ -131,7 +126,6 @@ export default function OrderDetailsPage() {
     message: string;
   }>({ open: false, success: false, message: '' });
 
->>>>>>> origin/IOS28
   useEffect(() => {
     if (orderId) {
       fetchOrderDetails();
@@ -184,16 +178,12 @@ export default function OrderDetailsPage() {
   };
 
   const handleCancelOrder = async () => {
-<<<<<<< HEAD
-    if (!order || !confirm('Are you sure you want to cancel this order?')) return;
-=======
     if (!order) return;
     setShowCancelDialog(true);
   };
 
   const confirmCancelOrder = async () => {
     if (!order) return;
->>>>>>> origin/IOS28
 
     try {
       setCancelling(true);
@@ -205,16 +195,6 @@ export default function OrderDetailsPage() {
         }
       });
 
-<<<<<<< HEAD
-      if (response.ok) {
-        await fetchOrderDetails(false); // Refresh order details
-      } else {
-        const errorData = await response.json();
-        alert(errorData.message || 'Failed to cancel order');
-      }
-    } catch (error) {
-      alert('Error cancelling order. Please try again.');
-=======
       const data = await response.json();
 
       if (response.ok) {
@@ -247,7 +227,6 @@ export default function OrderDetailsPage() {
         success: false,
         message: 'Error cancelling order. Please check your connection and try again.'
       });
->>>>>>> origin/IOS28
     } finally {
       setCancelling(false);
     }
@@ -289,14 +268,6 @@ export default function OrderDetailsPage() {
 
   if (loading) {
     return (
-<<<<<<< HEAD
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Loading order details...</p>
-          </div>
-=======
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="flex justify-center mb-4">
@@ -308,7 +279,6 @@ export default function OrderDetailsPage() {
           <p className="text-gray-500 font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>
             Please wait
           </p>
->>>>>>> origin/IOS28
         </div>
       </div>
     );
@@ -324,11 +294,7 @@ export default function OrderDetailsPage() {
               {error || 'Order not found'}
             </h2>
             <p className="text-gray-600 mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
-<<<<<<< HEAD
-              The order you&apos;re looking for doesn&apos;t exist or you don&apos;t have permission to view it.
-=======
               The order you're looking for doesn't exist or you don't have permission to view it.
->>>>>>> origin/IOS28
             </p>
             <div className="flex gap-4 justify-center">
               <Link
@@ -747,8 +713,6 @@ export default function OrderDetailsPage() {
           </div>
         )}
       </div>
-<<<<<<< HEAD
-=======
 
       {/* Cancel Order Confirmation Dialog */}
       <Dialog open={showCancelDialog} onOpenChange={(open) => !cancelling && setShowCancelDialog(open)}>
@@ -828,7 +792,6 @@ export default function OrderDetailsPage() {
           </div>
         </DialogContent>
       </Dialog>
->>>>>>> origin/IOS28
     </div>
   );
 }

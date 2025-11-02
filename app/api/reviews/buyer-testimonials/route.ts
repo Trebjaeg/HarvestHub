@@ -57,6 +57,7 @@ export async function GET(request: NextRequest) {
         $project: {
           _id: 1,
           productId: 1,
+          buyerId: 1, // Include buyer ID for profile linking
           rating: 1,
           title: 1,
           comment: 1,
@@ -70,13 +71,33 @@ export async function GET(request: NextRequest) {
             ] 
           },
           fullName: { 
-            $concat: [
-              { $ifNull: ['$buyerProfile.firstName', ''] }, 
-              ' ', 
-              { $ifNull: ['$buyerProfile.lastName', ''] }
+            $cond: {
+              if: { 
+                $and: [
+                  { $ne: ['$buyerProfile.firstName', null] },
+                  { $ne: ['$buyerProfile.firstName', ''] }
+                ]
+              },
+              then: {
+                $trim: {
+                  input: {
+                    $concat: [
+                      { $ifNull: ['$buyerProfile.firstName', ''] }, 
+                      ' ', 
+                      { $ifNull: ['$buyerProfile.lastName', ''] }
+                    ]
+                  }
+                }
+              },
+              else: { $ifNull: ['$buyerProfile.name', 'Anonymous'] }
+            }
+          },
+          city: { 
+            $ifNull: [
+              { $arrayElemAt: ['$buyerProfile.addresses.city', 0] },
+              'Philippines'
             ] 
           },
-          city: { $ifNull: ['$buyerProfile.city', 'Philippines'] },
           // Product info
           productName: { $ifNull: ['$productInfo.name', 'Product'] },
           productImage: { $ifNull: ['$productInfo.image', null] }
