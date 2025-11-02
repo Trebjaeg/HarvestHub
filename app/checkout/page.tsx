@@ -193,17 +193,14 @@ export default function CheckoutPage() {
     setQuotationError(null);
 
     try {
-      // Get seller location (assume first item's seller for now)
       const firstSeller = checkoutData?.items[0]?.sellerId;
       if (!firstSeller) {
         throw new Error('No seller found');
       }
 
-      // Add timeout for seller fetch
       const sellerController = new AbortController();
       const sellerTimeout = setTimeout(() => sellerController.abort(), 5000);
 
-      // Fetch seller details to get pickup location
       const sellerResponse = await fetch(`/api/sellers/${firstSeller}`, {
         signal: sellerController.signal
       });
@@ -214,7 +211,6 @@ export default function CheckoutPage() {
       }
       const sellerData = await sellerResponse.json();
 
-      // Build quotation request
       const quotationPayload = {
         pickupLocation: {
           lat: sellerData.latitude?.toString() || '14.5995',
@@ -237,9 +233,8 @@ export default function CheckoutPage() {
         serviceType: 'MOTORCYCLE'
       };
 
-      // Add timeout for quotation request
       const quotationController = new AbortController();
-      const quotationTimeout = setTimeout(() => quotationController.abort(), 10000); // 10 seconds
+      const quotationTimeout = setTimeout(() => quotationController.abort(), 15000);
 
       const response = await fetch('/api/lalamove/quotation', {
         method: 'POST',
@@ -252,13 +247,12 @@ export default function CheckoutPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to get quotation');
+        throw new Error(error.message || error.error || 'Failed to get quotation from Lalamove');
       }
 
       const data = await response.json();
       setQuotation(data);
 
-      // Update checkout data with dynamic delivery fee
       if (checkoutData) {
         setCheckoutData({
           ...checkoutData,
@@ -267,26 +261,15 @@ export default function CheckoutPage() {
         });
       }
     } catch (error) {
-      console.error('Error fetching quotation:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch quotation';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to calculate delivery fee';
       setQuotationError(errorMessage);
       
-      // FALLBACK: Use fixed delivery fee when Lalamove fails
-      const FALLBACK_DELIVERY_FEE = 50; // ₱50 fixed delivery fee
-      const fallbackQuotation: LalamoveQuotation = {
-        quotationId: `fallback-${Date.now()}`,
-        deliveryFee: FALLBACK_DELIVERY_FEE,
-        currency: 'PHP',
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      };
-      
-      setQuotation(fallbackQuotation);
-      
+      // Show error to user - no fallback
       if (checkoutData) {
         setCheckoutData({
           ...checkoutData,
-          shippingFee: FALLBACK_DELIVERY_FEE,
-          total: checkoutData.subtotal + FALLBACK_DELIVERY_FEE
+          shippingFee: 0,
+          total: checkoutData.subtotal
         });
       }
     } finally {
@@ -397,7 +380,7 @@ export default function CheckoutPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 md:py-8">
+      <div className="container mx-auto px-4 py-6 md:py-8"></div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Shipping & Payment */}
           <div className="lg:col-span-2 space-y-6">

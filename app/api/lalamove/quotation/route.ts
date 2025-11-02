@@ -42,8 +42,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create quotation via Lalamove
-    const quotation = await createQuotation(
+    // Create quotation via Lalamove with timeout
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Lalamove API timeout after 10 seconds')), 10000);
+    });
+
+    const quotationPromise = createQuotation(
       pickupLocation,
       pickupContact,
       dropoffLocation,
@@ -51,6 +55,8 @@ export async function POST(request: NextRequest) {
       serviceType,
       scheduleAt ? new Date(scheduleAt) : undefined
     );
+
+    const quotation = await Promise.race([quotationPromise, timeoutPromise]) as any;
 
     return NextResponse.json({
       success: true,
@@ -61,11 +67,10 @@ export async function POST(request: NextRequest) {
       distance: quotation.distance,
     });
   } catch (error: any) {
-    console.error('Error creating Lalamove quotation:', error);
     return NextResponse.json(
       { 
         error: 'Failed to get delivery quotation',
-        message: error.message 
+        message: error.message || 'Lalamove service unavailable'
       },
       { status: 500 }
     );
