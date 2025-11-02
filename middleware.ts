@@ -71,6 +71,12 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // Skip authentication for webhook endpoints (external services)
+  if (pathname.startsWith('/api/webhooks/')) {
+    console.log('🔔 Webhook endpoint accessed, skipping auth:', pathname);
+    return response;
+  }
+
   // Check if route is public (doesn't need auth)
   const isPublic = isPublicPath(pathname);
   
