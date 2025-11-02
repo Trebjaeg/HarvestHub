@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import LoadingDots from '@/components/ui/LoadingDots';
 import { 
   Search, 
@@ -229,23 +230,59 @@ const buyerSections: HelpSection[] = [
 const hotQuestions: HotQuestion[] = [
   {
     question: "How do I track my order?",
-    answer: "Go to 'My Orders' in your account dashboard. You'll see real-time tracking information and receive SMS/email updates on your order status."
+    answer: "Go to 'My Orders' in your buyer dashboard to see real-time tracking information. Each order shows its current status (Pending, Confirmed, Preparing, Shipped, Delivered, or Completed). You'll receive automatic notifications through the app when your order status changes. Click on any order to view detailed tracking steps, estimated delivery date, and seller information."
   },
   {
-    question: "How can I cancel my order after payment?",
-    answer: "You can cancel orders within 1 hour of placement if they haven't been processed yet. Go to 'My Orders' and click 'Cancel Order' if available."
+    question: "Can I cancel my order after placing it?",
+    answer: "Yes, you can cancel orders that haven't been processed by the seller yet. Go to 'My Orders', find the order you want to cancel, and click the 'Cancel Order' button if it's available. Orders can typically be cancelled within the first hour or before the seller marks them as 'Processing'. Once the order is cancelled, you won't be charged since payment is collected upon delivery (COD)."
   },
   {
-    question: "Why did my payment fail?",
-    answer: "Payment failures can occur due to insufficient funds, expired cards, network issues, or bank restrictions. Please check your payment details and try again."
+    question: "What payment method is accepted?",
+    answer: "HarvestHub currently accepts Cash on Delivery (COD) only. You pay for your order in cash when it's delivered to your address. Make sure to have the exact amount ready or sufficient cash for change. Your order total will be shown during checkout and in your order confirmation."
   },
   {
-    question: "How can I request a refund?",
-    answer: "Go to 'My Orders', select the order, and click 'Request Refund'. Provide a reason and any supporting photos. Refunds are processed within 3-5 business days."
+    question: "How long does delivery take?",
+    answer: "Delivery times depend on your location and the seller's location. Orders are delivered through Lalamove, our trusted delivery partner. Typical delivery takes 1-3 days for nearby areas within the same city, and 3-6 days for farther locations. You can track your Lalamove rider in real-time once your order is shipped."
   },
   {
-    question: "What should I do if I received a damaged item?",
-    answer: "Take photos of the damaged item immediately and report it through 'My Orders' or contact support. We'll arrange a replacement or full refund."
+    question: "What should I do if my order arrives damaged?",
+    answer: "Inspect your order before accepting it from the Lalamove rider. If items arrive damaged or spoiled, you have the right to refuse the delivery. Take clear photos immediately and contact us through the 'My Orders' section by clicking 'Report Issue' or email admin@harvesthubph.app with your order number and photos. We'll work with the seller to resolve the issue."
+  },
+  {
+    question: "Do you offer refunds?",
+    answer: "HarvestHub does not process refunds. Since we use Cash on Delivery (COD), you only pay when you receive your order. Always inspect items before accepting delivery. If products are damaged, spoiled, or not as described, refuse the delivery and report the issue immediately. We'll coordinate with the seller for a replacement or resolution."
+  },
+  {
+    question: "How do I add or change my delivery address?",
+    answer: "Go to your Profile settings, select 'My Addresses', and click 'Add Address'. Fill in the complete address details including street, barangay, city, province, and postal code. You can save multiple addresses and set one as your default for faster checkout. Make sure your address is accurate and accessible for Lalamove delivery."
+  },
+  {
+    question: "How do I contact a seller about my order?",
+    answer: "You can message sellers directly through your order page. Go to 'My Orders', click on the specific order, and select 'Contact Seller'. You can ask questions about product details, delivery schedules, or order concerns. Sellers typically respond within 24 hours. For urgent matters, you can also call the seller if they've provided a contact number."
+  },
+  {
+    question: "What is the return and exchange policy?",
+    answer: "Since HarvestHub uses Cash on Delivery, you should inspect all items before paying the Lalamove rider. Refuse delivery if items are damaged, spoiled, or not as described. Fresh produce quality is guaranteed upon delivery - do not accept items that don't meet quality standards. For processed goods, check packaging and product condition before payment. Once you accept and pay for delivery, sales are final."
+  },
+  {
+    question: "How do I leave a product review?",
+    answer: "After your order is delivered and marked as completed, go to 'My Orders', find the product, and click 'Write Review'. Rate the product from 1-5 stars and share your experience. You can upload up to 5 photos. Reviews help other buyers make informed decisions and help sellers improve their products. You can add follow up review within."
+  },
+  {
+    question: "Why can't I checkout my cart?",
+    answer: "Checkout issues usually occur when: 1) Items are out of stock (remove them from cart), 2) You haven't selected a delivery address (add one in your profile), 3) Minimum order value isn't met (some sellers have minimum purchase requirements), or 4) Items are from sellers who don't deliver to your area via Lalamove. Check these factors and try again. If the problem persists, clear your browser cache or try a different browser."
+  },
+  {
+    question: "How do I use discount codes or vouchers?",
+    answer: "During checkout, look for the 'Apply Voucher' or 'Discount Code' field. Enter your code and click 'Apply'. The discount will be calculated and shown in your order summary. The discounted amount will be reflected in your total COD payment. Vouchers may have conditions like minimum purchase amounts, specific product categories, or expiration dates. Check your 'My Vouchers' section to see all available vouchers and their terms."
+  },
+  {
+    question: "What does each order status mean?",
+    answer: "Order statuses guide you through the process: 'Confirmed' – Your order has been placed and automatically confirmed; 'Preparing' – The seller is packing your items; 'Shipped' – The Lalamove rider has picked up your order and is on the way; 'Delivered' – The package has reached your address and payment has been collected; 'Completed' – The order is finalized after a successful COD delivery; 'Cancelled' – The order was cancelled by either the buyer or the seller."
+  },
+  {
+    question: "How does Lalamove delivery work?",
+    answer: "Once the seller ships your order, a Lalamove rider will be assigned to pick it up and deliver to your address. You'll receive notifications with the rider's details. The rider will contact you when nearby. Prepare the exact cash amount for COD payment. Inspect your items before paying and accepting delivery."
   }
 ];
 
@@ -413,7 +450,7 @@ const sellerSections: HelpSection[] = [
     description: 'Get in touch with our seller support team for personalized help',
     topics: [
       'Live chat with Kali (AI Assistant)',
-      'Seller support email',
+      'Contact support',
       'Priority support for sellers',
       'Support ticket system',
       'Escalation procedures',
@@ -424,7 +461,7 @@ const sellerSections: HelpSection[] = [
     faqs: [
       {
         question: 'How can I contact seller support?',
-        answer: 'You can reach our seller support team through live chat with Kali or email us at seller-support@harvesthubph.app. Priority support within 12 hours.'
+        answer: 'You can reach our seller support team through live chat with Kali or email us at admin@harvesthubph.app. Priority support within 12 hours.'
       },
       {
         question: 'Do sellers get priority support?',
@@ -440,7 +477,6 @@ export default function HelpCenterPage() {
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
   const [selectedHotQuestion, setSelectedHotQuestion] = useState<number | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
   const [isSectionLoading, setIsSectionLoading] = useState(false);
   const [isNavigatingProfile, setIsNavigatingProfile] = useState(false);
 
@@ -449,12 +485,6 @@ export default function HelpCenterPage() {
   // Simulate search loading
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    if (value.trim()) {
-      setIsSearching(true);
-      setTimeout(() => setIsSearching(false), 500);
-    } else {
-      setIsSearching(false);
-    }
   };
 
   // Simulate section loading
@@ -535,8 +565,19 @@ export default function HelpCenterPage() {
       </div>
 
       {/* Header */}
-      <div className="text-white py-16" style={{ background: 'linear-gradient(135deg, #008236 0%, #00a644 100%)' }}>
-        <div className="container mx-auto px-4">
+      <div 
+        className="text-white py-16 relative overflow-hidden"
+        style={{
+          backgroundImage: 'url(/images/KALI/unnamed.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        {/* Optional overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/30"></div>
+        
+        <div className="container mx-auto px-4 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-4xl md:text-5xl font-bold mb-8" style={{ fontFamily: 'Poppins, sans-serif' }}>
               Hi, how can we help?
@@ -544,27 +585,31 @@ export default function HelpCenterPage() {
             
             {/* Search Bar */}
             <div className="relative max-w-2xl mx-auto mb-8">
-              <div className="flex rounded-lg overflow-hidden shadow-lg">
+              <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search for help topics, guides, or questions..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="flex-1 px-4 py-3 text-gray-600 text-base border-0 focus:outline-none focus:ring-0 bg-white"
-                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                  className="w-full px-6 py-4 pr-16 text-gray-800 rounded-full border border-white/20 focus:outline-none focus:ring-2 focus:ring-white/30 text-lg shadow-lg"
+                  style={{ 
+                    fontFamily: 'Poppins, sans-serif',
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15)',
+                    borderColor: 'rgba(255, 255, 255, 0.25)'
+                  }}
                 />
                 <button 
-                  className="px-6 py-3 text-white transition-colors hover:opacity-90"
-                  style={{ backgroundColor: '#008236' }}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-green-500 hover:bg-green-600 text-white p-3 rounded-full transition-colors border border-green-400/30"
+                  style={{
+                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)'
+                  }}
                 >
                   <Search className="w-5 h-5" />
                 </button>
               </div>
-              {isSearching && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
-                  <LoadingDots />
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -782,19 +827,11 @@ export default function HelpCenterPage() {
                   {[
                     {
                       question: "How do I verify my seller account?",
-                      answer: "Upload your business registration documents, valid ID, and bank account information through your seller dashboard. Verification typically takes 2-3 business days, and you'll receive email updates on the status."
-                    },
-                    {
-                      question: "When do I receive my payments?",
-                      answer: "Seller payouts are processed weekly every Friday for orders completed 7 days prior. Funds are transferred to your registered bank account within 1-2 business days after processing."
+                      answer: "Upload your business registration documents and valid ID through your seller dashboard. Verification typically takes 2-3 business days, and you'll receive the updates on the seller dashboard."
                     },
                     {
                       question: "How do I add products to my store?",
-                      answer: "Go to your Seller Dashboard, click 'Add Product,' fill in the product details with high-quality images (minimum 800x800px), set your price and inventory levels, then publish your listing."
-                    },
-                    {
-                      question: "What commission does HarvestHub charge?",
-                      answer: "Commission rates vary by category, typically ranging from 3-8% of the sale price. You can view the exact rates for your products in your seller agreement and dashboard analytics."
+                      answer: "Go to your Seller Dashboard, go to 'Products,' click 'Add Product,' fill in the product details with images, set your price and inventory levels, then publish your listing."
                     },
                     {
                       question: "How quickly do I need to process orders?",
@@ -825,84 +862,92 @@ export default function HelpCenterPage() {
 
           {/* Expanded Section Details */}
           {selectedSection && (
-            <div className="bg-white rounded-xl shadow-lg p-8 mb-12 animate-slideDown">
-              {(() => {
-                const section = currentSections.find(s => s.id === selectedSection);
-                if (!section) return null;
-                const Icon = section.icon;
-                const colorScheme = activeTab === 'buyer' 
-                  ? { bg: 'bg-blue-500', bgLight: 'bg-blue-50', bgHover: 'bg-blue-100', dot: 'bg-blue-500' }
-                  : { bg: 'bg-green-500', bgLight: 'bg-green-50', bgHover: 'bg-green-100', dot: 'bg-green-500' };
-                
-                return (
-                  <div>
-                    <div className="flex items-center space-x-3 mb-6">
-                      <div className={`w-12 h-12 ${colorScheme.bg} rounded-lg flex items-center justify-center`}>
-                        <Icon className="w-6 h-6 text-white" />
+            <div 
+              className="rounded-xl shadow-lg p-8 mb-12 animate-slideDown relative overflow-hidden"
+              style={{
+                backgroundImage: 'url(/images/KALI/unnamed.jpg)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+              }}
+            >
+              {/* Optional overlay for better text readability */}
+              <div className="absolute inset-0 bg-black/30 rounded-xl"></div>
+              
+              <div className="relative z-10">
+                {(() => {
+                  const section = currentSections.find(s => s.id === selectedSection);
+                  if (!section) return null;
+                  const colorScheme = activeTab === 'buyer' 
+                    ? { bg: 'bg-blue-500', bgLight: 'bg-white/15', bgHover: 'bg-white/25', dot: 'bg-blue-500' }
+                    : { bg: 'bg-green-500', bgLight: 'bg-white/15', bgHover: 'bg-white/25', dot: 'bg-green-500' };
+                  
+                  return (
+                    <div>
+                      <div className="mb-6">
+                        <h3 className="text-2xl font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          {section.title}
+                        </h3>
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        {section.title}
-                      </h3>
-                    </div>
 
-                    {isSectionLoading ? (
-                      <div className="flex justify-center items-center h-32">
-                        <LoadingDots />
-                      </div>
-                    ) : (
-                      <div className="grid md:grid-cols-2 gap-8">
-                        <div>
-                          <h4 className="font-semibold text-gray-800 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                            Help Topics
-                          </h4>
-                          <div className="space-y-3">
-                            {section.topics.map((topic, index) => (
-                              <div key={index} className={`flex items-center p-3 ${colorScheme.bgLight} rounded-lg hover:${colorScheme.bgHover} transition-colors cursor-pointer`}>
-                                <div className={`w-2 h-2 ${colorScheme.dot} rounded-full mr-3`}></div>
-                                <span className="text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                  {topic}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
+                      {isSectionLoading ? (
+                        <div className="flex justify-center items-center h-32">
+                          <LoadingDots />
                         </div>
-
-                        <div>
-                          <h4 className="font-semibold text-gray-800 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                            Frequently Asked Questions
-                          </h4>
-                          <div className="space-y-3">
-                            {section.faqs.map((faq, index) => (
-                              <div key={index} className="border border-gray-200 rounded-lg">
-                                <button
-                                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
-                                  onClick={() => setExpandedFAQ(expandedFAQ === `${section.id}-${index}` ? null : `${section.id}-${index}`)}
-                                >
-                                  <span className="font-medium text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                    {faq.question}
+                      ) : (
+                        <div className="grid md:grid-cols-2 gap-8">
+                          <div>
+                            <h4 className="font-semibold text-white mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                              Help Topics
+                            </h4>
+                            <div className="space-y-3">
+                              {section.topics.map((topic, index) => (
+                                <div key={index} className={`p-3 ${colorScheme.bgLight} backdrop-blur-sm rounded-lg hover:${colorScheme.bgHover} transition-all duration-200 cursor-pointer`}>
+                                  <span className="text-white/90" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                    {topic}
                                   </span>
-                                  {expandedFAQ === `${section.id}-${index}` ? (
-                                    <ChevronUp className="w-5 h-5 text-gray-500" />
-                                  ) : (
-                                    <ChevronDown className="w-5 h-5 text-gray-500" />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4 className="font-semibold text-white mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                              Frequently Asked Questions
+                            </h4>
+                            <div className="space-y-3">
+                              {section.faqs.map((faq, index) => (
+                                <div key={index} className="border border-white/30 rounded-lg backdrop-blur-sm bg-white/10">
+                                  <button
+                                    className="w-full flex items-center justify-between p-4 text-left hover:bg-white/20 transition-all duration-200 rounded-lg"
+                                    onClick={() => setExpandedFAQ(expandedFAQ === `${section.id}-${index}` ? null : `${section.id}-${index}`)}
+                                  >
+                                    <span className="font-medium text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                      {faq.question}
+                                    </span>
+                                    {expandedFAQ === `${section.id}-${index}` ? (
+                                      <ChevronUp className="w-5 h-5 text-white/70" />
+                                    ) : (
+                                      <ChevronDown className="w-5 h-5 text-white/70" />
+                                    )}
+                                  </button>
+                                  {expandedFAQ === `${section.id}-${index}` && (
+                                    <div className="p-4 border-t border-white/30 bg-white/10 animate-fadeIn rounded-b-lg">
+                                      <p className="text-white/90" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                        {faq.answer}
+                                      </p>
+                                    </div>
                                   )}
-                                </button>
-                                {expandedFAQ === `${section.id}-${index}` && (
-                                  <div className="p-4 border-t bg-gray-50 animate-fadeIn">
-                                    <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                      {faq.answer}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           )}
 
@@ -943,11 +988,14 @@ export default function HelpCenterPage() {
 
               <div className="flex items-center space-x-4 p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl">
                 <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
-                  <Mail className="w-6 h-6 text-white" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white" aria-hidden="true">
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-800 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    {activeTab === 'buyer' ? 'Email Support' : 'Seller Support Email'}
+                    {activeTab === 'buyer' ? 'Contact Support' : 'Contact Support'}
                   </h4>
                   <p className="text-sm text-gray-600 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
                     admin@harvesthubph.app
@@ -963,6 +1011,120 @@ export default function HelpCenterPage() {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-[#103C2E] text-white mt-0">
+        <div className="container mx-auto px-4 py-8 md:py-12">
+          {/* Logo Section */}
+          <div className="text-center mb-6 md:mb-8">
+            <div className="mb-4 md:mb-6">
+              <span className="text-2xl md:text-4xl font-bold" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <span style={{ color: '#6CD75A'}}>Harvest</span>
+                <span style={{ color: '#D4DB69' }}>Hub</span>
+              </span>
+            </div>
+            <div className="w-full h-px bg-white/20 max-w-5xl mx-auto"></div>
+          </div>
+
+          {/* Main Footer Content */}
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-6 md:mb-8">
+              {/* Customer Care */}
+              <div className="text-center md:text-left">
+                <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-[#6CD75A]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Customer Care
+                </h3>
+                <div className="space-y-2 md:space-y-3">
+                  <div className="flex items-center justify-center md:justify-start space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0 text-[#D4DB69]">
+                      <path d="M1.5 8.67v8.58a3 3 0 003 3h15a3 3 0 003-3V8.67l-8.928 5.493a3 3 0 01-3.144 0L1.5 8.67z" />
+                      <path d="M22.5 6.908V6.75a3 3 0 00-3-3h-15a3 3 0 00-3 3v.158l9.714 5.978a1.5 1.5 0 001.572 0L22.5 6.908z" />
+                    </svg>
+                    <a href="mailto:admin@harvesthubph.app" className="text-white/90 hover:text-white transition-colors text-xs md:text-sm break-all">
+                      admin@harvesthubph.app
+                    </a>
+                  </div>
+                  <div className="flex items-center justify-center md:justify-start space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0 text-[#D4DB69]">
+                      <path fillRule="evenodd" d="M1.5 4.5a3 3 0 013-3h1.372c.86 0 1.61.586 1.819 1.42l1.105 4.423a1.875 1.875 0 01-.694 1.955l-1.293.97c-.135.101-.164.249-.126.352a11.285 11.285 0 006.697 6.697c.103.038.25.009.352-.126l.97-1.293a1.875 1.875 0 011.955-.694l4.423 1.105c.834.209 1.42.959 1.42 1.82V19.5a3 3 0 01-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 6.75V4.5z" clipRule="evenodd" />
+                    </svg>
+                    <a href="tel:09762926130" className="text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                      09762926130
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Methods */}
+              <div className="text-center md:text-left">
+                <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-[#6CD75A]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Payment Methods
+                </h3>
+                <div className="space-y-2 md:space-y-3 flex flex-col items-center md:items-start">
+                  <div className="flex items-center">
+                    <Image
+                      src="/images/lalamove.svg"
+                      alt="Lalamove"
+                      width={100}
+                      height={20}
+                      className="md:w-[100px] md:h-[20px]"
+                    />
+                  </div>
+                  <div className="flex items-center">
+                    <Image
+                      src="/images/cod.svg"
+                      alt="Cash on Delivery"
+                      width={140}
+                      height={24}
+                      className="md:w-[140px] md:h-[24px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Links */}
+              <div className="text-center md:text-left">
+                <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-[#6CD75A]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Quick Links
+                </h3>
+                <div className="space-y-1.5 md:space-y-2">
+                  <Link href="/about" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    About Us
+                  </Link>
+                  <Link href="/help/buyer/contact-support" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    Contact Us
+                  </Link>
+                  <Link href="/help" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    Hot Questions
+                  </Link>
+                </div>
+              </div>
+
+              {/* Policies */}
+              <div className="text-center md:text-left">
+                <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-[#6CD75A]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Policies
+                </h3>
+                <div className="space-y-1.5 md:space-y-2">
+                  <Link href="/privacy/privacy-policy" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    Privacy Policy
+                  </Link>
+                  <Link href="/privacy/terms-of-service" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    Terms & Conditions
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Copyright */}
+          <div className="pt-6 md:pt-8 border-t border-white/20 text-center max-w-5xl mx-auto">
+            <p className="text-white/80 text-xs md:text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              © 2025 Harvest Hub. All Rights Reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

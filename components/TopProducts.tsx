@@ -2,49 +2,70 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { IProduct } from '../types/product';
 
 interface TopProductsProps {
   title?: string;
   maxItems?: number;
+  minRating?: number;
+  minReviews?: number;
+  refreshInterval?: number; // Auto-refresh interval in milliseconds
 }
 
 const TopProducts: React.FC<TopProductsProps> = ({ 
-  title = 'Top Products',
-  maxItems = 4 
+  title = 'Top Rated Products',
+  maxItems = 4,
+  minRating = 4.0,
+  minReviews = 1,
+  refreshInterval = 60000 // Default: refresh every 60 seconds
 }) => {
   const [products, setProducts] = useState<IProduct[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTopProducts();
-  }, []);
+    
+    // Set up auto-refresh if interval is provided
+    if (refreshInterval > 0) {
+      const intervalId = setInterval(() => {
+        fetchTopProducts(true); // Silent refresh
+      }, refreshInterval);
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [refreshInterval, minRating, minReviews]);
 
-  const fetchTopProducts = async () => {
+  const fetchTopProducts = async (silent = false) => {
     try {
-      setLoading(true);
-      // Fetch products sorted by some criteria (e.g., most popular, best sellers, highest rated)
+      if (!silent) setLoading(true);
+      setError(null);
+      
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      const response = await fetch(`${baseUrl}/api/products?limit=20&sortBy=popular`, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `${baseUrl}/api/products/top-rated?limit=${maxItems * 3}&minRating=${minRating}&minReviews=${minReviews}`,
+        {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      
       const data = await response.json();
       
       if (data.success) {
-        // Filter products with discounts or featured products
-        const topProducts = data.products
-          .filter((p: IProduct) => p.basePrice && p.basePrice > p.currentPrice)
-          .slice(0, maxItems * 3); // Get more for rotation
-        setProducts(topProducts);
+        setProducts(data.products || []);
+      } else {
+        setError(data.message || 'Failed to load top products');
       }
     } catch (error) {
-      console.error('Error fetching top products:', error);
+      console.error('Error fetching top-rated products:', error);
+      setError('Failed to load top products');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -62,10 +83,46 @@ const TopProducts: React.FC<TopProductsProps> = ({
 
   const visibleProducts = products.slice(currentIndex, currentIndex + maxItems);
 
+  // Render star rating display
+  const renderStars = (rating: number) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    
+    for (let i = 0; i < 5; i++) {
+      if (i < fullStars) {
+        stars.push(
+          <svg key={i} className="w-3.5 h-3.5 text-yellow-400 fill-current" viewBox="0 0 20 20">
+            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+          </svg>
+        );
+      } else if (i === fullStars && hasHalfStar) {
+        stars.push(
+          <svg key={i} className="w-3.5 h-3.5 text-yellow-400" viewBox="0 0 20 20">
+            <defs>
+              <linearGradient id={`half-${i}`}>
+                <stop offset="50%" stopColor="currentColor" className="text-yellow-400" />
+                <stop offset="50%" stopColor="currentColor" className="text-gray-300" />
+              </linearGradient>
+            </defs>
+            <path fill={`url(#half-${i})`} d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+          </svg>
+        );
+      } else {
+        stars.push(
+          <svg key={i} className="w-3.5 h-3.5 text-gray-300 fill-current" viewBox="0 0 20 20">
+            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+          </svg>
+        );
+      }
+    }
+    return stars;
+  };
+
   if (loading) {
     return (
       <div className="bg-[#F5ECDE] pt-4 px-4 pb-0 overflow-hidden" style={{ height: '509px', borderTopLeftRadius: '1.5rem', borderTopRightRadius: '1.5rem', borderBottomLeftRadius: '1.5rem', borderBottomRightRadius: '1.5rem' }}>
-        {/* Header outside - 313 x 36 */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-3" style={{ height: '36px' }}>
           <div className="h-8 w-32 bg-gray-200 rounded animate-pulse"></div>
           <div className="flex gap-1 items-center">
@@ -74,7 +131,7 @@ const TopProducts: React.FC<TopProductsProps> = ({
             <div className="w-6 h-6 bg-gray-200 rounded"></div>
           </div>
         </div>
-        {/* White container - expanded to edges */}
+        {/* White container */}
         <div 
           className="bg-white border-2 p-4"
           style={{ 
@@ -112,7 +169,7 @@ const TopProducts: React.FC<TopProductsProps> = ({
 
   return (
     <div className="bg-[#F5ECDE] pt-4 px-4 pb-0 w-full overflow-hidden" style={{ height: '509px', borderTopLeftRadius: '1.5rem', borderTopRightRadius: '1.5rem', borderBottomLeftRadius: '1.5rem', borderBottomRightRadius: '1.5rem' }}>
-      {/* Header - Outside the white box - 313 x 36 */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-3" style={{ height: '36px' }}>
         <h3 
           className="font-bold"
@@ -126,7 +183,7 @@ const TopProducts: React.FC<TopProductsProps> = ({
           {title}
         </h3>
         <div className="flex gap-1 items-center">
-          {/* Next Button - Green Arrow */}
+          {/* Next Button */}
           <button 
             onClick={handleNext}
             disabled={currentIndex + maxItems >= products.length}
@@ -151,7 +208,7 @@ const TopProducts: React.FC<TopProductsProps> = ({
             <line x1="1" y1="0" x2="1" y2="24" stroke="#9CA3AF" strokeWidth="1"/>
           </svg>
           
-          {/* Previous Button - Gray Arrow */}
+          {/* Previous Button */}
           <button 
             onClick={handlePrev}
             disabled={currentIndex === 0}
@@ -173,7 +230,7 @@ const TopProducts: React.FC<TopProductsProps> = ({
         </div>
       </div>
 
-      {/* White Products Container - Expanded to edges on left, right, bottom */}
+      {/* White Products Container */}
       <div 
         className="bg-white border-2 p-4 overflow-y-auto"
         style={{ 
@@ -191,9 +248,20 @@ const TopProducts: React.FC<TopProductsProps> = ({
           borderBottomRightRadius: '1.5rem'
         }}
       >
-        {visibleProducts.length === 0 ? (
+        {error ? (
+          <div className="text-center py-8 text-red-500">
+            <p style={{ fontFamily: 'Poppins, sans-serif' }}>{error}</p>
+            <button
+              onClick={() => fetchTopProducts()}
+              className="mt-4 px-4 py-2 bg-[#40613D] text-white rounded-lg hover:bg-[#2D5240] transition-colors"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+            >
+              Retry
+            </button>
+          </div>
+        ) : visibleProducts.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p style={{ fontFamily: 'Poppins, sans-serif' }}>No products available</p>
+            <p style={{ fontFamily: 'Poppins, sans-serif' }}>No top-rated products available</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -201,13 +269,14 @@ const TopProducts: React.FC<TopProductsProps> = ({
               const hasDiscount = product.basePrice && product.basePrice > product.currentPrice;
 
               return (
-                <div 
+                <Link 
+                  href={`/product/${product._id}`}
                   key={product._id}
                   className={`flex items-start gap-3 pb-3 ${
                     index !== visibleProducts.length - 1 ? 'border-b border-gray-200' : ''
-                  }`}
+                  } hover:bg-gray-50 transition-colors rounded-lg p-2 -mx-2`}
                 >
-                  {/* Product Image - Square with border */}
+                  {/* Product Image */}
                   <div 
                     className="relative flex-shrink-0 bg-white rounded-2xl border-2 overflow-hidden"
                     style={{ width: '115px', height: '115px', borderColor: '#40613D' }}
@@ -237,7 +306,7 @@ const TopProducts: React.FC<TopProductsProps> = ({
 
                     {/* Product Name */}
                     <h4 
-                      className="font-semibold mb-2 line-clamp-2"
+                      className="font-semibold mb-1 line-clamp-2"
                       style={{ 
                         color: '#1E3A2F',
                         fontFamily: 'Poppins, sans-serif',
@@ -247,6 +316,36 @@ const TopProducts: React.FC<TopProductsProps> = ({
                     >
                       {product.name}
                     </h4>
+
+                    {/* Rating Display */}
+                    {product.rating && product.rating > 0 && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-0.5">
+                          {renderStars(product.rating)}
+                        </div>
+                        <span 
+                          className="text-sm font-semibold"
+                          style={{ 
+                            color: '#1E3A2F',
+                            fontFamily: 'Poppins, sans-serif',
+                            fontSize: '13px'
+                          }}
+                        >
+                          {product.rating.toFixed(1)}
+                        </span>
+                        {product.totalReviews && product.totalReviews > 0 && (
+                          <span 
+                            className="text-xs text-gray-500"
+                            style={{ 
+                              fontFamily: 'Poppins, sans-serif',
+                              fontSize: '12px'
+                            }}
+                          >
+                            ({product.totalReviews} {product.totalReviews === 1 ? 'review' : 'reviews'})
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Price Section */}
                     <div className="flex items-baseline gap-2">
@@ -275,7 +374,7 @@ const TopProducts: React.FC<TopProductsProps> = ({
                       )}
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

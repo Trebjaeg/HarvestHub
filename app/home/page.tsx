@@ -9,16 +9,16 @@ import I18nProvider from '../../components/I18nProvider';
 import ProductCard from '../../components/ProductCard';
 import TopProducts from '../../components/TopProducts';
 import PromoBanner from '../../components/PromoBanner';
+import BuyerTestimonials from '../../components/BuyerTestimonials';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import { ProtectedRoute } from '../../components/ProtectedRoute';
 import { useAuthUserData } from '../../hooks/useAuthUserData';
 import { useProducts } from '../../hooks/useProducts';
-import { IProduct } from '../../types/product';
 
 const HomePageContent = () => {
   const { t } = useTranslation();
   const router = useRouter();
-  const { isAuthenticated, cartCount: initialCartCount, notificationCount } = useAuthUserData();
+  const { isAuthenticated, cartCount: initialCartCount, notificationCount, user } = useAuthUserData();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -56,7 +56,7 @@ const HomePageContent = () => {
   
   // Listen for cart update events
   useEffect(() => {
-    const handleCartUpdate = (event: any) => {
+    const handleCartUpdate = (event: CustomEvent<{ count?: number }>) => {
       setCartShake(true);
       setTimeout(() => setCartShake(false), 600);
       
@@ -76,8 +76,8 @@ const HomePageContent = () => {
       }
     };
     
-    window.addEventListener('cart-updated', handleCartUpdate);
-    return () => window.removeEventListener('cart-updated', handleCartUpdate);
+    window.addEventListener('cart-updated', handleCartUpdate as EventListener);
+    return () => window.removeEventListener('cart-updated', handleCartUpdate as EventListener);
   }, []);
   
   // Use real API data via useProducts hook
@@ -86,10 +86,8 @@ const HomePageContent = () => {
     loading, 
     error,
     totalPages,
-    currentPage: apiCurrentPage,
     setCurrentPage: setApiCurrentPage,
-    setFilters,
-    refetch
+    setFilters
   } = useProducts({
     category: selectedCategory === 'all' ? undefined : selectedCategory,
     page: currentPage,
@@ -227,6 +225,19 @@ const HomePageContent = () => {
       setShowSuggestions(false);
       router.push(`/shop?search=${encodeURIComponent(searchInput.trim())}`);
     }
+  };
+
+  // Get contact support link based on user role
+  const getContactSupportLink = () => {
+    if (!user) return '/help/buyer/contact-support'; // Default to buyer if no user
+    
+    // Check if user has seller role
+    const isSeller = user.role === 'seller' || user.role === 'farmer';
+    return isSeller ? '/help/seller/contact-support' : '/help/buyer/contact-support';
+  };
+
+  const getHotQuestionsLink = () => {
+    return '/help';
   };
 
   const categories = [
@@ -903,7 +914,7 @@ const HomePageContent = () => {
                   <div className="text-center py-12">
                     <div className="text-red-600 mb-4">
                       <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 1 0-18 0 9 9 0 0 0 18 0z" />
                       </svg>
                       <h3 className="text-xl font-semibold mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         Error Loading Products
@@ -1015,11 +1026,83 @@ const HomePageContent = () => {
               <div className="mt-12 flex justify-center">
                 <PromoBanner />
               </div>
+
+              {/* Buyer Testimonials - Directly Below Promo Banner */}
+              <div className="mt-0">
+                <BuyerTestimonials minRating={4} limit={20} />
+              </div>
             </div>
           </div>
         </div>
       </section>
-      
+
+      {/* Farmers Showcase Section */}
+      <section className="bg-white py-8 md:py-12 overflow-hidden">
+        <div className="relative">
+          <div className="flex animate-scroll md:animate-scroll-desktop" style={{ gap: '12px' }}>
+            {/* First set of images */}
+            {[
+              'kalabaw.svg',
+              'lolafarmer.svg',
+              'nakayuko.svg',
+              'palay1.svg',
+              'palay2.svg',
+              'palaygirl.svg',
+              'pineapplefarmer.svg',
+              'saging.svg'
+            ].map((image, index) => (
+              <div
+                key={`first-${index}`}
+                className="flex-shrink-0"
+                style={{ 
+                  width: '180px', 
+                  height: '240px' 
+                }}
+              >
+                <div className="relative w-full h-full rounded-xl md:rounded-2xl overflow-hidden shadow-md md:shadow-lg">
+                  <Image
+                    src={`/images/farmers-pic/${image}`}
+                    alt={`Farmer ${index + 1}`}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+            ))}
+            
+            {/* Duplicate set for seamless loop */}
+            {[
+              'kalabaw.svg',
+              'lolafarmer.svg',
+              'nakayuko.svg',
+              'palay1.svg',
+              'palay2.svg',
+              'palaygirl.svg',
+              'pineapplefarmer.svg',
+              'saging.svg'
+            ].map((image, index) => (
+              <div
+                key={`second-${index}`}
+                className="flex-shrink-0"
+                style={{ 
+                  width: '180px', 
+                  height: '240px' 
+                }}
+              >
+                <div className="relative w-full h-full rounded-xl md:rounded-2xl overflow-hidden shadow-md md:shadow-lg">
+                  <Image
+                    src={`/images/farmers-pic/${image}`}
+                    alt={`Farmer ${index + 1}`}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Cart Shake Animation */}
       <style jsx global>{`
         @keyframes shake {
@@ -1030,7 +1113,152 @@ const HomePageContent = () => {
         .animate-shake {
           animation: shake 0.6s ease-in-out !important;
         }
+        
+        /* Mobile animation */
+        @keyframes scroll-left-mobile {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(calc(-180px * 8 - 12px * 8));
+          }
+        }
+        
+        /* Desktop animation */
+        @keyframes scroll-left-desktop {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(calc(-180px * 8 - 12px * 8));
+          }
+        }
+        
+        .animate-scroll {
+          animation: scroll-left-mobile 30s linear infinite;
+          will-change: transform;
+        }
+        
+        @media (min-width: 768px) {
+          .animate-scroll-desktop {
+            animation: scroll-left-desktop 35s linear infinite;
+          }
+        }
+        
+        .animate-scroll:hover,
+        .animate-scroll-desktop:hover {
+          animation-play-state: paused;
+        }
       `}</style>
+
+      {/* Footer */}
+      <footer className="bg-[#103C2E] text-white mt-0">
+        <div className="container mx-auto px-4 py-8 md:py-12">
+          {/* Logo Section */}
+          <div className="text-center mb-6 md:mb-8">
+            <div className="mb-4 md:mb-6">
+              <span className="text-2xl md:text-4xl font-bold" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <span style={{ color: '#6CD75A'}}>Harvest</span>
+                <span style={{ color: '#D4DB69' }}>Hub</span>
+              </span>
+            </div>
+            <div className="w-full h-px bg-white/20 max-w-5xl mx-auto"></div>
+          </div>
+
+          {/* Main Footer Content */}
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-6 md:mb-8">
+              {/* Customer Care */}
+              <div className="text-center md:text-left">
+                <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-[#6CD75A]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Customer Care
+                </h3>
+                <div className="space-y-2 md:space-y-3">
+                  <div className="flex items-center justify-center md:justify-start space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 36 36" className="flex-shrink-0 text-[#D4DB69]"><path fill="currentColor" d="M32.33 6a2 2 0 0 0-.41 0h-28a2 2 0 0 0-.53.08l14.45 14.39Z" className="clr-i-solid clr-i-solid-path-1"/><path fill="currentColor" d="m33.81 7.39l-14.56 14.5a2 2 0 0 1-2.82 0L2 7.5a2 2 0 0 0-.07.5v20a2 2 0 0 0 2 2h28a2 2 0 0 0 2-2V8a2 2 0 0 0-.12-.61M5.3 28H3.91v-1.43l7.27-7.21l1.41 1.41Zm26.61 0h-1.4l-7.29-7.23l1.41-1.41l7.27 7.21Z" className="clr-i-solid clr-i-solid-path-2"/><path fill="none" d="M0 0h36v36H0z"/></svg>
+                    <a href="mailto:admin@harvesthubph.app" className="text-white/90 hover:text-white transition-colors text-xs md:text-sm break-all">
+                      admin@harvesthubph.app
+                    </a>
+                  </div>
+                  <div className="flex items-center justify-center md:justify-start space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" className="flex-shrink-0 text-[#D4DB69]"><path fill="currentColor" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24c1.12.37 2.33.57 3.57.57c.55 0 1 .45 1 1V20c0 .55-.45 1-1 1c-9.39 0-17-7.61-17-17c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1c0 1.25.2 2.45.57 3.57c.11.35.03.74-.25 1.02z"/></svg>
+                    <a href="tel:09762926130" className="text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                      09762926130
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Methods */}
+              <div className="text-center md:text-left">
+                <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-[#6CD75A]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Payment Methods
+                </h3>
+                <div className="space-y-2 md:space-y-3 flex flex-col items-center md:items-start">
+                  <div className="flex items-center">
+                    <Image
+                      src="/images/lalamove.svg"
+                      alt="Lalamove"
+                      width={100}
+                      height={20}
+                      className="md:w-[100px] md:h-[20px]"
+                    />
+                  </div>
+                  <div className="flex items-center">
+                    <Image
+                      src="/images/cod.svg"
+                      alt="Cash on Delivery"
+                      width={140}
+                      height={24}
+                      className="md:w-[140px] md:h-[24px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Links */}
+              <div className="text-center md:text-left">
+                <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-[#6CD75A]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Quick Links
+                </h3>
+                <div className="space-y-1.5 md:space-y-2">
+                  <Link href="/about" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    About Us
+                  </Link>
+                  <Link href={getContactSupportLink()} className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    Contact Us
+                  </Link>
+                  <Link href={getHotQuestionsLink()} className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    Hot Questions
+                  </Link>
+                </div>
+              </div>
+
+              {/* Policies */}
+              <div className="text-center md:text-left">
+                <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-[#6CD75A]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Policies
+                </h3>
+                <div className="space-y-1.5 md:space-y-2">
+                  <Link href="/privacy/privacy-policy" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    Privacy Policy
+                  </Link>
+                  <Link href="/privacy/terms-of-service" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    Terms & Conditions
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Copyright */}
+          <div className="pt-6 md:pt-8 border-t border-white/20 text-center max-w-5xl mx-auto">
+            <p className="text-white/80 text-xs md:text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              © 2025 Harvest Hub. All Rights Reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

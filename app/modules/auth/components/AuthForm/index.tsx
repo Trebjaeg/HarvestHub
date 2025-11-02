@@ -10,21 +10,14 @@ import Image from "next/image";
 export interface AuthFormProps {
   handleSubmit?: (e: React.FormEvent) => void;
   validateCreateAccount?: () => boolean;
-  mode: 'login' | 'register';
 }
 
 const AuthForm: FC<AuthFormProps> = ({
   handleSubmit,
   validateCreateAccount,
-  mode,
 }) => {
   const { t } = useTranslation();
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
-  const [dynamicTitle, setDynamicTitle] = useState<string>(t('auth.title'));
-
-  const handleTitleChange = (title: string) => {
-    setDynamicTitle(title);
-  };
 
   return (
     <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-gray-50 relative min-h-screen lg:min-h-0 overflow-y-auto">
@@ -44,7 +37,7 @@ const AuthForm: FC<AuthFormProps> = ({
             </h1>
           </div>
           <h2 className="text-xl sm:text-2xl font-medium mb-2 text-gray-900 text-left" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            {dynamicTitle}
+            {t('auth.title')}
           </h2>
           <p className="text-gray-600 text-sm text-left" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: '400' }}>
             {t('auth.subtitle')}
@@ -57,7 +50,7 @@ const AuthForm: FC<AuthFormProps> = ({
           }}
           className="space-y-4 sm:space-y-6"
         >
-          <AuthFormInput onTitleChange={handleTitleChange} />
+          <AuthFormInput />
         </form>
 
         <p className="text-center mt-4 sm:mt-6 text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: '400' }}>

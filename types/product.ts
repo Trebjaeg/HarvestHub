@@ -18,6 +18,12 @@ export interface IProduct {
   isOrganic: boolean;
   isFeatured: boolean;
   tags: string[];
+  // Rating and review information
+  rating?: number; // Average rating (0-5)
+  totalReviews?: number; // Total number of reviews
+  fiveStarCount?: number; // Number of 5-star reviews
+  fourStarCount?: number; // Number of 4-star reviews
+  qualityScore?: number; // Calculated quality score for ranking
   nutritionalInfo?: {
     calories: number;
     protein: number;

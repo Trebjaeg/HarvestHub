@@ -392,7 +392,7 @@ export default function BuyerHelpCenter() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-800 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    Email Support
+                    Contact Support
                   </h4>
                   <p className="text-sm text-gray-600 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
                     admin@harvesthubph.app

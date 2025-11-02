@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
   ArrowLeft, 
   User, 
@@ -50,17 +51,14 @@ const accountGuides: GuideSection[] = [
         id: 'create-account',
         title: 'How to Create a Seller Account',
         steps: [
-          'Go to the HarvestHub Landing Page or Home Page',
-          'Click "Sign Up" if you don\'t have an account, or "Log In" if you already have one',
-          'During sign-up or after logging in, select "Seller" as your account role',
-          'Complete your basic account registration with email and password',
-          'Verify your email address by clicking the link sent to your inbox',
+          'Go to the harvesthubph.app',
+          'Click "Sign Up," type in your information and verify your email address by clicking the link on your inbox or typing in the 6 digits one-time passcode.',
+          'Select "Seller" as the account role then click on "Create Account" button.',
           'Once logged in, navigate to your "Seller Profile" section from the dashboard',
-          'In your Seller Profile, upload required business documents: DTI/SEC registration, BIR registration, and valid ID',
+          'In your Seller Profile, upload required business documents: DTI/SEC registration, BIR registration, and/or (1) valid ID',
           'Fill in your complete business information and contact details',
-          'Submit your verification documents for review',
-          'Wait for account approval (typically 2-3 business days)',
-          'Once approved, complete your business profile and start selling!'
+          'Submit your verification documents for review. Wait for account approval (typically 2-3 business days)',
+          'Once approved, complete your business profile and start selling!',
         ],
         tips: [
           'Role selection happens during the sign-up process, not on a separate registration page',
@@ -254,32 +252,26 @@ export default function SellerAccountProfileHelp() {
   return (
     <div className="min-h-screen bg-white">
       {/* Top Navigation Bar */}
-      <div className="bg-white border-b border-gray-200 py-3">
+      <div className="bg-[#103C2E] border-b border-gray-200 py-3">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Link href="/home" className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#008236' }}>
-                  <span className="text-white font-bold text-sm">H</span>
-                </div>
-                <span className="font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif', color: '#008236' }}>
-                  HarvestHub
+                <span className="font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  <span style={{ color: '#6CD75A'}}>Harvest</span>
+                  <span style={{ color: '#D4DB69' }}>Hub</span>
                 </span>
               </Link>
               <span className="text-gray-400">|</span>
-              <Link href="/help" className="text-gray-600 hover:text-gray-800 transition-colors" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                Help Center
-              </Link>
-              <span className="text-gray-400">|</span>
-              <span className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                Seller Account & Profile
+              <span className="text-white/80 font-bold" style={{ fontFamily: 'Poppins, sans-serif'}}>
+                HarvestHub Help Center
               </span>
             </div>
             
-            <div className="text-right">
+            <div className="flex items-center space-x-4">
               <Link 
                 href="/privacy" 
-                className="text-gray-600 hover:text-gray-800 transition-colors text-sm"
+                className="text-white/80 hover:text-white transition-colors font-bold"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 Policies
@@ -288,10 +280,20 @@ export default function SellerAccountProfileHelp() {
           </div>
         </div>
       </div>
-
       {/* Header */}
-      <div className="text-white py-12" style={{ background: 'linear-gradient(135deg, #008236 0%, #00a644 100%)' }}>
-        <div className="container mx-auto px-4">
+      <div 
+        className="text-white py-12 relative overflow-hidden"
+        style={{
+          backgroundImage: 'url(/images/KALI/unnamed4.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        {/* Optional overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/30"></div>
+        
+        <div className="container mx-auto px-4 relative z-10">
           <div className="flex items-center mb-6">
             <Link 
               href="/help" 
@@ -303,16 +305,13 @@ export default function SellerAccountProfileHelp() {
           </div>
 
           <div className="max-w-4xl">
-            <div className="flex items-center space-x-4 mb-4">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                <Building2 className="w-8 h-8 text-white" />
-              </div>
+            <div className="mb-4">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  Seller Account & Profile Help
+                  Account & Profile Help
                 </h1>
                 <p className="text-green-100 text-lg" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  Manage your seller account settings, business security, and payout information
+                  Manage your seller account, verification, and business information
                 </p>
               </div>
             </div>
@@ -364,18 +363,13 @@ export default function SellerAccountProfileHelp() {
                 <div className="animate-fadeIn">
                   {/* Section Header */}
                   <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-                    <div className="flex items-center space-x-4 mb-4">
-                      <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                        <currentSection.icon className="w-6 h-6 text-green-600" />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          {currentSection.title}
-                        </h2>
-                        <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          {currentSection.description}
-                        </p>
-                      </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {currentSection.title}
+                      </h2>
+                      <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {currentSection.description}
+                      </p>
                     </div>
                   </div>
 
@@ -473,48 +467,148 @@ export default function SellerAccountProfileHelp() {
           </div>
 
           {/* Contact Support Section */}
-          <div className="bg-white border border-gray-200 rounded-lg p-8 mt-12">
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                Need More Help?
-              </h3>
-              <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                Can't find what you're looking for? Our seller support team is here to help
-              </p>
-            </div>
+          <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            <Link href="/help" className="flex items-center space-x-4 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl hover:from-green-100 hover:to-emerald-100 transition-colors">
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                <ArrowLeft className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-gray-800 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Back to Help Center
+                </h4>
+                <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Browse other help topics
+                </p>
+              </div>
+            </Link>
 
-            <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-              <Link href="/help" className="flex items-center space-x-4 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl hover:from-green-100 hover:to-emerald-100 transition-colors">
-                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                  <ArrowLeft className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    Back to Help Center
-                  </h4>
-                  <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    Browse all help categories
-                  </p>
-                </div>
-              </Link>
-
-              <div className="flex items-center space-x-4 p-6 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl">
-                <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
-                  <Building2 className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    Seller Support
-                  </h4>
-                  <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    seller-support@harvesthubph.app
-                  </p>
-                </div>
+            <div className="flex items-center space-x-4 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
+              <div>
+                <h4 className="font-semibold text-gray-800 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Contact Support
+                </h4>
+                <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  admin@harvesthubph.app
+                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-[#103C2E] text-white mt-0">
+        <div className="container mx-auto px-4 py-8 md:py-12">
+          {/* Logo Section */}
+          <div className="text-center mb-6 md:mb-8">
+            <div className="mb-4 md:mb-6">
+              <span className="text-2xl md:text-4xl font-bold" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <span style={{ color: '#6CD75A'}}>Harvest</span>
+                <span style={{ color: '#D4DB69' }}>Hub</span>
+              </span>
+            </div>
+            <div className="w-full h-px bg-white/20 max-w-5xl mx-auto"></div>
+          </div>
+
+          {/* Main Footer Content */}
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 mb-6 md:mb-8">
+              {/* Customer Care */}
+              <div className="text-center md:text-left">
+                <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-[#6CD75A]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Customer Care
+                </h3>
+                <div className="space-y-2 md:space-y-3">
+                  <div className="flex items-center justify-center md:justify-start space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0 text-[#D4DB69]">
+                      <path d="M1.5 8.67v8.58a3 3 0 003 3h15a3 3 0 003-3V8.67l-8.928 5.493a3 3 0 01-3.144 0L1.5 8.67z" />
+                      <path d="M22.5 6.908V6.75a3 3 0 00-3-3h-15a3 3 0 00-3 3v.158l9.714 5.978a1.5 1.5 0 001.572 0L22.5 6.908z" />
+                    </svg>
+                    <a href="mailto:admin@harvesthubph.app" className="text-white/90 hover:text-white transition-colors text-xs md:text-sm break-all">
+                      admin@harvesthubph.app
+                    </a>
+                  </div>
+                  <div className="flex items-center justify-center md:justify-start space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0 text-[#D4DB69]">
+                      <path fillRule="evenodd" d="M1.5 4.5a3 3 0 013-3h1.372c.86 0 1.61.586 1.819 1.42l1.105 4.423a1.875 1.875 0 01-.694 1.955l-1.293.97c-.135.101-.164.249-.126.352a11.285 11.285 0 006.697 6.697c.103.038.25.009.352-.126l.97-1.293a1.875 1.875 0 011.955-.694l4.423 1.105c.834.209 1.42.959 1.42 1.82V19.5a3 3 0 01-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 6.75V4.5z" clipRule="evenodd" />
+                    </svg>
+                    <a href="tel:09762926130" className="text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                      09762926130
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Methods */}
+              <div className="text-center md:text-left">
+                <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-[#6CD75A]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Payment Methods
+                </h3>
+                <div className="space-y-2 md:space-y-3 flex flex-col items-center md:items-start">
+                  <div className="flex items-center">
+                    <Image
+                      src="/images/lalamove.svg"
+                      alt="Lalamove"
+                      width={100}
+                      height={20}
+                      className="md:w-[100px] md:h-[20px]"
+                    />
+                  </div>
+                  <div className="flex items-center">
+                    <Image
+                      src="/images/cod.svg"
+                      alt="Cash on Delivery"
+                      width={140}
+                      height={24}
+                      className="md:w-[140px] md:h-[24px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Links */}
+              <div className="text-center md:text-left">
+                <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-[#6CD75A]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Quick Links
+                </h3>
+                <div className="space-y-1.5 md:space-y-2">
+                  <Link href="/about" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    About Us
+                  </Link>
+                  <Link href="/help/seller/contact-support" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    Contact Us
+                  </Link>
+                  <Link href="/help" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    Hot Questions
+                  </Link>
+                </div>
+              </div>
+
+              {/* Policies */}
+              <div className="text-center md:text-left">
+                <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-[#6CD75A]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Policies
+                </h3>
+                <div className="space-y-1.5 md:space-y-2">
+                  <Link href="/privacy/privacy-policy" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    Privacy Policy
+                  </Link>
+                  <Link href="/privacy/terms-of-service" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                    Terms & Conditions
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Copyright */}
+          <div className="pt-6 md:pt-8 border-t border-white/20 text-center max-w-5xl mx-auto">
+            <p className="text-white/80 text-xs md:text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              © 2025 Harvest Hub. All Rights Reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
