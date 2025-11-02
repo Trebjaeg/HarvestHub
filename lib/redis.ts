@@ -176,6 +176,6 @@ export const cache = {
 /**
  * Cache key builders for consistent naming
  */
-export const cacheKeys = memoryCacheKeys;
+export const cacheKeys: typeof memoryCacheKeys = memoryCacheKeys;
 
 export default redis;

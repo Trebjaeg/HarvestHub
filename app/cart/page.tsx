@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuthUserData } from '../../hooks/useAuthUserData';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import AlertDialog from '../../components/ui/AlertDialog';
+import NotificationsPanel from '../../components/NotificationsPanel';
+import { useNotificationSocket } from '../../hooks/useNotificationSocket';
+import { useNotificationShake } from '../../hooks/useNotificationShake';
 
 interface CartItem {
   _id: string;
@@ -40,16 +43,26 @@ export default function CartPage() {
   const [cartShake, setCartShake] = useState(false);
   const [cartCount, setCartCount] = useState(initialCartCount);
   const [stockLimitReached, setStockLimitReached] = useState<Set<string>>(new Set());
-  const [stockInfo, setStockInfo] = useState<Map<string, number>>(new Map()); // Store actual stock per item
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set()); // Track selected item IDs
+  const [stockInfo, setStockInfo] = useState<Map<string, number>>(new Map());
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [alertDialog, setAlertDialog] = useState({
     isOpen: false,
     title: '',
     message: ''
   });
+  const [isFetching, setIsFetching] = useState(false);
+  
+  // Notification states and refs
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notificationButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileNotificationButtonRef = useRef<HTMLButtonElement>(null);
+  const { unreadCount, setUnreadCount } = useNotificationSocket();
+  const { shouldShake: notificationShake } = useNotificationShake();
 
   useEffect(() => {
-    fetchCart();
+    if (!isFetching) {
+      fetchCart();
+    }
   }, []);
 
   // Update cart count when initial value changes
@@ -68,33 +81,65 @@ export default function CartPage() {
         setCartCount(event.detail.count);
       }
       
-     // Also refresh cart items
-      fetchCart();
+      // Don't refetch - we use optimistic updates instead
+      // Only refetch if explicitly requested (e.g., from add to cart)
+      if (event.detail?.refetch && !isFetching) {
+        setTimeout(() => fetchCart(), 300);
+      }
     };
     
     window.addEventListener('cart-updated', handleCartUpdate);
     return () => window.removeEventListener('cart-updated', handleCartUpdate);
-  }, []);
+  }, [isFetching]);
+
+  // Cross-tab synchronization using BroadcastChannel
+  useEffect(() => {
+    // Create broadcast channel for cross-tab communication
+    const channel = new BroadcastChannel('cart-sync');
+    
+    channel.onmessage = (event) => {
+      if (event.data.type === 'cart-item-added' || event.data.type === 'cart-item-removed') {
+        // Only refetch when items are added/removed from other tabs, not on quantity updates
+        if (!isFetching) {
+          fetchCart();
+        }
+      }
+    };
+    
+    return () => channel.close();
+  }, [isFetching]);
 
   const fetchCart = async () => {
+    if (isFetching) return; // Prevent concurrent fetches
+    
     try {
+      setIsFetching(true);
       setLoading(true);
+      
+      // Use AbortController for faster timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // Increase to 15 seconds
+      
       const response = await fetch('/api/cart', {
-        credentials: 'include'
+        credentials: 'include',
+        cache: 'no-store', // Force fresh data
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        },
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
         setCartItems(data.items || []);
         setCartCount(data.count || 0); // Update cart count from API
         
-        // Show notification if items were auto-removed
+        // Show notification if items were auto-removed (optional - can use alert instead of toast)
         if (data.removedItems && data.removedItems > 0) {
-          toast({
-            title: "Cart Updated",
-            description: `${data.removedItems} unavailable item(s) were removed from your cart.`,
-            variant: "default",
-          });
+          console.log(`${data.removedItems} unavailable item(s) were removed from your cart.`);
         }
         
         // Populate stock info from cart items
@@ -106,10 +151,20 @@ export default function CartPage() {
         });
         setStockInfo(newStockInfo);
       }
-    } catch (error) {
-      console.error('Error fetching cart:', error);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error('Cart fetch timed out');
+        setAlertDialog({
+          isOpen: true,
+          title: 'Connection Slow',
+          message: 'Cart is taking longer to load. Please check your connection.'
+        });
+      } else {
+        console.error('Error fetching cart:', error);
+      }
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
   };
 
@@ -153,7 +208,12 @@ export default function CartPage() {
       const response = await fetch('/api/cart/update', {
         method: 'PUT',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        },
         body: JSON.stringify({ itemId, quantity: newQuantity })
       });
 
@@ -196,6 +256,20 @@ export default function CartPage() {
           newSet.delete(itemId);
           return newSet;
         });
+        
+        // Update count from server response
+        if (data.count !== undefined) {
+          setCartCount(data.count);
+        }
+        
+        // Broadcast quantity change to other tabs (but don't trigger refetch)
+        try {
+          const channel = new BroadcastChannel('cart-sync');
+          channel.postMessage({ type: 'cart-quantity-updated', itemId });
+          channel.close();
+        } catch (e) {
+          // BroadcastChannel not supported, skip
+        }
       }
     } catch (error) {
       console.error('Error updating quantity:', error);
@@ -225,13 +299,33 @@ export default function CartPage() {
       const response = await fetch('/api/cart/remove', {
         method: 'DELETE',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        },
         body: JSON.stringify({ itemId })
       });
 
       if (!response.ok) {
         // Revert on error
         await fetchCart();
+      } else {
+        // Update count from server response
+        const data = await response.json();
+        if (data.count !== undefined) {
+          setCartCount(data.count);
+        }
+        
+        // Broadcast removal to other tabs
+        try {
+          const channel = new BroadcastChannel('cart-sync');
+          channel.postMessage({ type: 'cart-item-removed', itemId });
+          channel.close();
+        } catch (e) {
+          // BroadcastChannel not supported, skip
+        }
       }
     } catch (error) {
       console.error('Error removing item:', error);
@@ -424,13 +518,18 @@ export default function CartPage() {
                 </svg>
               </Link>
               
-              <button className="relative">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+              <button 
+                ref={mobileNotificationButtonRef}
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative"
+                aria-label={`Notifications${isAuthenticated && unreadCount > 0 ? ` (${unreadCount > 99 ? '99+' : unreadCount} unread)` : ''}`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-5 h-5 ${notificationShake ? 'animate-shake' : ''}`}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                 </svg>
-                {notificationCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {notificationCount > 99 ? '99+' : notificationCount}
+                {isAuthenticated && unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                    {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
               </button>
@@ -474,14 +573,19 @@ export default function CartPage() {
                 )}
               </button>
               
-              <button className="relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all flex items-center space-x-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+              <button 
+                ref={notificationButtonRef}
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all flex items-center space-x-2"
+                aria-label={`Notifications${isAuthenticated && unreadCount > 0 ? ` (${unreadCount > 99 ? '99+' : unreadCount} unread)` : ''}`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-6 h-6 ${notificationShake ? 'animate-shake' : ''}`}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                 </svg>
                 <span className="text-sm font-medium">Notifications</span>
-                {notificationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {notificationCount > 99 ? '99+' : notificationCount}
+                {isAuthenticated && unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                    {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
               </button>
@@ -516,7 +620,22 @@ export default function CartPage() {
               </div>
 
               {loading ? (
-                <div className="p-8 text-center text-gray-500">Loading cart...</div>
+                <div className="p-4 md:p-8 space-y-4">
+                  {/* Skeleton loader for better UX */}
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="flex items-center space-x-4 p-4 border-b">
+                        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                        <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-200 rounded"></div>
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                        </div>
+                        <div className="h-8 w-20 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : cartItems.length === 0 ? (
                 <div className="p-8 text-center">
                   <p className="text-gray-500 mb-4">Your cart is empty</p>
@@ -919,6 +1038,16 @@ export default function CartPage() {
         title={alertDialog.title}
         message={alertDialog.message}
       />
+
+      {/* Notifications Panel */}
+      {showNotifications && (notificationButtonRef.current || mobileNotificationButtonRef.current) && (
+        <NotificationsPanel 
+          isOpen={showNotifications}
+          onClose={() => setShowNotifications(false)}
+          onUnreadCountChange={setUnreadCount}
+          buttonRef={(notificationButtonRef.current ? notificationButtonRef : mobileNotificationButtonRef) as React.RefObject<HTMLButtonElement>}
+        />
+      )}
     </div>
   );
 }

@@ -3,7 +3,6 @@ import dbConnect from '@/lib/mongodb';
 import CartItem from '@/models/CartItem';
 import Product from '@/models/Product';
 import jwt from 'jsonwebtoken';
-import { cache, cacheKeys } from '@/lib/redis';
 
 interface DecodedToken {
   userId: string;
@@ -16,12 +15,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Set cache-control headers to prevent stale reads
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   // Add timeout protection
   const timeoutId = setTimeout(() => {
     if (!res.headersSent) {
       res.status(408).json({ error: 'Request timeout - cart loading is taking too long' });
     }
-  }, 10000); // 10 second timeout
+  }, 15000); // Increase to 15 seconds to match frontend timeout
 
   try {
     await dbConnect();
@@ -37,26 +41,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
     const userId = decoded.userId;
 
-    // Try to get from cache first (with timeout)
-    try {
-      const cachedCart = await Promise.race([
-        cache.get(cacheKeys.cart(userId)),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Cache timeout')), 1000))
-      ]);
-      if (cachedCart) {
-        clearTimeout(timeoutId);
-        return res.status(200).json(cachedCart);
-      }
-    } catch (cacheError) {
-      console.log('Cache read skipped:', cacheError instanceof Error ? cacheError.message : 'unknown');
-    }
-
-    // Get all cart items for this user with timeout
+    // Get all cart items for this user with timeout - use projection to limit data
     const cartItems = await CartItem.find({
       userId: userId
     })
+    .select('_id userId productId productName quantity price imageUrl unit sellerId sellerName createdAt')
     .sort({ createdAt: -1 })
-    .maxTimeMS(3000) // 3 second timeout
+    .maxTimeMS(5000) // Increase to 5 seconds
     .lean()
     .exec();
 
@@ -64,7 +55,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (cartItems.length === 0) {
       clearTimeout(timeoutId);
       const emptyResponse = { success: true, items: [], count: 0 };
-      await cache.set(cacheKeys.cart(userId), emptyResponse, 120).catch(() => {});
       return res.status(200).json(emptyResponse);
     }
 
@@ -72,40 +62,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const productIds = cartItems.map(item => item.productId);
     
     // Fetch products to get current stock and check if they still exist with timeout
+    // Only fetch essential fields
     const products = await Product.find({
       _id: { $in: productIds }
     })
-    .select('_id stock farmerId farmerName')
-    .maxTimeMS(3000) // 3 second timeout
+    .select('_id stock farmerId farmerName isActive')
+    .maxTimeMS(5000) // Increase to 5 seconds
     .lean()
     .exec();
 
     // Create a map of productId to product data
     const productMap = new Map(
-      products.map(p => [p._id.toString(), p])
+      products.map(p => [(p as any)._id.toString(), p])
     );
 
     // Create a set of existing product IDs
-    const existingProductIds = new Set(products.map(p => p._id.toString()));
+    const existingProductIds = new Set(products.map(p => (p as any)._id.toString()));
     
     // Find cart items with deleted products
     const deletedProductItems = cartItems.filter(item => !existingProductIds.has(item.productId));
     
-    // Auto-cleanup: Remove cart items for deleted products
+    // Auto-cleanup: Remove cart items for deleted products (do in background)
     if (deletedProductItems.length > 0) {
       const deletedItemIds = deletedProductItems.map(item => item._id);
-      await CartItem.deleteMany({
+      // Don't await - let this run in background
+      CartItem.deleteMany({
         _id: { $in: deletedItemIds }
-      }).exec();
-      
-      // Clear cache since we modified the cart
-      await cache.del(cacheKeys.cart(userId)).catch(() => {});
+      }).exec().catch(err => console.error('Background cleanup error:', err));
     }
     
     // Filter out deleted products from the response
     const validCartItems = cartItems.filter(item => existingProductIds.has(item.productId));
     
-    // Get unique seller IDs that need name lookup
+    // Batch fetch seller names only if needed
     const sellerIdsToLookup = new Set<string>();
     validCartItems.forEach(item => {
       if (!item.sellerName || item.sellerName === 'Unknown Farmer' || item.sellerName === 'Unknown Seller') {
@@ -118,7 +107,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
     
-    // Fetch seller names if needed with timeout
+    // Fetch seller names in one query if needed
     const sellerNamesMap = new Map<string, string>();
     if (sellerIdsToLookup.size > 0) {
       try {
@@ -127,7 +116,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           _id: { $in: Array.from(sellerIdsToLookup) }
         })
         .select('_id name firstName lastName')
-        .maxTimeMS(2000) // 2 second timeout
+        .maxTimeMS(3000) // Increase to 3 seconds
         .lean()
         .exec();
         
@@ -137,7 +126,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
       } catch (userError) {
         console.error('Error fetching seller names:', userError);
-        // Continue without seller names if this fails
+        // Continue without seller names if this fails - don't block cart load
       }
     }
 
@@ -153,7 +142,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       
       return {
-        _id: item._id.toString(),
+        _id: (item as any)._id.toString(),
         productId: item.productId,
         productName: item.productName,
         quantity: item.quantity,
@@ -163,7 +152,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         unit: item.unit,
         sellerId: sellerId,
         sellerName: sellerName,
-        stock: product?.stock || 0,
+        stock: (product as any)?.stock || 0,
         isAvailable: true // All items here are valid since we filtered out deleted ones
       };
     });
@@ -174,16 +163,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       count: items.length,
       removedItems: deletedProductItems.length // Let frontend know items were removed
     };
-
-    // Cache for 2 minutes (with timeout protection)
-    try {
-      await Promise.race([
-        cache.set(cacheKeys.cart(userId), responseData, 120),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Cache write timeout')), 1000))
-      ]);
-    } catch (cacheError) {
-      console.log('Cache write skipped:', cacheError instanceof Error ? cacheError.message : 'unknown');
-    }
 
     clearTimeout(timeoutId);
     return res.status(200).json(responseData);

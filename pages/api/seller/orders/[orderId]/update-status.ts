@@ -2,12 +2,15 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '../../../../../lib/mongodb';
 import Order from '../../../../../models/Order';
 import Product from '../../../../../models/Product';
+import ChatMessage, { generateConversationId } from '../../../../../models/ChatMessage';
 import jwt from 'jsonwebtoken';
 import inventoryManager from '../../../../../lib/inventory-manager';
 import mongoose from 'mongoose';
 import { cache } from '../../../../../lib/memory-cache';
 import { sendOrderConfirmationEmail } from '../../../../../lib/email-service-sendgrid';
 import { sendOrderModificationEmail } from '../../../../../lib/email-service-sendgrid';
+import { notifyOrderStatusUpdate } from '../../../../../lib/notification-utils';
+import { emitNewMessage } from '../../../../../lib/socket-client';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'PATCH') {
@@ -67,11 +70,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Validate status transitions
     const currentStatus = order.status;
     const validTransitions: { [key: string]: string[] } = {
-      'pending': ['confirmed', 'cancelled'],
+      'pending': ['preparing', 'cancelled'],
       'confirmed': ['preparing', 'cancelled'],
       'preparing': ['shipped', 'cancelled'],
-      'shipped': ['delivered'],
-      'delivered': ['completed'],
+      'shipped': ['cancelled'], // Seller cannot mark as delivered - only buyer can
+      'delivered': ['completed'], // Seller can only complete after buyer confirms delivery
       'cancelled': [],
       'completed': []
     };
@@ -79,7 +82,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!validTransitions[currentStatus]?.includes(status)) {
       return res.status(400).json({ 
         success: false, 
-        message: `Cannot transition from ${currentStatus} to ${status}` 
+        message: `Cannot transition from ${currentStatus} to ${status}. ${
+          currentStatus === 'shipped' && status === 'delivered' 
+            ? 'Only the buyer can confirm delivery by clicking "Order Received".' 
+            : ''
+        }` 
       });
     }
 
@@ -99,7 +106,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
       // Handle inventory transitions based on status change
-      if (status === 'confirmed' && currentStatus === 'pending') {
+      if (status === 'preparing' && currentStatus === 'pending') {
         // First, ensure products have inventory fields and check if inventory was reserved
         let needsReservation = false;
         const deletedProducts: any[] = [];
@@ -172,7 +179,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // Remove deleted products from order
           const remainingProducts = order.products.filter((p: any) => {
             const prodId = typeof p.productId === 'string' ? p.productId : p.productId.toString();
-            return availableItems.some(item => item.productId === prodId);
+            return availableItems.some((item: any) => item.productId === prodId);
           });
           
           // Recalculate order totals
@@ -232,16 +239,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           
           // Get detailed product info for debugging
           const productDetails = await Promise.all(
-            inventoryItems.map(async (item) => {
+            inventoryItems.map(async (item: any) => {
               const product = await Product.findById(item.productId).select('name inventory_reserved inventory_committed inventory_available').lean();
               return {
                 productId: item.productId,
                 requestedQty: item.quantity,
                 product: product ? {
-                  name: product.name,
-                  reserved: product.inventory_reserved,
-                  committed: product.inventory_committed,
-                  available: product.inventory_available
+                  name: (product as any).name,
+                  reserved: (product as any).inventory_reserved,
+                  committed: (product as any).inventory_committed,
+                  available: (product as any).inventory_available
                 } : null
               };
             })
@@ -255,7 +262,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           });
         }
       } else if (status === 'cancelled' && currentStatus === 'pending') {
-        // Seller cancels before confirm: Try to release reserved inventory (if any)
+        // Seller cancels before preparing: Try to release reserved inventory (if any)
         // Don't fail if products don't exist - order might be old or products deleted
         try {
           const releaseResult = await inventoryManager.releaseReservedInventory(inventoryItems, session);
@@ -263,8 +270,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         } catch (err) {
           // Ignore inventory release errors on cancellation
         }
-      } else if (status === 'cancelled' && currentStatus === 'confirmed') {
-        // Seller cancels after confirm: Try to release committed inventory
+      } else if (status === 'cancelled' && currentStatus === 'preparing') {
+        // Seller cancels after preparing started: Try to release committed inventory
         try {
           const releaseResult = await inventoryManager.releaseCommittedInventory(inventoryItems, session);
           // Even if release fails, allow cancellation
@@ -295,10 +302,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Set actual delivery date when delivered
       if (status === 'delivered') {
         updateData.actualDelivery = new Date();
+        // Mark payment as paid when order is delivered (especially for COD)
+        updateData.paymentStatus = 'paid';
       }
 
-      // Set estimated delivery when confirmed (7 days from now)
-      if (status === 'confirmed' && !order.estimatedDelivery) {
+      // Set estimated delivery when order starts preparing (7 days from now)
+      if (status === 'preparing' && !order.estimatedDelivery) {
         const estimatedDelivery = new Date();
         estimatedDelivery.setDate(estimatedDelivery.getDate() + 7);
         updateData.estimatedDelivery = estimatedDelivery;
@@ -313,47 +322,107 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Commit transaction - both inventory and order status update succeed
       await session.commitTransaction();
 
-      // Send order confirmation email to buyer when order is confirmed
-      if (status === 'confirmed') {
+      // Send notifications to buyer (asynchronous, don't block response)
+      if (updatedOrder) {
+        notifyOrderStatusUpdate(
+          (updatedOrder as any).buyerId,
+          (updatedOrder as any).orderNumber,
+          (updatedOrder as any)._id.toString(),
+          status,
+          (updatedOrder as any).sellerName || 'Seller'
+        ).catch(err => console.error('Error sending notification:', err));
+
+        // Send automatic chat message to buyer about status update
+        const conversationId = generateConversationId((updatedOrder as any).sellerId, (updatedOrder as any).buyerId);
+        const statusMessages: { [key: string]: string } = {
+          'preparing': `Your order ${(updatedOrder as any).orderNumber} is now being prepared! Estimated delivery: ${(updatedOrder as any).estimatedDelivery ? new Date((updatedOrder as any).estimatedDelivery).toLocaleDateString() : '7 days'}. We'll notify you once it's shipped!`,
+          'shipped': `Great news! Your order ${(updatedOrder as any).orderNumber} has been shipped and is on its way to you!`,
+          'delivered': `Your order ${(updatedOrder as any).orderNumber} has been delivered. Thank you for your purchase!`,
+          'cancelled': `Your order ${(updatedOrder as any).orderNumber} has been cancelled${notes ? `. Reason: ${notes}` : '.'}`,
+          'completed': `Order ${(updatedOrder as any).orderNumber} is complete. Thank you for shopping with us!`
+        };
+
+        if (statusMessages[status]) {
+          ChatMessage.create({
+          conversationId,
+          senderId: (updatedOrder as any).sellerId,
+          senderName: (updatedOrder as any).sellerName || 'Seller',
+          senderRole: 'seller',
+          receiverId: (updatedOrder as any).buyerId,
+          receiverName: (updatedOrder as any).buyerName,
+          receiverRole: 'buyer',
+          message: statusMessages[status],
+          isRead: false,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .then(async (msg) => {
+          // Emit real-time message to buyer
+          const messageData = {
+            _id: msg._id.toString(),
+            conversationId: msg.conversationId,
+            senderId: msg.senderId,
+            senderName: msg.senderName,
+            senderRole: msg.senderRole,
+            receiverId: msg.receiverId,
+            receiverName: msg.receiverName,
+            receiverRole: msg.receiverRole,
+            message: msg.message,
+            isRead: msg.isRead,
+            createdAt: msg.createdAt.toISOString(),
+          };
+
+          // Emit to buyer
+          await emitNewMessage((updatedOrder as any).buyerId, messageData);
+          // Emit to seller (for their own chat view)
+          await emitNewMessage((updatedOrder as any).sellerId, messageData);
+        })
+        .catch(err => console.error('Error creating status update chat message:', err));
+        }
+      }
+
+      // Send order confirmation email to buyer when order starts preparing
+      if (status === 'preparing' && updatedOrder) {
         try {
+          const orderData = updatedOrder as any;
           // If products were deleted, send modification email instead
           if (deletedProductsInfo.length > 0) {
-            await sendOrderModificationEmail(updatedOrder.buyerEmail, {
-              orderNumber: updatedOrder.orderNumber,
-              buyerName: updatedOrder.buyerName,
-              sellerName: updatedOrder.sellerName || 'Seller',
+            await sendOrderModificationEmail(orderData.buyerEmail, {
+              orderNumber: orderData.orderNumber,
+              buyerName: orderData.buyerName,
+              sellerName: orderData.sellerName || 'Seller',
               deletedProducts: deletedProductsInfo,
-              remainingProducts: updatedOrder.products.map((p: any) => ({
+              remainingProducts: orderData.products.map((p: any) => ({
                 productName: p.productName,
                 quantity: p.quantity,
                 price: p.price,
                 unit: p.unit || 'pcs'
               })),
               originalAmount: originalAmount,
-              newTotalAmount: updatedOrder.totalAmount,
-              deliveryFee: updatedOrder.deliveryFee || 0,
-              newFinalAmount: updatedOrder.finalAmount,
-              deliveryAddress: updatedOrder.deliveryAddress,
-              estimatedDelivery: updatedOrder.estimatedDelivery
+              newTotalAmount: orderData.totalAmount,
+              deliveryFee: orderData.deliveryFee || 0,
+              newFinalAmount: orderData.finalAmount,
+              deliveryAddress: orderData.deliveryAddress,
+              estimatedDelivery: orderData.estimatedDelivery
             });
           } else {
             // Normal confirmation email
-            await sendOrderConfirmationEmail(updatedOrder.buyerEmail, {
-              orderNumber: updatedOrder.orderNumber,
-              buyerName: updatedOrder.buyerName,
-              sellerName: updatedOrder.sellerName || 'Seller',
-              products: updatedOrder.products.map((p: any) => ({
+            await sendOrderConfirmationEmail(orderData.buyerEmail, {
+              orderNumber: orderData.orderNumber,
+              buyerName: orderData.buyerName,
+              sellerName: orderData.sellerName || 'Seller',
+              products: orderData.products.map((p: any) => ({
                 productName: p.productName,
                 quantity: p.quantity,
                 price: p.price,
                 unit: p.unit || 'pcs'
               })),
-              totalAmount: updatedOrder.totalAmount,
-              deliveryFee: updatedOrder.deliveryFee || 0,
-              finalAmount: updatedOrder.finalAmount,
-              deliveryAddress: updatedOrder.deliveryAddress,
-              estimatedDelivery: updatedOrder.estimatedDelivery,
-              paymentMethod: updatedOrder.paymentMethod || 'Cash on Delivery'
+              totalAmount: orderData.totalAmount,
+              deliveryFee: orderData.deliveryFee || 0,
+              finalAmount: orderData.finalAmount,
+              deliveryAddress: orderData.deliveryAddress,
+              estimatedDelivery: orderData.estimatedDelivery,
+              paymentMethod: orderData.paymentMethod || 'Cash on Delivery'
             });
           }
         } catch (emailError) {
@@ -362,39 +431,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // Clear all order-related caches for real-time updates
-      const cachePatterns = [
-        `orders:*`,
-        `order:${orderId}`,
-        `seller:orders:${sellerId}:*`,
-        `buyer:orders:${updatedOrder.buyerId}:*`,
-        `products:*`, // Product inventory changed
-        `product:*`
-      ];
-      
-      for (const pattern of cachePatterns) {
-        try {
-          cache.delPattern(pattern);
-        } catch (e) {
-          // Silent fail - cache clear is not critical
+      if (updatedOrder) {
+        const orderData = updatedOrder as any;
+        const cachePatterns = [
+          `orders:*`,
+          `order:${orderId}`,
+          `seller:orders:${sellerId}:*`,
+          `buyer:orders:${orderData.buyerId}:*`,
+          `products:*`, // Product inventory changed
+          `product:*`
+        ];
+        
+        for (const pattern of cachePatterns) {
+          try {
+            cache.delPattern(pattern);
+          } catch (e) {
+            // Silent fail - cache clear is not critical
+          }
         }
-      }
 
-      res.status(200).json({
-        success: true,
-        message: `Order status updated to ${status}`,
-        order: {
-          _id: updatedOrder._id.toString(),
-          orderNumber: updatedOrder.orderNumber,
-          status: updatedOrder.status,
-          estimatedDelivery: updatedOrder.estimatedDelivery,
-          actualDelivery: updatedOrder.actualDelivery,
-          notes: updatedOrder.notes
-        },
-        ...(deletedProductsInfo.length > 0 && {
-          warning: `${deletedProductsInfo.length} product(s) were removed from this order as they are no longer available.`,
-          deletedProducts: deletedProductsInfo
-        })
-      });
+        res.status(200).json({
+          success: true,
+          message: `Order status updated to ${status}`,
+          order: {
+            _id: orderData._id.toString(),
+            orderNumber: orderData.orderNumber,
+            status: orderData.status,
+            estimatedDelivery: orderData.estimatedDelivery,
+            actualDelivery: orderData.actualDelivery,
+            notes: orderData.notes
+          },
+          ...(deletedProductsInfo.length > 0 && {
+            warning: `${deletedProductsInfo.length} product(s) were removed from this order as they are no longer available.`,
+            deletedProducts: deletedProductsInfo
+          })
+        });
+      } else {
+        return res.status(404).json({ success: false, message: 'Order not found after update' });
+      }
 
     } catch (transactionError) {
       await session.abortTransaction();

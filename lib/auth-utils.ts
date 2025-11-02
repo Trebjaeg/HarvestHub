@@ -153,15 +153,16 @@ export function isPublicPath(pathname: string): boolean {
     '/api/best-sellers',
     '/api/deals',
     '/api/deals/banner',
-    '/api/sellers',  // Public seller store API
-    '/api/sellers/list'  // Public list of sellers
+    '/api/top-farmers',
+    '/api/sellers',
+    '/api/sellers/list'
   ];
   
   return publicRoutes.includes(pathname) || 
          pathname.startsWith('/auth/reset-password') ||
          pathname.startsWith('/auth/verify') ||
-         pathname.startsWith('/seller/') ||  // Public seller store pages
-         pathname.startsWith('/api/sellers/') ||  // Public seller store API
+         pathname.startsWith('/seller/') ||
+         pathname.startsWith('/api/sellers/') ||
          pathname.startsWith('/_next') ||
          pathname.startsWith('/static');
 }

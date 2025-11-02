@@ -30,7 +30,7 @@ export default async function handler(req: any, res: any) {
 
     const form = new IncomingForm({
       keepExtensions: true,
-      maxFileSize: 35 * 1024 * 1024, // 35MB (will be compressed and uploaded to Spaces in KB)
+      maxFileSize: 60 * 1024 * 1024, // 60MB server-side limit
       maxFiles: 5,
     });
 
@@ -44,8 +44,10 @@ export default async function handler(req: any, res: any) {
       for (const file of imageFiles) {
         if (file && file.filepath) {
           // Validate file type
-          const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-          if (!allowedTypes.includes(file.mimetype || '')) {
+          const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
+          const lowerName = (file.originalFilename || '').toLowerCase();
+          const looksLikeHeic = lowerName.endsWith('.heic') || lowerName.endsWith('.heif');
+          if (!(allowedTypes.includes(file.mimetype || '') || looksLikeHeic)) {
             // Clean up temporary file
             fs.unlinkSync(file.filepath);
             continue; // Skip invalid files

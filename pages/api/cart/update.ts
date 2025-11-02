@@ -3,7 +3,6 @@ import dbConnect from '@/lib/mongodb';
 import CartItem from '@/models/CartItem';
 import Product from '@/models/Product';
 import jwt from 'jsonwebtoken';
-import { cache, cacheKeys } from '@/lib/redis';
 
 interface DecodedToken {
   userId: string;
@@ -15,6 +14,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'PUT') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  // Set cache-control headers to prevent stale reads
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
 
   try {
     await dbConnect();
@@ -47,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Get product to check stock
     const product = await Product.findById(cartItem.productId)
-      .select('stock isActive unit')
+      .select('stock isActive unit inventory_available inventory_on_hand')
       .lean()
       .exec();
     
@@ -56,16 +60,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Check if product is still active
-    if (!product.isActive) {
+    if (!(product as any).isActive) {
       return res.status(400).json({ error: 'Product is no longer available' });
     }
 
-    // Check if requested quantity exceeds stock
-    if (quantity > product.stock) {
+    // Calculate real-time available stock
+    const availableStock = (product as any).inventory_available ?? (product as any).stock;
+
+    // Check if requested quantity exceeds available stock
+    if (quantity > availableStock) {
       return res.status(400).json({ 
         error: 'Insufficient stock',
-        message: `Only ${product.stock} ${product.unit} available in stock`,
-        availableStock: product.stock
+        message: `Only ${availableStock} ${(product as any).unit} available in stock`,
+        availableStock: availableStock
       });
     }
 
@@ -73,13 +80,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     cartItem.quantity = quantity;
     await cartItem.save();
 
-    // Invalidate cart cache
-    await cache.del(cacheKeys.cart(userId));
+    // Get updated cart count
+    const totalCount = await CartItem.countDocuments({ userId }).maxTimeMS(1000);
 
     return res.status(200).json({
       success: true,
       message: 'Cart updated successfully',
-      data: cartItem
+      data: cartItem,
+      count: totalCount
     });
 
   } catch (error) {

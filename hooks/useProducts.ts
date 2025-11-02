@@ -61,10 +61,10 @@ export const useProducts = (initialOptions: UseProductsOptions = {}): UseProduct
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache', // Disable caching for real-time updates
         },
         signal: controller.signal,
-        // Add caching for better performance
-        next: { revalidate: 60 } // Revalidate every 60 seconds
+        cache: 'no-store' // Force fresh data on every request
       } as any);
       
       clearTimeout(timeoutId);

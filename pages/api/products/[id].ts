@@ -55,7 +55,7 @@ async function getProduct(req: NextApiRequest, res: NextApiResponse, id: string)
     // Get product reviews - simplified
     const productReviews = await Review.find({ 
       productId: product._id, 
-      status: 'approved' 
+      status: 'active' 
     })
       .select('rating')
       .maxTimeMS(2000)
@@ -79,8 +79,10 @@ async function getProduct(req: NextApiRequest, res: NextApiResponse, id: string)
     let sellerReviewCount = productReviews.length;
 
     // Format response time from minutes to readable format
-    const formatResponseTime = (minutes: number | null): string => {
-      if (minutes === null || minutes === undefined) return 'N/A';
+    const formatResponseTime = (minutes: number | null, totalMessages: number = 0): string => {
+      if (minutes === null || minutes === undefined) {
+        return totalMessages === 0 ? 'New Seller' : 'N/A';
+      }
       if (minutes < 60) return `< 1h`;
       if (minutes < 120) return `< 2h`;
       if (minutes < 180) return `< 3h`;
@@ -95,19 +97,23 @@ async function getProduct(req: NextApiRequest, res: NextApiResponse, id: string)
       success: true,
       data: {
         ...product,
+        stock: product.inventory_available || product.stock || 0,
+        rating: averageRating,
+        reviewCount: productReviews.length,
+        ratingDistribution: distribution,
         seller: seller ? {
           id: seller._id,
           name: seller.name || `${seller.firstName || ''} ${seller.lastName || ''}`.trim(),
           email: seller.email,
           profileImage: seller.profileImage || seller.profilePicture,
-          location: seller.location || 'Philippines',
-          isActive: seller.accountStatus === 'active',
-          isSuspended: seller.accountStatus === 'suspended',
-          isVerified: seller.verified || false,
+          location: seller.address || 'Philippines',
+          isActive: seller.status === 'active',
+          isSuspended: seller.status === 'suspended',
+          isVerified: seller.isVerified || false,
           rating: sellerRating,
           reviewCount: sellerReviewCount,
           responseRate: seller.responseRate ?? 0,
-          responseTime: formatResponseTime(seller.averageResponseTime)
+          responseTime: formatResponseTime(seller.averageResponseTime, seller.totalMessagesReceived || 0)
         } : null,
         ratings: {
           average: averageRating,

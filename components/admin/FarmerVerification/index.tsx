@@ -536,36 +536,51 @@ const FarmerVerification: React.FC = () => {
                     )}
 
                     <div className="flex gap-3 flex-wrap">
-                      <Button
-                        onClick={() => setReviewAction('approve')}
-                        className="bg-green-600 hover:bg-green-700"
-                        disabled={reviewAction === 'approve'}
-                        style={{ fontFamily: 'Poppins, sans-serif' }}
-                      >
-                        {reviewAction === 'approve' ? 'Approving...' : 'Approve Farmer'}
-                      </Button>
-                      <Button
-                        onClick={() => setReviewAction('reject')}
-                        variant="destructive"
-                        disabled={reviewAction === 'reject'}
-                        style={{ fontFamily: 'Poppins, sans-serif' }}
-                      >
-                        Reject Application
-                      </Button>
+                      {!reviewAction && (
+                        <>
+                          <Button
+                            onClick={() => setReviewAction('approve')}
+                            className="bg-green-600 hover:bg-green-700"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                          >
+                            Approve Farmer
+                          </Button>
+                          <Button
+                            onClick={() => setReviewAction('reject')}
+                            variant="destructive"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                          >
+                            Reject Application
+                          </Button>
+                        </>
+                      )}
                       {reviewAction && (
-                        <Button
-                          onClick={() => {
-                            if (reviewAction === 'reject' && !rejectionReason.trim()) {
-                              alert('Please provide a rejection reason');
-                              return;
-                            }
-                            handleReview(selectedFarmer._id, reviewAction);
-                          }}
-                          variant="outline"
-                          style={{ fontFamily: 'Poppins, sans-serif' }}
-                        >
-                          Confirm {reviewAction === 'approve' ? 'Approval' : 'Rejection'}
-                        </Button>
+                        <>
+                          <Button
+                            onClick={() => {
+                              if (reviewAction === 'reject' && !rejectionReason.trim()) {
+                                alert('Please provide a rejection reason');
+                                return;
+                              }
+                              handleReview(selectedFarmer._id, reviewAction);
+                            }}
+                            className={reviewAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : ''}
+                            variant={reviewAction === 'approve' ? 'default' : 'destructive'}
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                          >
+                            Confirm {reviewAction === 'approve' ? 'Approval' : 'Rejection'}
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setReviewAction(null);
+                              setRejectionReason('');
+                            }}
+                            variant="outline"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                          >
+                            Cancel
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>

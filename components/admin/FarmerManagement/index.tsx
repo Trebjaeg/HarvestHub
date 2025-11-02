@@ -16,10 +16,9 @@ interface Farmer {
   email: string;
   farmName?: string;
   location?: string;
-  isVerified: boolean;
-  isActive?: boolean;
-  status: 'active' | 'suspended' | 'pending';
-  totalProducts: number;
+  role: string;
+  status: 'active' | 'suspended' | 'deleted';
+  totalProducts?: number;
   createdAt: string;
   farmerVerification?: {
     status?: 'approved' | 'pending' | 'rejected';
@@ -46,44 +45,41 @@ const FarmerManagement: React.FC = () => {
   const fetchFarmers = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call
-      // Mock data for now
-      setFarmers([
-        {
-          _id: '1',
-          username: 'farmer_john',
-          email: 'farmer@example.com',
-          firstName: 'John',
-          lastName: 'Smith',
-          farmName: 'Green Valley Farm',
-          location: 'California',
-          isVerified: true,
-          isActive: true,
-          status: 'active',
-          totalProducts: 15,
-          createdAt: new Date().toISOString(),
-          farmerVerification: {
-            status: 'approved'
-          }
-        }
-      ]);
+      setError(null);
+      
+      // Call the REAL API endpoint
+      const response = await fetch('/api/admin/farmers', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch farmers');
+      }
+
+      const data = await response.json();
+      setFarmers(data.farmers || []);
     } catch (error) {
       console.error('Error fetching farmers:', error);
-      setError('Failed to load farmers');
+      setError('Failed to load farmers. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleFarmerStatus = async (farmerId: string, isActive: boolean) => {
+  const toggleFarmerStatus = async (farmerId: string, currentStatus: string) => {
     try {
+      const newStatus = currentStatus === 'active' ? 'deleted' : 'active';
       const response = await fetch(`/api/admin/farmers/${farmerId}/toggle-status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         },
-        body: JSON.stringify({ isActive: !isActive })
+        body: JSON.stringify({ status: newStatus })
       });
 
       if (!response.ok) {
@@ -257,7 +253,7 @@ const FarmerManagement: React.FC = () => {
                         <Button 
                           size="sm" 
                           variant={farmer.status === 'active' ? 'destructive' : 'default'}
-                          onClick={() => toggleFarmerStatus(farmer._id, farmer.isActive || false)}
+                          onClick={() => toggleFarmerStatus(farmer._id, farmer.status)}
                         >
                           {farmer.status === 'active' ? 'Suspend' : 'Activate'}
                         </Button>
@@ -286,11 +282,13 @@ const FarmerManagement: React.FC = () => {
                         )}
                       </div>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        farmer.isActive 
+                        farmer.status === 'active' 
                           ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
+                          : farmer.status === 'suspended'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-gray-100 text-gray-800'
                       }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        {farmer.isActive ? 'Active' : 'Inactive'}
+                        {farmer.status === 'active' ? 'Active' : farmer.status === 'suspended' ? 'Suspended' : 'Deactivated'}
                       </span>
                     </div>
                     
@@ -306,13 +304,13 @@ const FarmerManagement: React.FC = () => {
                         View
                       </Button>
                       <Button
-                        onClick={() => toggleFarmerStatus(farmer._id, farmer.isActive || false)}
+                        onClick={() => toggleFarmerStatus(farmer._id, farmer.status)}
                         variant="outline"
                         size="sm"
-                        className={`flex-1 ${farmer.isActive ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}`}
+                        className={`flex-1 ${farmer.status === 'active' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}`}
                         style={{ fontFamily: 'Poppins, sans-serif' }}
                       >
-                        {farmer.isActive ? 'Deactivate' : 'Activate'}
+                        {farmer.status === 'active' ? 'Deactivate' : 'Activate'}
                       </Button>
                     </div>
                   </div>

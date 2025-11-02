@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -9,6 +9,7 @@ import LoadingDots from '@/components/ui/LoadingDots';
 import ProductCard from '@/components/ProductCard';
 import { useAuthUserData } from '@/hooks/useAuthUserData';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import NotificationsPanel from '@/components/NotificationsPanel';
 
 interface SellerProfileProps {
   sellerId: string;
@@ -29,6 +30,9 @@ export default function SellerProfile({ sellerId }: SellerProfileProps) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [localNotificationCount, setLocalNotificationCount] = useState(notificationCount);
+  const notificationButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     fetchSellerProfile();
@@ -243,13 +247,17 @@ export default function SellerProfile({ sellerId }: SellerProfileProps) {
                 )}
               </Link>
               
-              <button className="relative">
+              <button 
+                ref={notificationButtonRef}
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                 </svg>
-                {notificationCount > 0 && (
+                {localNotificationCount > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {notificationCount > 99 ? '99+' : notificationCount}
+                    {localNotificationCount > 99 ? '99+' : localNotificationCount}
                   </span>
                 )}
               </button>
@@ -293,14 +301,18 @@ export default function SellerProfile({ sellerId }: SellerProfileProps) {
                 )}
               </Link>
               
-              <button className="relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all flex items-center space-x-2">
+              <button 
+                ref={notificationButtonRef}
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all flex items-center space-x-2"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                 </svg>
                 <span className="text-sm font-medium">Notifications</span>
-                {notificationCount > 0 && (
+                {localNotificationCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {notificationCount > 99 ? '99+' : notificationCount}
+                    {localNotificationCount > 99 ? '99+' : localNotificationCount}
                   </span>
                 )}
               </button>
@@ -409,7 +421,10 @@ export default function SellerProfile({ sellerId }: SellerProfileProps) {
                     <Users className="w-5 h-5" />
                     {followLoading ? 'Loading...' : isFollowing ? 'Following' : 'Follow'}
                   </button>
-                  <button className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-lg font-semibold shadow-sm hover:shadow-md transition-all duration-200 border border-gray-300">
+                  <button 
+                    onClick={() => router.push(`/inbox?userId=${sellerId}`)}
+                    className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-lg font-semibold shadow-sm hover:shadow-md transition-all duration-200 border border-gray-300"
+                  >
                     <MessageCircle className="w-5 h-5" />
                     Chat
                   </button>
@@ -633,6 +648,14 @@ export default function SellerProfile({ sellerId }: SellerProfileProps) {
           </div>
         )}
       </div>
+
+      {/* Notifications Panel */}
+      <NotificationsPanel
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        onUnreadCountChange={(count) => setLocalNotificationCount(count)}
+        buttonRef={notificationButtonRef}
+      />
     </div>
   );
 }

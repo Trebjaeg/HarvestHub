@@ -29,7 +29,7 @@ async function reviewsHandler(req: NextApiRequest, res: NextApiResponse) {
 
 async function getReviews(req: NextApiRequest, res: NextApiResponse, productId: string) {
   try {
-    const { page = '1', limit = '10', sort = 'recent' } = req.query;
+    const { page = '1', limit = '10', sort = 'recent', star } = req.query;
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
@@ -39,29 +39,52 @@ async function getReviews(req: NextApiRequest, res: NextApiResponse, productId: 
     else if (sort === 'high') sortQuery = { rating: -1 };
     else if (sort === 'low') sortQuery = { rating: 1 };
 
-    const reviews = await Review.find({ 
+    // Build query filter
+    const filter: any = { 
       productId, 
-      status: 'approved' 
-    })
+      status: 'active' 
+    };
+    
+    // Add star filter if provided
+    if (star) {
+      const starNum = parseInt(star as string);
+      if (starNum >= 1 && starNum <= 5) {
+        filter.rating = starNum;
+      }
+    }
+
+    const reviews = await Review.find(filter)
+      .select('rating title comment images verified createdAt buyerId sellerResponse followUpReviews helpful status')
       .sort(sortQuery)
       .skip(skip)
       .limit(limitNum)
       .lean();
 
-    const total = await Review.countDocuments({ productId, status: 'approved' });
+    const total = await Review.countDocuments(filter);
 
     // Get buyer info for each review
     const User = (await import('@/models/User')).default;
     const reviewsWithBuyers = await Promise.all(
-      reviews.map(async (review) => {
+      reviews.map(async (review: any) => {
         const buyer = await User.findById(review.buyerId).select('name profilePicture').lean();
+        
+        // Ensure sellerResponse is properly structured
+        const sellerResponse = review.sellerResponse && review.sellerResponse.comment ? {
+          comment: review.sellerResponse.comment,
+          respondedAt: review.sellerResponse.respondedAt
+        } : null;
+        
         return {
           ...review,
+          id: review._id.toString(),
+          buyerId: review.buyerId.toString(),
           buyer: buyer ? {
-            id: buyer._id,
-            name: buyer.name,
-            profilePicture: buyer.profilePicture
-          } : null
+            id: (buyer as any)._id,
+            name: (buyer as any).name,
+            profilePicture: (buyer as any).profilePicture
+          } : null,
+          sellerResponse: sellerResponse,
+          followUpReviews: review.followUpReviews || []
         };
       })
     );
@@ -173,12 +196,12 @@ async function createReview(req: NextApiRequest, res: NextApiResponse, productId
       productId,
       orderId,
       buyerId: userId,
-      sellerId: product.sellerId,
+      sellerId: product.sellerId || product.farmerId,
       rating,
       comment,
       images: images || [],
       verified: true,
-      status: 'approved'
+      status: 'active'
     });
 
     return res.status(201).json({

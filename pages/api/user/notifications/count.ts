@@ -38,14 +38,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Verify token
     const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const userId = decoded.userId || decoded.id;
     
-    // For now, return a mock notification count
-    // In a real application, you would query the database for the user's unread notifications
-    // Example: const notifications = await Notification.find({ userId: decoded.userId, read: false });
-    // return res.status(200).json({ count: notifications.length });
+    if (!userId) {
+      return res.status(200).json({ count: 0 });
+    }
+
+    // Get unread notification count from database
+    const Notification = (await import('@/models/Notification')).default;
+    const count = await Notification.countDocuments({ 
+      userId, 
+      isRead: false 
+    });
     
-    // Return 0 for now since there's no notification system implemented yet
-    res.status(200).json({ count: 0 });
+    res.status(200).json({ count });
 
   } catch (error) {
     console.error('Notification count error:', error);

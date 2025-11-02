@@ -293,77 +293,6 @@ const BestSellerPageContent = () => {
         </div>
       </nav>
 
-      {/* Dynamic Best Seller Highlight Banner */}
-      {banner?.enabled && (
-        <div 
-          className="relative overflow-hidden border-b border-green-200"
-          style={{ 
-            background: banner.backgroundColor || 'linear-gradient(135deg, #DCFCE7 0%, #F0FDF4 50%, #ECFDF5 100%)'
-          }}
-        >
-          {/* Organic Abstract Shapes */}
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute top-4 left-8 w-32 h-32 bg-green-300 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
-            <div className="absolute top-12 right-12 w-24 h-24 bg-emerald-300 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-1000"></div>
-            <div className="absolute bottom-8 left-1/3 w-20 h-20 bg-lime-300 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-500"></div>
-            <div className="absolute bottom-12 right-1/4 w-28 h-28 bg-green-400 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-700"></div>
-          </div>
-          
-          <div className="relative px-4 md:px-12 py-8 md:py-12">
-            <div className="max-w-6xl mx-auto">
-              <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
-                
-                {/* Left Content - Dynamic */}
-                <div className="flex-1 text-center lg:text-left">
-                  <h1 
-                    className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight" 
-                    style={{ 
-                      fontFamily: 'Poppins, sans-serif',
-                      color: banner.textColor || '#1E3A2F'
-                    }}
-                  >
-                    {banner.title}
-                  </h1>
-                  <p 
-                    className="text-lg md:text-xl lg:text-2xl mb-6 max-w-2xl" 
-                    style={{ 
-                      fontFamily: 'Poppins, sans-serif',
-                      color: banner.textColor || '#15803D'
-                    }}
-                  >
-                    {banner.subtitle}
-                  </p>
-                  
-                  <Link href={banner.buttonLink}>
-                    <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-full transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      {banner.buttonText}
-                    </button>
-                  </Link>
-                </div>
-
-                {/* Right Content - Dynamic Hero Image */}
-                <div className="flex-shrink-0 lg:w-96">
-                  <div className="relative w-full h-64 lg:h-80">
-                    <Image
-                      src={banner.heroImage}
-                      alt="Featured best seller products"
-                      fill
-                      className="object-cover rounded-2xl shadow-2xl"
-                      sizes="(max-width: 768px) 100vw, 384px"
-                      priority
-                      onError={(e) => {
-                        // Fallback to a placeholder if the image doesn't exist
-                        (e.target as HTMLImageElement).src = '/images/products/default.png';
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Main Best Seller Content */}
       <div className="px-4 md:px-12 py-6" id="products">
         <div className="flex flex-col lg:flex-row gap-6">
@@ -641,29 +570,48 @@ const BestSellerPageContent = () => {
               ) : products.length === 0 ? (
                 <div className="text-center py-12 px-4">
                   <div className="text-gray-500 mb-4">
-                    <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                     </svg>
-                    <h3 className="text-lg md:text-xl font-semibold mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    <h3 className="text-xl font-semibold mb-2 text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       No Best Sellers Found
                     </h3>
-                    <p className="text-sm md:text-base text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    <p className="text-base text-gray-600 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       {selectedCategory === 'all' 
-                        ? "No best sellers available at the moment." 
-                        : `No best sellers found matching your filters.`
+                        ? "We're currently updating our best sellers. Please check back soon!" 
+                        : `No best sellers found in ${selectedCategory}. Try browsing other categories.`
                       }
                     </p>
                   </div>
-                  <button 
-                    onClick={clearFilters}
-                    className="min-h-[44px] px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm md:text-base"
-                    style={{ fontFamily: 'Poppins, sans-serif' }}
-                  >
-                    Clear Filters
-                  </button>
+                  {selectedCategory !== 'all' && (
+                    <button 
+                      onClick={clearFilters}
+                      className="min-h-[44px] px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm md:text-base"
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                    >
+                      View All Products
+                    </button>
+                  )}
                 </div>
               ) : (
                 <>
+                  {/* Best Sellers Header Info */}
+                  <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border-l-4 border-green-500">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                      </svg>
+                      <div>
+                        <h3 className="font-semibold text-green-800 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          Why These Are Best Sellers
+                        </h3>
+                        <p className="text-sm text-green-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          These products are ranked based on sales, customer ratings, and popularity. Click on any product to view details, or add directly to cart!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8 justify-items-center">
                     {products.map((product: IProduct) => (
                       <ProductCard key={product._id} product={product} />
@@ -674,11 +622,14 @@ const BestSellerPageContent = () => {
                     <div className="text-center mt-8 md:mt-12">
                       <button 
                         onClick={handleLoadMore}
-                        className="min-h-[44px] bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 md:px-8 rounded-lg transition-colors text-sm md:text-base"
+                        className="min-h-[44px] bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 md:px-8 rounded-lg transition-colors text-sm md:text-base shadow-md hover:shadow-lg"
                         style={{ fontFamily: 'Poppins, sans-serif' }}
                       >
-                        Load More
+                        Load More Best Sellers
                       </button>
+                      <p className="text-sm text-gray-500 mt-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        Showing {products.length} of {totalProducts} best sellers
+                      </p>
                     </div>
                   )}
                 </>

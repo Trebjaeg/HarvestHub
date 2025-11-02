@@ -151,13 +151,13 @@ const FarmerApplication: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Government ID Upload */}
           <div>
-            <Label htmlFor="governmentId" className="text-base font-semibold">
+            <Label htmlFor="governmentId" className="text-sm font-semibold text-gray-700">
               Government ID * <span className="text-sm font-normal text-gray-500">(Required for verification)</span>
             </Label>
             <Input
               id="governmentId"
               type="file"
-              accept="image/jpeg,image/jpg,image/png,application/pdf"
+              accept="image/jpeg,image/jpg,image/png,image/heic,image/heif,application/pdf"
               onChange={handleFileChange}
               className="mt-2"
               required
@@ -165,7 +165,7 @@ const FarmerApplication: React.FC = () => {
             <p className="text-xs text-gray-500 mt-1">
               Upload a clear photo of your government-issued ID (Driver's License, National ID, Passport, etc.)
               <br />
-              Accepted formats: JPEG, PNG, PDF • Max size: 5MB
+              Accepted formats: JPEG, PNG, HEIC, PDF • Max size: 50MB
             </p>
             {governmentIdFile && (
               <p className="text-sm text-green-600 mt-2">

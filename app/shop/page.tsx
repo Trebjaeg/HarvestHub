@@ -10,6 +10,9 @@ import { useAuthUserData } from '../../hooks/useAuthUserData';
 import { useProducts } from '../../hooks/useProducts';
 import { ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import NotificationsPanel from '../../components/NotificationsPanel';
+import { useNotificationSocket } from '../../hooks/useNotificationSocket';
+import { useNotificationShake } from '../../hooks/useNotificationShake';
 
 const ShopPageContent = () => {
   const { isAuthenticated, cartCount: initialCartCount, notificationCount } = useAuthUserData();
@@ -26,8 +29,13 @@ const ShopPageContent = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+  const notificationButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileNotificationButtonRef = useRef<HTMLButtonElement>(null);
   const [cartShake, setCartShake] = useState(false);
   const [cartCount, setCartCount] = useState(initialCartCount);
+  const [notificationsPanelOpen, setNotificationsPanelOpen] = useState(false);
+  const { unreadCount, setUnreadCount } = useNotificationSocket();
+  const { shouldShake: notificationShake } = useNotificationShake();
   
   // Debounce timer for search suggestions
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -53,9 +61,10 @@ const ShopPageContent = () => {
     search: searchQuery
   });
 
-  // Since rating is not available in the product model, we'll just use all products
-  // In the future, if rating is added to the product model, this can be updated
-  const filteredProducts = products; // Remove rating filter since rating doesn't exist on products
+  // Filter products by rating on the client side (since API doesn't support it yet)
+  const filteredProducts = selectedRating > 0 
+    ? products.filter(p => ((p as any).rating || 0) >= selectedRating)
+    : products;
 
   const categories = [
     { id: 'all', name: 'All Products' },
@@ -268,16 +277,24 @@ const ShopPageContent = () => {
                 )}
               </Link>
               
-              <Link href="/messages" className="relative p-2 rounded-lg hover:bg-white/10 transition-all duration-200" title="Notifications">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                </svg>
-                {isAuthenticated && notificationCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {notificationCount > 99 ? '99+' : notificationCount}
-                  </span>
-                )}
-              </Link>
+              <div className="relative">
+                <button 
+                  ref={mobileNotificationButtonRef}
+                  onClick={() => setNotificationsPanelOpen(!notificationsPanelOpen)}
+                  className="relative p-2 rounded-lg hover:bg-white/10 transition-all duration-200" 
+                  title="Notifications"
+                  aria-label={`Notifications${isAuthenticated && unreadCount > 0 ? ` (${unreadCount > 99 ? '99+' : unreadCount} unread)` : ''}`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-5 h-5 ${notificationShake ? 'animate-shake' : ''}`}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                  </svg>
+                  {isAuthenticated && unreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+              </div>
               
               <div className="relative">
                 <LanguageSwitcher variant="header" />
@@ -332,17 +349,24 @@ const ShopPageContent = () => {
                 )}
               </Link>
               
-              <Link href="/messages" className="relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center space-x-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                </svg>
-                <span className="text-white text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Notifications</span>
-                {isAuthenticated && notificationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {notificationCount > 99 ? '99+' : notificationCount}
-                  </span>
-                )}
-              </Link>
+              <div className="relative">
+                <button 
+                  ref={notificationButtonRef}
+                  onClick={() => setNotificationsPanelOpen(!notificationsPanelOpen)}
+                  className="relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center space-x-2"
+                  aria-label={`Notifications${isAuthenticated && unreadCount > 0 ? ` (${unreadCount > 99 ? '99+' : unreadCount} unread)` : ''}`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-6 h-6 ${notificationShake ? 'animate-shake' : ''}`}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                  </svg>
+                  <span className="text-white text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Notifications</span>
+                  {isAuthenticated && unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+              </div>
               
               <div className="relative">
                 <LanguageSwitcher variant="header" />
@@ -443,6 +467,16 @@ const ShopPageContent = () => {
             </button>
           ))}
         </div>
+      )}
+
+      {/* Notifications Panel - Works for both Desktop & Mobile */}
+      {notificationsPanelOpen && (notificationButtonRef.current || mobileNotificationButtonRef.current) && (
+        <NotificationsPanel 
+          isOpen={notificationsPanelOpen}
+          onClose={() => setNotificationsPanelOpen(false)}
+          onUnreadCountChange={setUnreadCount}
+          buttonRef={(notificationButtonRef.current ? notificationButtonRef : mobileNotificationButtonRef) as React.RefObject<HTMLButtonElement>}
+        />
       )}
 
       <nav className="bg-gray-100 py-3 border-b border-gray-200 sticky top-0 z-50">

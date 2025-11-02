@@ -26,49 +26,69 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData();
-    const file = formData.get('file') as File;
     const folder = formData.get('folder') as string || 'general';
+    
+    // Get all files (supports both single 'file' and multiple 'images')
+    const files: File[] = [];
+    const singleFile = formData.get('file') as File;
+    const multipleFiles = formData.getAll('images') as File[];
+    
+    if (singleFile) {
+      files.push(singleFile);
+    }
+    if (multipleFiles && multipleFiles.length > 0) {
+      files.push(...multipleFiles);
+    }
 
-    if (!file) {
+    if (files.length === 0) {
       return NextResponse.json(
-        { error: 'No file provided' },
+        { error: 'No files provided' },
         { status: 400 }
       );
     }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json(
-        { error: 'Only image files are allowed' },
-        { status: 400 }
-      );
+    // Upload all files
+    const uploadedUrls: string[] = [];
+    
+    for (const file of files) {
+      // Validate file type (allow common images and HEIC/HEIF by extension)
+      const lowerName = (file.name || '').toLowerCase();
+      const looksLikeHeic = lowerName.endsWith('.heic') || lowerName.endsWith('.heif');
+      if (!(file.type?.startsWith('image/') || looksLikeHeic)) {
+        return NextResponse.json(
+          { error: 'Only image files are allowed (jpg/png/webp/heic/heif)' },
+          { status: 400 }
+        );
+      }
+
+      // Validate file size (max 60MB per image server-side)
+      if (file.size > 60 * 1024 * 1024) {
+        return NextResponse.json(
+          { error: 'Each file must be less than 60MB' },
+          { status: 400 }
+        );
+      }
+
+      // Generate unique filename
+      const timestamp = Date.now();
+      const randomString = Math.random().toString(36).substring(2, 15);
+  const fileExtension = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const fileName = `${timestamp}-${randomString}.${fileExtension}`;
+
+      // Convert file to buffer
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // Upload to DigitalOcean Spaces
+      const imageUrl = await uploadToSpaces(buffer, fileName, file.type, folder);
+      uploadedUrls.push(imageUrl);
     }
-
-    // Validate file size (max 30MB after compression)
-    if (file.size > 30 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: 'File size must be less than 30MB' },
-        { status: 400 }
-      );
-    }
-
-    // Generate unique filename
-    const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 15);
-    const fileExtension = file.name.split('.').pop() || 'jpg';
-    const fileName = `${folder}/${timestamp}-${randomString}.${fileExtension}`;
-
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Upload to DigitalOcean Spaces
-    const imageUrl = await uploadToSpaces(buffer, fileName, file.type);
 
     return NextResponse.json({
       success: true,
-      url: imageUrl,
-      message: 'File uploaded successfully'
+      url: uploadedUrls[0], // For backward compatibility with single file uploads
+      urls: uploadedUrls, // For multiple file uploads
+      message: `${uploadedUrls.length} file(s) uploaded successfully`
     });
 
   } catch (error: any) {

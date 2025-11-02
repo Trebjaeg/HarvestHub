@@ -6,7 +6,7 @@ import cache from '@/lib/memory-cache';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
     await dbConnect();
@@ -18,7 +18,7 @@ export async function DELETE(
     }
 
     const userId = authResult.user.id;
-    const { productId } = params;
+    const { productId } = await params;
 
     if (!productId) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });

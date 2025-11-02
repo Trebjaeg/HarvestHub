@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import LoadingDots from '@/components/ui/LoadingDots';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import ReviewSection from '@/components/ReviewSection';
 import { 
   ArrowLeft, 
   Package, 
@@ -34,11 +35,12 @@ interface OrderDetails {
     unit: string;
     category: string;
     subtotal: number;
+    image?: string;
   }>;
   totalAmount: number;
   deliveryFee: number;
   finalAmount: number;
-  status: 'pending' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled' | 'completed';
+  status: 'preparing' | 'shipped' | 'delivered' | 'cancelled' | 'completed';
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
   paymentMethod: string;
   estimatedDelivery?: string;
@@ -53,6 +55,14 @@ interface OrderDetails {
   sellerId: string;
   sellerName: string;
   notes?: string;
+  refusalReason?: string;
+  refusalDate?: string;
+  cancellationRequest?: {
+    requestedBy: 'buyer';
+    reason?: string;
+    requestedAt: string;
+    status: 'pending' | 'approved' | 'rejected';
+  };
   createdAt: string;
   updatedAt: string;
   totalItems: number;
@@ -88,8 +98,6 @@ interface ApiResponse {
 }
 
 const statusColors = {
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  confirmed: 'bg-blue-100 text-blue-800 border-blue-200',
   preparing: 'bg-purple-100 text-purple-800 border-purple-200',
   shipped: 'bg-indigo-100 text-indigo-800 border-indigo-200',
   delivered: 'bg-green-100 text-green-800 border-green-200',
@@ -107,17 +115,28 @@ const paymentStatusColors = {
 export default function OrderDetailsPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const orderId = params.id as string;
-  const activeTab = searchParams.get('tab') || 'details';
+  const orderId = (params?.id ?? '') as string;
+  const activeTab = (searchParams?.get('tab') ?? 'details') as string;
 
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [contacting, setContacting] = useState(false);
+  const [receiving, setReceiving] = useState(false);
+  const [refusing, setRefusing] = useState(false);
 
   // Cancel confirmation dialog state
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  
+  // Receive confirmation dialog state
+  const [showReceiveDialog, setShowReceiveDialog] = useState(false);
+  
+  // Refuse delivery dialog state
+  const [showRefuseDialog, setShowRefuseDialog] = useState(false);
+  const [refuseReason, setRefuseReason] = useState('');
   
   // Result dialog state
   const [resultDialog, setResultDialog] = useState<{
@@ -192,20 +211,32 @@ export default function OrderDetailsPage() {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify({
+          reason: cancelReason
+        })
       });
 
       const data = await response.json();
 
       if (response.ok) {
         setShowCancelDialog(false);
+        setCancelReason(''); // Reset reason
         
-        // Show success message
-        setResultDialog({
-          open: true,
-          success: true,
-          message: 'Order cancelled successfully. Your inventory has been released.'
-        });
+        // Check if it requires approval
+        if (data.requiresApproval) {
+          setResultDialog({
+            open: true,
+            success: true,
+            message: 'Cancellation request submitted. The seller will review your request and respond shortly.'
+          });
+        } else {
+          setResultDialog({
+            open: true,
+            success: true,
+            message: 'Order cancelled successfully.'
+          });
+        }
         
         await fetchOrderDetails(false); // Refresh order details
       } else {
@@ -229,6 +260,165 @@ export default function OrderDetailsPage() {
       });
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleReceiveOrder = async () => {
+    if (!order) return;
+    setShowReceiveDialog(true);
+  };
+
+  const confirmReceiveOrder = async () => {
+    if (!order) return;
+
+    try {
+      setReceiving(true);
+      const response = await fetch(`/api/buyer/orders/${orderId}/receive`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setShowReceiveDialog(false);
+        
+        // Show success message
+        setResultDialog({
+          open: true,
+          success: true,
+          message: 'Order marked as received! Thank you for confirming delivery.'
+        });
+        
+        await fetchOrderDetails(false); // Refresh order details
+      } else {
+        setShowReceiveDialog(false);
+        
+        // Show error message
+        setResultDialog({
+          open: true,
+          success: false,
+          message: data.message || 'Failed to mark order as received. Please try again.'
+        });
+      }
+    } catch (error) {
+      setShowReceiveDialog(false);
+      
+      // Show error message
+      setResultDialog({
+        open: true,
+        success: false,
+        message: 'Error marking order as received. Please check your connection and try again.'
+      });
+    } finally {
+      setReceiving(false);
+    }
+  };
+
+  const handleRefuseDelivery = async () => {
+    if (!order) return;
+    setRefuseReason('');
+    setShowRefuseDialog(true);
+  };
+
+  const confirmRefuseDelivery = async () => {
+    if (!order) return;
+    
+    if (!refuseReason.trim()) {
+      setResultDialog({
+        open: true,
+        success: false,
+        message: 'Please provide a reason for refusing the delivery.'
+      });
+      return;
+    }
+
+    try {
+      setRefusing(true);
+      const response = await fetch(`/api/buyer/orders/${orderId}/refuse`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: refuseReason })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setShowRefuseDialog(false);
+        
+        // Show success message
+        setResultDialog({
+          open: true,
+          success: true,
+          message: 'Delivery refused. The seller has been notified and your order will be processed accordingly.'
+        });
+        
+        await fetchOrderDetails(false); // Refresh order details
+      } else {
+        setShowRefuseDialog(false);
+        
+        // Show error message
+        setResultDialog({
+          open: true,
+          success: false,
+          message: data.message || 'Failed to refuse delivery. Please try again.'
+        });
+      }
+    } catch (error) {
+      setShowRefuseDialog(false);
+      
+      // Show error message
+      setResultDialog({
+        open: true,
+        success: false,
+        message: 'Error refusing delivery. Please check your connection and try again.'
+      });
+    } finally {
+      setRefusing(false);
+    }
+  };
+
+  const handleContactSeller = async () => {
+    if (!order) return;
+
+    try {
+      setContacting(true);
+
+      // Send order details message automatically using existing chat API
+      const orderDetailsMessage = `Hi! I have a question about my order #${order.orderNumber}\n\nOrder Date: ${formatDate(order.orderDate)}\nTotal Amount: ${formatCurrency(order.finalAmount)}\nStatus: ${order.status}\n\nProducts:\n${order.products.map(p => `- ${p.productName} (${p.quantity} ${p.unit})`).join('\n')}`;
+
+      const response = await fetch('/api/chat/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          receiverId: order.sellerId,
+          message: orderDetailsMessage
+        })
+      });
+
+      if (response.ok) {
+        // Redirect to inbox after sending message
+        window.location.href = '/inbox';
+      } else {
+        throw new Error('Failed to send message');
+      }
+    } catch (error) {
+      setResultDialog({
+        open: true,
+        success: false,
+        message: 'Failed to contact seller. Please try again.'
+      });
+    } finally {
+      setContacting(false);
     }
   };
 
@@ -405,12 +595,27 @@ export default function OrderDetailsPage() {
               >
                 Order Tracking
               </Link>
+              {(order.status === 'delivered' || order.status === 'completed') && (
+                <Link
+                  href={`/buyer-orders/${orderId}?tab=review`}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'review'
+                      ? 'border-green-500 text-green-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                >
+                  Write Review
+                </Link>
+              )}
             </nav>
           </div>
         </div>
 
         {/* Content */}
-        {activeTab === 'details' ? (
+        {activeTab === 'review' ? (
+          <ReviewSection orderId={order._id} products={order.products} />
+        ) : activeTab === 'details' ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-8">
@@ -424,8 +629,16 @@ export default function OrderDetailsPage() {
                 <div className="divide-y divide-gray-200">
                   {order.products.map((product, index) => (
                     <div key={index} className="p-6 flex items-center gap-4">
-                      <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <Package className="w-8 h-8 text-gray-400" />
+                      <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                        {product.image ? (
+                          <img 
+                            src={product.image} 
+                            alt={product.productName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Package className="w-8 h-8 text-gray-400" />
+                        )}
                       </div>
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -507,6 +720,101 @@ export default function OrderDetailsPage() {
                   </p>
                 </div>
               )}
+
+              {/* Cancellation Request Status */}
+              {order.cancellationRequest && (
+                <div className={`border rounded-lg shadow-sm p-6 ${
+                  order.cancellationRequest.status === 'pending' 
+                    ? 'bg-yellow-50 border-yellow-200' 
+                    : order.cancellationRequest.status === 'approved'
+                    ? 'bg-green-50 border-green-200'
+                    : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className="flex items-start gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      order.cancellationRequest.status === 'pending'
+                        ? 'bg-yellow-100'
+                        : order.cancellationRequest.status === 'approved'
+                        ? 'bg-green-100'
+                        : 'bg-red-100'
+                    }`}>
+                      {order.cancellationRequest.status === 'pending' ? (
+                        <Clock className={`w-5 h-5 ${
+                          order.cancellationRequest.status === 'pending' ? 'text-yellow-600' : ''
+                        }`} />
+                      ) : order.cancellationRequest.status === 'approved' ? (
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-red-600" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h2 className={`text-lg font-semibold mb-2 ${
+                        order.cancellationRequest.status === 'pending'
+                          ? 'text-yellow-900'
+                          : order.cancellationRequest.status === 'approved'
+                          ? 'text-green-900'
+                          : 'text-red-900'
+                      }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {order.cancellationRequest.status === 'pending' && 'Cancellation Request Pending'}
+                        {order.cancellationRequest.status === 'approved' && 'Cancellation Request Approved'}
+                        {order.cancellationRequest.status === 'rejected' && 'Cancellation Request Rejected'}
+                      </h2>
+                      <p className={`mb-2 ${
+                        order.cancellationRequest.status === 'pending'
+                          ? 'text-yellow-800'
+                          : order.cancellationRequest.status === 'approved'
+                          ? 'text-green-800'
+                          : 'text-red-800'
+                      }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {order.cancellationRequest.status === 'pending' && 
+                          `Your cancellation request is waiting for seller approval. Requested on ${formatDate(order.cancellationRequest.requestedAt)}`}
+                        {order.cancellationRequest.status === 'approved' && 
+                          'The seller has approved your cancellation request. Your order has been cancelled.'}
+                        {order.cancellationRequest.status === 'rejected' && 
+                          'The seller has rejected your cancellation request. The order will continue as planned.'}
+                      </p>
+                      {order.cancellationRequest.reason && (
+                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                          <p className="text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                            Your Reason:
+                          </p>
+                          <p className="text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                            {order.cancellationRequest.reason}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Refusal Reason */}
+              {order.status === 'cancelled' && order.refusalReason && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg shadow-sm p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                      <AlertTriangle className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-lg font-semibold text-orange-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        Delivery Refused
+                      </h2>
+                      <p className="text-orange-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        You refused this delivery on {order.refusalDate && formatDate(order.refusalDate)}
+                      </p>
+                      <div className="bg-white rounded-lg p-4 border border-orange-200">
+                        <p className="text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          Reason:
+                        </p>
+                        <p className="text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          {order.refusalReason}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Sidebar */}
@@ -578,9 +886,15 @@ export default function OrderDetailsPage() {
                     </span>
                   </div>
                   {order.canContactSeller && (
-                    <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
+                    <button 
+                      onClick={handleContactSeller}
+                      disabled={contacting}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                       <MessageSquare className="w-4 h-4" />
-                      <span style={{ fontFamily: 'Poppins, sans-serif' }}>Contact Seller</span>
+                      <span style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {contacting ? 'Contacting...' : 'Contact Seller'}
+                      </span>
                     </button>
                   )}
                 </div>
@@ -597,7 +911,41 @@ export default function OrderDetailsPage() {
                     <span style={{ fontFamily: 'Poppins, sans-serif' }}>Download Invoice</span>
                   </button>
                   
-                  {order.canCancel && (
+                  {order.status === 'shipped' && (
+                    <>
+                      <button
+                        onClick={handleReceiveOrder}
+                        disabled={receiving || refusing}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                      >
+                        {receiving ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                          <CheckCircle className="w-5 h-5" />
+                        )}
+                        <span style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          {receiving ? 'Processing...' : 'Order Received'}
+                        </span>
+                      </button>
+                      
+                      <button
+                        onClick={handleRefuseDelivery}
+                        disabled={receiving || refusing}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                      >
+                        {refusing ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600"></div>
+                        ) : (
+                          <XCircle className="w-4 h-4" />
+                        )}
+                        <span style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          {refusing ? 'Processing...' : 'Refuse Delivery'}
+                        </span>
+                      </button>
+                    </>
+                  )}
+                  
+                  {order.canCancel && !order.cancellationRequest?.status && (
                     <button
                       onClick={handleCancelOrder}
                       disabled={cancelling}
@@ -612,6 +960,15 @@ export default function OrderDetailsPage() {
                         {cancelling ? 'Cancelling...' : 'Cancel Order'}
                       </span>
                     </button>
+                  )}
+                  
+                  {order.cancellationRequest?.status === 'pending' && (
+                    <div className="w-full px-4 py-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-center text-sm">
+                      <Clock className="w-4 h-4 inline mr-2" />
+                      <span style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        Cancellation request pending
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -717,26 +1074,51 @@ export default function OrderDetailsPage() {
       {/* Cancel Order Confirmation Dialog */}
       <Dialog open={showCancelDialog} onOpenChange={(open) => !cancelling && setShowCancelDialog(open)}>
         <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <DialogTitle className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Cancel Order?
+          </DialogTitle>
           <div className="flex flex-col items-center gap-4">
             {/* Icon */}
             <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
               <XCircle className="w-10 h-10 text-red-600" />
             </div>
             
-            {/* Title */}
-            <h3 className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Cancel Order?
-            </h3>
-            
             {/* Message */}
             <p className="text-gray-600 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Are you sure you want to cancel this order? This action cannot be undone.
+              {order?.status === 'preparing' 
+                ? 'Are you sure you want to cancel this order? This action cannot be undone.'
+                : 'Please provide a reason for cancellation. The seller will review your request.'}
             </p>
+            
+            {/* Reason Textarea - Only show for confirmed/preparing/shipped orders */}
+            {order && ['confirmed', 'preparing', 'shipped'].includes(order.status) && (
+              <div className="w-full">
+                <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Reason for Cancellation
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Please explain why you want to cancel this order..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                  rows={4}
+                  maxLength={500}
+                  disabled={cancelling}
+                />
+                <p className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  {cancelReason.length}/500 characters
+                </p>
+              </div>
+            )}
             
             {/* Buttons */}
             <div className="flex gap-3 w-full">
               <button
-                onClick={() => setShowCancelDialog(false)}
+                onClick={() => {
+                  setShowCancelDialog(false);
+                  setCancelReason('');
+                }}
                 disabled={cancelling}
                 className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
@@ -749,7 +1131,98 @@ export default function OrderDetailsPage() {
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
-                {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
+                {cancelling ? 'Processing...' : order?.status === 'preparing' ? 'Yes, Cancel' : 'Submit Request'}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Receive Order Confirmation Dialog */}
+      <Dialog open={showReceiveDialog} onOpenChange={(open) => !receiving && setShowReceiveDialog(open)}>
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <DialogTitle className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Confirm Order Received?
+          </DialogTitle>
+          <div className="flex flex-col items-center gap-4">
+            {/* Icon */}
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle className="w-10 h-10 text-green-600" />
+            </div>
+            
+            {/* Message */}
+            <p className="text-gray-600 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Have you received your order in good condition? This will mark the order as delivered.
+            </p>
+            
+            {/* Buttons */}
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setShowReceiveDialog(false)}
+                disabled={receiving}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                Not Yet
+              </button>
+              <button
+                onClick={confirmReceiveOrder}
+                disabled={receiving}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                {receiving ? 'Processing...' : 'Yes, Received'}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Refuse Delivery Dialog */}
+      <Dialog open={showRefuseDialog} onOpenChange={(open) => !refusing && setShowRefuseDialog(open)}>
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <DialogTitle className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Refuse Delivery?
+          </DialogTitle>
+          <div className="flex flex-col items-center gap-4">
+            {/* Icon */}
+            <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center">
+              <AlertTriangle className="w-10 h-10 text-orange-600" />
+            </div>
+            
+            {/* Message */}
+            <p className="text-gray-600 text-center mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Please tell us why you're refusing this delivery. The seller will be notified.
+            </p>
+            
+            {/* Reason Input */}
+            <textarea
+              value={refuseReason}
+              onChange={(e) => setRefuseReason(e.target.value)}
+              placeholder="e.g., Damaged items, wrong order, quality issues..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+              rows={4}
+              disabled={refusing}
+            />
+            
+            {/* Buttons */}
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setShowRefuseDialog(false)}
+                disabled={refusing}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRefuseDelivery}
+                disabled={refusing || !refuseReason.trim()}
+                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                {refusing ? 'Processing...' : 'Refuse Delivery'}
               </button>
             </div>
           </div>
@@ -759,6 +1232,9 @@ export default function OrderDetailsPage() {
       {/* Result Dialog */}
       <Dialog open={resultDialog.open} onOpenChange={(open) => setResultDialog({ ...resultDialog, open })}>
         <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <DialogTitle className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            {resultDialog.success ? 'Success!' : 'Error'}
+          </DialogTitle>
           <div className="flex flex-col items-center gap-4">
             {/* Icon */}
             <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
@@ -770,11 +1246,6 @@ export default function OrderDetailsPage() {
                 <XCircle className="w-10 h-10 text-red-600" />
               )}
             </div>
-            
-            {/* Title */}
-            <h3 className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              {resultDialog.success ? 'Success!' : 'Error'}
-            </h3>
             
             {/* Message */}
             <p className="text-gray-600 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>

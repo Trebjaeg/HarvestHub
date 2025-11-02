@@ -511,50 +511,50 @@ export default function HelpCenterPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Top Navigation Bar */}
-      <div className="bg-[#103C2E] border-b border-gray-200 py-3">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Link href="/home" className="flex items-center space-x-2">
-                <span className="font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+      <div className="bg-[#103C2E] border-b border-gray-200 py-3 px-2 sm:px-4">
+        <div className="container mx-auto">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center space-x-1 sm:space-x-2 min-w-0">
+              <Link href="/home" className="flex items-center space-x-1 sm:space-x-2">
+                <span className="font-bold text-white text-sm sm:text-base" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   <span style={{ color: '#6CD75A'}}>Harvest</span>
                   <span style={{ color: '#D4DB69' }}>Hub</span>
                 </span>
               </Link>
-              <span className="text-gray-400">|</span>
-              <span className="text-white/80 font-bold" style={{ fontFamily: 'Poppins, sans-serif'}}>
-                HarvestHub Help Center
+              <span className="text-gray-400 text-xs sm:text-base">|</span>
+              <span className="text-white/80 font-bold text-xs sm:text-base truncate" style={{ fontFamily: 'Poppins, sans-serif'}}>
+                Help Center
               </span>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
               <Link 
                 href="/home"
-                className="flex items-center space-x-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
+                className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
-                <Home className="w-4 h-4" />
-                <span className="hidden sm:inline font-black"style={{ fontFamily: 'Poppins, sans-serif'}}>Back to Home</span>
+                <Home className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline font-black text-sm">Back to Home</span>
               </Link>
-              <span className="text-gray-400">|</span>
+              <span className="text-gray-400 hidden sm:inline">|</span>
               <button 
                 onClick={handleProfileNavigation}
-                className="flex items-center space-x-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
+                className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 font-medium"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 {isNavigatingProfile ? (
                   <LoadingDots />
                 ) : (
                   <>
-                    <User className="w-4 h-4" />
-                    <span className="hidden sm:inline font-bold" style={{ fontFamily: 'Poppins, sans-serif'}}>Profile</span>
+                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="hidden sm:inline font-bold text-sm">Profile</span>
                   </>
                 )}
               </button>
-              <span className="text-gray-400">|</span>
+              <span className="text-gray-400 hidden sm:inline">|</span>
               <Link 
                 href="/privacy" 
-                className="text-white/80 hover:text-white transition-colors font-bold"
+                className="text-white/80 hover:text-white transition-colors font-bold text-xs sm:text-sm"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 Policies
@@ -566,7 +566,7 @@ export default function HelpCenterPage() {
 
       {/* Header */}
       <div 
-        className="text-white py-16 relative overflow-hidden"
+        className="text-white py-8 sm:py-12 md:py-16 relative overflow-hidden"
         style={{
           backgroundImage: 'url(/images/KALI/unnamed.jpg)',
           backgroundSize: 'cover',
@@ -579,19 +579,19 @@ export default function HelpCenterPage() {
         
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold mb-8" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 md:mb-8" style={{ fontFamily: 'Poppins, sans-serif' }}>
               Hi, how can we help?
             </h1>
             
             {/* Search Bar */}
-            <div className="relative max-w-2xl mx-auto mb-8">
+            <div className="relative max-w-2xl mx-auto mb-4 sm:mb-6 md:mb-8">
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search for help topics, guides, or questions..."
+                  placeholder="Search for help..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full px-6 py-4 pr-16 text-gray-800 rounded-full border border-white/20 focus:outline-none focus:ring-2 focus:ring-white/30 text-lg shadow-lg"
+                  className="w-full px-4 sm:px-6 py-3 sm:py-4 pr-12 sm:pr-16 text-gray-800 rounded-full border border-white/20 focus:outline-none focus:ring-2 focus:ring-white/30 text-sm sm:text-base md:text-lg shadow-lg"
                   style={{ 
                     fontFamily: 'Poppins, sans-serif',
                     background: 'rgba(255, 255, 255, 0.15)',
@@ -602,12 +602,12 @@ export default function HelpCenterPage() {
                   }}
                 />
                 <button 
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-green-500 hover:bg-green-600 text-white p-3 rounded-full transition-colors border border-green-400/30"
+                  className="absolute right-1.5 sm:right-2 top-1/2 transform -translate-y-1/2 bg-green-500 hover:bg-green-600 text-white p-2 sm:p-3 rounded-full transition-colors border border-green-400/30"
                   style={{
                     boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)'
                   }}
                 >
-                  <Search className="w-5 h-5" />
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
             </div>
@@ -616,10 +616,10 @@ export default function HelpCenterPage() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-10 md:py-16">
         {/* Toggle Buttons */}
-        <div className="flex justify-center mb-12">
-          <div className="bg-white rounded-2xl shadow-lg p-2 flex">
+        <div className="flex justify-center mb-6 sm:mb-8 md:mb-12 px-4">
+          <div className="bg-white rounded-2xl shadow-lg p-1.5 sm:p-2 flex w-full sm:w-auto max-w-md sm:max-w-none">
             <button
               onClick={() => {
                 setActiveTab('buyer');
@@ -627,9 +627,9 @@ export default function HelpCenterPage() {
                 setExpandedFAQ(null);
                 setSelectedHotQuestion(null);
               }}
-              className={`flex items-center space-x-3 px-8 py-4 rounded-xl font-semibold transition-all duration-300 ${
+              className={`flex items-center justify-center space-x-2 sm:space-x-3 px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-xl font-semibold transition-all duration-300 flex-1 sm:flex-initial ${
                 activeTab === 'buyer'
-                  ? 'text-black shadow-lg transform scale-105'
+                  ? 'text-black shadow-lg scale-105'
                   : 'text-gray-600 hover:bg-blue-50'
               }`}
               style={{
@@ -637,8 +637,8 @@ export default function HelpCenterPage() {
                  backgroundColor: activeTab === 'buyer' ? 'oklch(0.967 0.003 264.542)' : 'transparent'
                 }}
             >
-              <ShoppingCart className={`w-6 h-6 ${activeTab === 'buyer' ? 'text-black' : 'oklch(0.967 0.003 264.542)'}`} />
-              <span className="text-lg">Buyer Help Center</span>
+              <ShoppingCart className={`w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 ${activeTab === 'buyer' ? 'text-black' : 'oklch(0.967 0.003 264.542)'}`} />
+              <span className="text-sm sm:text-base md:text-lg whitespace-nowrap">Buyer Help</span>
             </button>
             
             <button
@@ -648,15 +648,15 @@ export default function HelpCenterPage() {
                 setExpandedFAQ(null);
                 setSelectedHotQuestion(null);
               }}
-              className={`flex items-center space-x-3 px-8 py-4 rounded-xl font-semibold transition-all duration-300 ${
+              className={`flex items-center justify-center space-x-2 sm:space-x-3 px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-xl font-semibold transition-all duration-300 flex-1 sm:flex-initial ${
                 activeTab === 'seller'
-                  ? 'bg-green-500 text-white shadow-lg transform scale-105'
+                  ? 'bg-green-500 text-white shadow-lg scale-105'
                   : 'text-gray-600 hover:bg-green-50 hover:text-green-600'
               }`}
               style={{ fontFamily: 'Poppins, sans-serif' }}
             >
-              <Store className={`w-6 h-6 ${activeTab === 'seller' ? 'text-white' : 'text-green-500'}`} />
-              <span className="text-lg">Seller Help Center</span>
+              <Store className={`w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 ${activeTab === 'seller' ? 'text-white' : 'text-green-500'}`} />
+              <span className="text-sm sm:text-base md:text-lg whitespace-nowrap">Seller Help</span>
             </button>
           </div>
         </div>

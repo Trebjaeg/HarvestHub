@@ -7,12 +7,13 @@ import {
   User,
   ShoppingBag,
   Heart,
-  MessageSquare,
+  MessageCircle,
   HelpCircle,
   Home,
   Menu,
   X,
   MapPin,
+  Star,
 } from "lucide-react";
 import Image from "next/image";
 import ConfirmationModal from "@/components/ui/ConfirmationModal";
@@ -48,14 +49,19 @@ const menuItems = [
     href: "/buyer-addresses",
   },
   {
+    icon: Star,
+    label: "My Reviews",
+    href: "/buyer-reviews",
+  },
+  {
     icon: Heart,
     label: "Favorites",
     href: "/buyer-favorites",
   },
   {
-    icon: MessageSquare,
+    icon: MessageCircle,
     label: "Messages",
-    href: "/messages",
+    href: "/inbox",
   },
   {
     icon: HelpCircle,

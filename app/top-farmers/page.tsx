@@ -27,7 +27,6 @@ const TopFarmersPageContent = () => {
     farmers, 
     performanceFilters,
     categoryFilters,
-    banner,
     sorting,
     filters: filtersConfig,
     loading, 
@@ -300,76 +299,6 @@ const TopFarmersPageContent = () => {
           </div>
         </div>
       </nav>
-
-      {/* Dynamic Top Farmers Banner */}
-      {banner?.enabled && (
-        <div 
-          className="relative overflow-hidden border-b border-green-200"
-          style={{ 
-            background: banner.backgroundColor || 'linear-gradient(135deg, #DCFCE7 0%, #F0FDF4 50%, #ECFDF5 100%)'
-          }}
-        >
-          {/* Organic Abstract Shapes */}
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute top-4 left-8 w-32 h-32 bg-green-300 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
-            <div className="absolute top-12 right-12 w-24 h-24 bg-emerald-300 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-1000"></div>
-            <div className="absolute bottom-8 left-1/3 w-20 h-20 bg-lime-300 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-500"></div>
-            <div className="absolute bottom-12 right-1/4 w-28 h-28 bg-green-400 rounded-full mix-blend-multiply filter blur-xl animate-pulse delay-700"></div>
-          </div>
-          
-          <div className="relative px-4 md:px-12 py-8 md:py-12">
-            <div className="max-w-6xl mx-auto">
-              <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
-                
-                {/* Left Content - Dynamic */}
-                <div className="flex-1 text-center lg:text-left">
-                  <h1 
-                    className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight" 
-                    style={{ 
-                      fontFamily: 'Poppins, sans-serif',
-                      color: banner.textColor || '#1E3A2F'
-                    }}
-                  >
-                    {banner.title}
-                  </h1>
-                  <p 
-                    className="text-lg md:text-xl lg:text-2xl mb-6 max-w-2xl" 
-                    style={{ 
-                      fontFamily: 'Poppins, sans-serif',
-                      color: banner.textColor || '#15803D'
-                    }}
-                  >
-                    {banner.subtitle}
-                  </p>
-                  
-                  <Link href={banner.buttonLink}>
-                    <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-full transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      {banner.buttonText}
-                    </button>
-                  </Link>
-                </div>
-
-                {/* Right Content - Dynamic Hero Image */}
-                <div className="flex-shrink-0 lg:w-96">
-                  <div className="relative w-full h-64 lg:h-80">
-                    <Image
-                      src={banner.heroImage}
-                      alt="Top farmers"
-                      fill
-                      className="object-cover rounded-2xl shadow-2xl"
-                      sizes="(max-width: 768px) 100vw, 384px"
-                      priority
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/images/default-farmer.png';
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Main Top Farmers Content */}
       <div className="px-4 md:px-12 py-6" id="farmers">
@@ -781,17 +710,23 @@ const TopFarmersPageContent = () => {
                               {/* Farmer Info */}
                               <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center space-x-3">
-                                  <div className="relative w-10 h-10">
-                                    <Image
-                                      src={farmer.profilePicture}
-                                      alt={`${farmer.firstName} ${farmer.lastName}`}
-                                      fill
-                                      className="rounded-full object-cover"
-                                      sizes="40px"
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).src = '/images/default-farmer.png';
-                                      }}
-                                    />
+                                  <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                                    {farmer.profilePicture && farmer.profilePicture !== '/images/default-farmer.png' ? (
+                                      <Image
+                                        src={farmer.profilePicture}
+                                        alt={`${farmer.firstName} ${farmer.lastName}`}
+                                        fill
+                                        className="object-cover"
+                                        sizes="40px"
+                                      />
+                                    ) : (
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                                        <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                                        <path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" />
+                                      </svg>
+                                    )}
                                   </div>
                                   <div>
                                     <div className="text-sm font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -839,13 +774,19 @@ const TopFarmersPageContent = () => {
                               {/* Actions - Enhanced touch targets */}
                               <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                                 <div className="flex space-x-2">
-                                  <button className="inline-flex items-center min-h-[44px] px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                                    </svg>
-                                    {t('topFarmers.viewShop')}
-                                  </button>
-                                  <button className="inline-flex items-center min-h-[44px] px-3 py-2 border border-green-600 text-xs font-medium rounded-md text-green-600 bg-white hover:bg-green-50 transition-colors" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                  <Link href={`/seller/${farmer._id}`}>
+                                    <button className="inline-flex items-center min-h-[44px] px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                      </svg>
+                                      {t('topFarmers.viewShop')}
+                                    </button>
+                                  </Link>
+                                  <button 
+                                    onClick={() => alert('Messaging feature coming soon! For now, you can contact the seller through their shop page.')}
+                                    className="inline-flex items-center min-h-[44px] px-3 py-2 border border-green-600 text-xs font-medium rounded-md text-green-600 bg-white hover:bg-green-50 transition-colors" 
+                                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                                  >
                                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                     </svg>
@@ -926,13 +867,19 @@ const TopFarmersPageContent = () => {
                             
                             {/* Mobile action buttons with proper touch targets */}
                             <div className="flex flex-col sm:flex-row gap-2">
-                              <button className="flex-1 inline-flex items-center justify-center min-h-[44px] px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                                </svg>
-                                {t('topFarmers.viewShop')}
-                              </button>
-                              <button className="flex-1 inline-flex items-center justify-center min-h-[44px] px-4 py-3 border border-green-600 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-green-50 transition-colors" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                              <Link href={`/seller/${farmer._id}`} className="flex-1">
+                                <button className="w-full inline-flex items-center justify-center min-h-[44px] px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                  </svg>
+                                  {t('topFarmers.viewShop')}
+                                </button>
+                              </Link>
+                              <button 
+                                onClick={() => alert('Messaging feature coming soon! For now, you can contact the seller through their shop page.')}
+                                className="flex-1 inline-flex items-center justify-center min-h-[44px] px-4 py-3 border border-green-600 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-green-50 transition-colors" 
+                                style={{ fontFamily: 'Poppins, sans-serif' }}
+                              >
                                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                 </svg>

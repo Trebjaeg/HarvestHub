@@ -4,10 +4,13 @@ import Order from '@/models/Order';
 import CartItem from '@/models/CartItem';
 import User from '@/models/User';
 import Product from '@/models/Product';
+import ChatMessage, { generateConversationId } from '@/models/ChatMessage';
 import jwt from 'jsonwebtoken';
 import emailService from '@/lib/email-service';
 import inventoryManager from '@/lib/inventory-manager';
 import mongoose from 'mongoose';
+import { notifyNewOrder } from '@/lib/notification-utils';
+import { emitNewMessage } from '@/lib/socket-client';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
@@ -117,7 +120,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Create maps for O(1) lookup
     const sellerMap = new Map(sellers.map(s => [s._id.toString(), s]));
-    const productMap = new Map(products.map(p => [p._id.toString(), p]));
+    const productMap = new Map(products.map(p => [(p._id as any).toString(), p]));
 
     const createdOrders: string[] = [];
     const ordersToCreate: any[] = [];
@@ -151,10 +154,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ordersToCreate.push({
         orderNumber: generateOrderNumber(),
         buyerId: userId,
-        buyerName: buyer.fullName || buyer.email,
+        buyerName: (buyer as any).fullName || buyer.email,
         buyerEmail: buyer.email,
         sellerId: sellerId,
-        sellerName: seller.fullName || seller.email,
+        sellerName: (seller as any).fullName || seller.email,
         products: productsWithDetails,
         totalAmount: orderSubtotal,
         deliveryFee: shippingFee,
@@ -167,7 +170,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
         paymentMethod,
         paymentStatus: paymentMethod === 'cod' ? 'pending' : 'pending',
-        status: 'pending',
+        status: 'preparing',
         orderDate: new Date()
       });
     }
@@ -196,6 +199,72 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Commit transaction - both inventory reservation and order creation succeed together
       await session.commitTransaction();
 
+      // Send notifications to sellers (asynchronous, don't block response)
+      insertedOrders.forEach(order => {
+        const productNames = order.products.map((p: any) => p.productName);
+        notifyNewOrder(
+          order.sellerId,
+          order.orderNumber,
+          order._id.toString(),
+          order.buyerName,
+          productNames,
+          order.totalAmount
+        ).catch(err => console.error('Error sending notification:', err));
+      });
+
+      // Create initial chat messages for each order (buyer-seller conversation)
+      const chatMessages = insertedOrders.map(order => {
+        const conversationId = generateConversationId(userId, order.sellerId);
+        const productList = order.products.map((p: any) => `${p.productName} (${p.quantity} ${p.unit})`).join(', ');
+        
+        return {
+          conversationId,
+          senderId: userId,
+          senderName: order.buyerName,
+          senderRole: 'buyer',
+          receiverId: order.sellerId,
+          receiverName: order.sellerName,
+          receiverRole: 'seller',
+          message: `Hi! I just placed an order (${order.orderNumber}) for: ${productList}. Total: ₱${order.finalAmount.toFixed(2)}`,
+          isRead: false,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+      });
+
+      // Insert chat messages and emit real-time events
+      if (chatMessages.length > 0) {
+        ChatMessage.insertMany(chatMessages)
+          .then(async (insertedMessages) => {
+            // Emit new message events to both buyer and seller in real-time
+            for (let i = 0; i < insertedMessages.length; i++) {
+              const msg = insertedMessages[i];
+              const order = insertedOrders[i];
+              
+              const messageData = {
+                _id: msg._id.toString(),
+                conversationId: msg.conversationId,
+                senderId: msg.senderId,
+                senderName: msg.senderName,
+                senderRole: msg.senderRole,
+                receiverId: msg.receiverId,
+                receiverName: msg.receiverName,
+                receiverRole: msg.receiverRole,
+                message: msg.message,
+                isRead: msg.isRead,
+                createdAt: msg.createdAt.toISOString(),
+              };
+
+              // Emit to seller (receiver) - new conversation notification
+              await emitNewMessage(order.sellerId, messageData);
+              
+              // Emit to buyer (sender) - confirmation they initiated the conversation
+              await emitNewMessage(userId, messageData);
+            }
+          })
+          .catch(err => console.error('Error creating chat messages:', err));
+      }
+
       // Send order confirmation email asynchronously (don't wait for it)
       if (buyer.email && insertedOrders.length > 0) {
         // Get the first order for email (or combine all if needed)
@@ -207,7 +276,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       emailService.sendOrderConfirmation(buyer.email, {
         orderNumber: firstOrder.orderNumber,
-        buyerName: buyer.fullName || buyer.email.split('@')[0],
+        buyerName: (buyer as any).fullName || buyer.email.split('@')[0],
         products: firstOrder.products.map((p: any) => ({
           productName: p.productName,
           quantity: p.quantity,

@@ -286,7 +286,7 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
+                  accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,image/*"
                   capture="environment"
                   onChange={handleImageUpload}
                   className="hidden"

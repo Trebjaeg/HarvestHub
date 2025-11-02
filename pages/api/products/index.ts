@@ -20,6 +20,9 @@ async function productsHandler(req: NextApiRequest, res: NextApiResponse) {
 }
 
 async function getProducts(req: NextApiRequest, res: NextApiResponse) {
+  // Variable to hold cached data throughout the function (must be outside try block)
+  let cachedData: any = null;
+
   try {
     const {
       category,
@@ -38,7 +41,7 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
     const cacheKey = `products:${JSON.stringify({ category, featured, farmerId, search, limit, page, sort, sortBy, minPrice, maxPrice })}`;
 
     // Try memory cache first (fastest - no network calls)
-    let cachedData: any = memoryCache.get(cacheKey);
+    cachedData = memoryCache.get(cacheKey);
     if (cachedData) {
       return res.status(200).json(cachedData);
     }
@@ -50,8 +53,9 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
         new Promise((_, reject) => setTimeout(() => reject(new Error('Cache timeout')), 2000))
       ]);
       if (redisCachedData) {
-        // Store in memory cache for next time
-        memoryCache.set(cacheKey, redisCachedData, 300);
+        // Store in memory cache for next time (30 seconds for real-time updates)
+        memoryCache.set(cacheKey, redisCachedData, 30);
+        cachedData = redisCachedData;
         return res.status(200).json(redisCachedData);
       }
     } catch (cacheError) {
@@ -66,6 +70,9 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
       if (category === 'vegetables') {
         // Show all vegetable-related categories
         query.category = { $in: ['Leafy Greens', 'Root Crops', 'Eggplant & Gourds'] };
+      } else if (category === 'Grains & Rice') {
+        // Handle both "Grains & Rice" and "Grains and Rice" variations
+        query.category = { $in: ['Grains & Rice', 'Grains and Rice'] };
       } else {
         query.category = category;
       }
@@ -142,7 +149,7 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
     // Map inventory_available to stock for backwards compatibility
     const productsWithStock = products.map(p => ({
       ...p,
-      stock: p.inventory_available ?? p.stock ?? 0 // Use inventory_available as stock
+      stock: p.inventory_available || p.stock || 0
     }));
 
     // Estimate total (don't run expensive count query)
@@ -162,13 +169,13 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
       }
     };
 
-    // Cache the response in both memory (10 min) and Redis (10 min)
-    memoryCache.set(cacheKey, responseData, 600);
+    // Cache the response in both memory (30 seconds) and Redis (30 seconds) for real-time updates
+    memoryCache.set(cacheKey, responseData, 30);
     
     // Redis cache with timeout protection
     try {
       await Promise.race([
-        cache.set(cacheKeys.products(JSON.stringify({ category, featured, farmerId, search, limit, page, sort, sortBy, minPrice, maxPrice })), responseData, 600),
+        cache.set(cacheKeys.products(JSON.stringify({ category, featured, farmerId, search, limit, page, sort, sortBy, minPrice, maxPrice })), responseData, 30),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Cache write timeout')), 3000))
       ]);
     } catch (cacheError) {

@@ -91,7 +91,7 @@ export default function CheckoutPage() {
 
   const fetchSavedAddresses = async () => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // Increase to 15 seconds
 
     try {
       const response = await fetch('/api/user/addresses', {

@@ -201,13 +201,13 @@ export default function OrderConfirmationPage() {
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4">
           <Link 
-            href="/"
+            href="/shop"
             className="flex-1 bg-[#4A7C59] hover:bg-[#3d6549] text-white text-center py-3 rounded-lg font-semibold transition-colors"
           >
             Continue Shopping
           </Link>
           <Link 
-            href="/my-profile?tab=orders"
+            href="/buyer-orders"
             className="flex-1 bg-white hover:bg-gray-50 text-[#4A7C59] border-2 border-[#4A7C59] text-center py-3 rounded-lg font-semibold transition-colors"
           >
             View All Orders

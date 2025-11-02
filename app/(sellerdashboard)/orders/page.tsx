@@ -61,6 +61,12 @@ interface Order {
     province: string;
     zipCode: string;
   };
+  cancellationRequest?: {
+    requestedBy: 'buyer';
+    reason?: string;
+    requestedAt: string;
+    status: 'pending' | 'approved' | 'rejected';
+  };
   estimatedDelivery?: string;
   actualDelivery?: string;
   totalItems: number;
@@ -103,22 +109,26 @@ const statusIcons = {
 };
 
 const statusActions: { [key: string]: { label: string; nextStatus: string; color: string; icon: any }[] } = {
+  // Legacy statuses (for old orders in database)
   pending: [
-    { label: 'Confirm Order', nextStatus: 'confirmed', color: 'bg-[#4A7C59] hover:bg-[#3d6549]', icon: CheckCircle },
+    { label: 'Start Preparing', nextStatus: 'preparing', color: 'bg-[#4A7C59] hover:bg-[#3d6549]', icon: Package },
     { label: 'Cancel', nextStatus: 'cancelled', color: 'bg-red-600 hover:bg-red-700', icon: XCircle }
   ],
   confirmed: [
     { label: 'Start Preparing', nextStatus: 'preparing', color: 'bg-[#4A7C59] hover:bg-[#3d6549]', icon: Package },
     { label: 'Cancel', nextStatus: 'cancelled', color: 'bg-red-600 hover:bg-red-700', icon: XCircle }
   ],
+  // Current workflow
   preparing: [
     { label: 'Mark as Shipped', nextStatus: 'shipped', color: 'bg-[#4A7C59] hover:bg-[#3d6549]', icon: Truck },
     { label: 'Cancel', nextStatus: 'cancelled', color: 'bg-red-600 hover:bg-red-700', icon: XCircle }
   ],
   shipped: [
-    { label: 'Mark as Delivered', nextStatus: 'delivered', color: 'bg-green-600 hover:bg-green-700', icon: CheckCircle }
+    // Seller cannot mark as delivered - only buyer can confirm receipt
+    { label: 'Cancel', nextStatus: 'cancelled', color: 'bg-red-600 hover:bg-red-700', icon: XCircle }
   ],
   delivered: [
+    // Seller can complete order after buyer confirms delivery
     { label: 'Complete Order', nextStatus: 'completed', color: 'bg-emerald-600 hover:bg-emerald-700', icon: PackageCheck }
   ],
   cancelled: [],
@@ -160,6 +170,15 @@ const ManageOrders = () => {
   useEffect(() => {
     fetchOrders();
   }, [currentPage, sortBy, sortOrder, filters.status, filters.dateRange, filters.customStartDate, filters.customEndDate]);
+
+  // Auto-refresh orders every 30 seconds in the background (invisible loading)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchOrders(false); // false = invisible loading
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [currentPage, sortBy, sortOrder, filters]);
 
   // Debounced search
   useEffect(() => {
@@ -363,6 +382,52 @@ const ManageOrders = () => {
     }
   };
 
+  const handleCancellationRequest = async (orderId: string, action: 'approve' | 'reject') => {
+    try {
+      setUpdatingOrderId(orderId);
+
+      const response = await fetch(`/api/seller/orders/${orderId}/handle-cancellation`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        await fetchOrders(false);
+        
+        setResultDialog({
+          open: true,
+          success: true,
+          message: action === 'approve' 
+            ? 'Cancellation approved. The order has been cancelled and inventory has been released.' 
+            : 'Cancellation request rejected. The order will continue as planned.'
+        });
+      } else {
+        await fetchOrders(false);
+        
+        setResultDialog({
+          open: true,
+          success: false,
+          message: data.message || `Failed to ${action} cancellation request`
+        });
+      }
+    } catch (error) {
+      await fetchOrders(false);
+      setResultDialog({
+        open: true,
+        success: false,
+        message: 'Error processing cancellation request. Please try again.'
+      });
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -515,8 +580,8 @@ const ManageOrders = () => {
                     style={{ fontFamily: 'Poppins, sans-serif' }}
                   >
                     <option value="all">All Statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
+                    <option value="pending">Pending (Legacy)</option>
+                    <option value="confirmed">Confirmed (Legacy)</option>
                     <option value="preparing">Preparing</option>
                     <option value="shipped">Shipped</option>
                     <option value="delivered">Delivered</option>
@@ -628,7 +693,7 @@ const ManageOrders = () => {
                 {/* Order Header */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <h3 className="text-lg font-semibold text-[#103C2E]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         #{order.orderNumber}
                       </h3>
@@ -636,6 +701,12 @@ const ManageOrders = () => {
                         {getStatusIcon(order.status)}
                         {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                       </span>
+                      {order.cancellationRequest?.status === 'pending' && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border bg-red-100 text-red-800 border-red-300 animate-pulse">
+                          <AlertCircle className="w-3 h-3" />
+                          Cancellation Requested
+                        </span>
+                      )}
                     </div>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600">
                       <span className="flex items-center gap-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -696,9 +767,88 @@ const ManageOrders = () => {
                   </div>
                 </div>
 
+                {/* Cancellation Request Notice */}
+                {order.cancellationRequest?.status === 'pending' && (
+                  <div className="border-t pt-4">
+                    <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-red-900 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          The buyer has requested to cancel this order
+                        </p>
+                        {order.cancellationRequest.reason && (
+                          <div className="bg-white border border-red-200 rounded p-3 my-2">
+                            <p className="text-xs font-medium text-gray-700 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                              Reason:
+                            </p>
+                            <p className="text-sm text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                              {order.cancellationRequest.reason}
+                            </p>
+                          </div>
+                        )}
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={() => handleCancellationRequest(order._id, 'approve')}
+                            disabled={updatingOrderId === order._id}
+                            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                          >
+                            {updatingOrderId === order._id ? (
+                              <>
+                                <LoadingDots size="sm" color="#ffffff" />
+                                <span>Processing...</span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4" />
+                                Approve Cancellation
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleCancellationRequest(order._id, 'reject')}
+                            disabled={updatingOrderId === order._id}
+                            className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                          >
+                            {updatingOrderId === order._id ? (
+                              <>
+                                <LoadingDots size="sm" color="#ffffff" />
+                                <span>Processing...</span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-4 h-4" />
+                                Reject Request
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Shipped Order Notice */}
+                {order.status === 'shipped' && (
+                  <div className={`${order.cancellationRequest?.status === 'pending' ? '' : 'border-t'} pt-4`}>
+                    <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <Clock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-blue-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          Waiting for buyer confirmation
+                        </p>
+                        <p className="text-sm text-blue-700 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          The buyer needs to confirm receipt before you can complete this order.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Action Buttons */}
                 {statusActions[order.status] && statusActions[order.status].length > 0 && (
-                  <div className="border-t pt-4">
+                  <div className={`${order.status === 'shipped' ? '' : 'border-t'} pt-4`}>
                     <div className="flex flex-wrap gap-2">
                       {statusActions[order.status].map((action) => {
                         const Icon = action.icon;
@@ -836,6 +986,9 @@ const ManageOrders = () => {
       {resultDialog.open && (
         <Dialog open={resultDialog.open} onOpenChange={(open) => setResultDialog({ ...resultDialog, open })}>
           <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl p-8">
+            <VisuallyHidden>
+              <DialogTitle>{resultDialog.success ? 'Success' : 'Error'}</DialogTitle>
+            </VisuallyHidden>
             <div className="flex flex-col items-center gap-4">
               {/* Icon */}
               <div className={`w-16 h-16 rounded-full flex items-center justify-center ${

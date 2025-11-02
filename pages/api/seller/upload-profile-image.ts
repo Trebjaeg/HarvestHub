@@ -48,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Parse the uploaded file
     const form = formidable({
       keepExtensions: true,
-      maxFileSize: 5 * 1024 * 1024, // 5MB limit
+      maxFileSize: 60 * 1024 * 1024, // 60MB server-side limit
     });
 
     const [fields, files] = await form.parse(req);
@@ -58,9 +58,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: 'No image uploaded' });
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(profileImage.mimetype || '')) {
+    // Validate file type (allow HEIC/HEIF by mimetype or extension)
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
+    const lowerName = (profileImage.originalFilename || '').toLowerCase();
+    const looksLikeHeic = lowerName.endsWith('.heic') || lowerName.endsWith('.heif');
+    if (!(allowedTypes.includes(profileImage.mimetype || '') || looksLikeHeic)) {
       return res.status(400).json({ message: 'Invalid file type. Only images are allowed.' });
     }
 

@@ -39,6 +39,13 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Pragma', 'no-cache');
   response.headers.set('Expires', '0');
   
+  // Extra strict no-cache for cart endpoints
+  if (pathname.includes('/api/cart') || pathname.includes('/cart')) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    response.headers.set('Surrogate-Control', 'no-store');
+    response.headers.set('CDN-Cache-Control', 'no-store');
+  }
+  
   // Skip middleware for static files and Next.js internals
   if (
     pathname.includes('/_next/') ||

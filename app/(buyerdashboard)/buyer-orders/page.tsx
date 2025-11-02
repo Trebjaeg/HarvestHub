@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import LoadingDots from '@/components/ui/LoadingDots';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { 
   Package, 
   Search, 
@@ -16,8 +16,7 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  ShoppingBag,
-  RefreshCw
+  ShoppingBag
 } from 'lucide-react';
 
 // Custom Filter Icon
@@ -47,11 +46,12 @@ interface Order {
     price: number;
     unit: string;
     category: string;
+    hasReview?: boolean;
   }>;
   totalAmount: number;
   deliveryFee: number;
   finalAmount: number;
-  status: 'pending' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled' | 'completed';
+  status: 'preparing' | 'shipped' | 'delivered' | 'cancelled' | 'completed';
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
   estimatedDelivery?: string;
   actualDelivery?: string;
@@ -59,6 +59,13 @@ interface Order {
   totalItems: number;
   canCancel: boolean;
   canTrack: boolean;
+  hasReview?: boolean;
+  cancellationRequest?: {
+    requestedBy: 'buyer';
+    reason?: string;
+    requestedAt: string;
+    status: 'pending' | 'approved' | 'rejected';
+  };
 }
 
 interface Pagination {
@@ -93,8 +100,6 @@ interface ApiResponse {
 }
 
 const statusColors = {
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  confirmed: 'bg-blue-100 text-blue-800 border-blue-200',
   preparing: 'bg-purple-100 text-purple-800 border-purple-200',
   shipped: 'bg-indigo-100 text-indigo-800 border-indigo-200',
   delivered: 'bg-green-100 text-green-800 border-green-200',
@@ -103,8 +108,6 @@ const statusColors = {
 };
 
 const statusIcons = {
-  pending: Clock,
-  confirmed: CheckCircle,
   preparing: Package,
   shipped: Truck,
   delivered: CheckCircle,
@@ -119,7 +122,9 @@ export default function MyOrdersPage() {
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  
+  // Track recently mutated orders to prevent auto-refresh overwrites
+  const recentlyMutatedOrders = React.useRef<Set<string>>(new Set());
   
   // Cancel confirmation dialog state
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -154,9 +159,21 @@ export default function MyOrdersPage() {
   // Debounce search to avoid excessive API calls
   const [searchDebounce, setSearchDebounce] = useState<NodeJS.Timeout | null>(null);
 
+  // Fetch orders when dependencies change
   useEffect(() => {
     fetchOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, sortBy, sortOrder, filters.status, filters.category, filters.dateRange, filters.customStartDate, filters.customEndDate]);
+
+  // Auto-refresh orders every 30 seconds in the background (invisible loading)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchOrders(false); // false = invisible loading
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only set up once
 
   // Debounced search effect
   useEffect(() => {
@@ -165,9 +182,8 @@ export default function MyOrdersPage() {
     }
     
     const timeoutId = setTimeout(() => {
-      if (filters.searchTerm !== '' || currentPage !== 1) {
+      if (filters.searchTerm !== '') {
         setCurrentPage(1);
-        fetchOrders();
       }
     }, 500); // 500ms debounce
 
@@ -176,6 +192,7 @@ export default function MyOrdersPage() {
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.searchTerm]);
 
   const fetchOrders = async (showLoader = true) => {
@@ -241,7 +258,32 @@ export default function MyOrdersPage() {
       const data: ApiResponse = await response.json();
 
       if (data.success) {
-        setOrders(data.data.orders);
+        // Merge fresh data with recently mutated orders to prevent overwrites
+        setOrders(prevOrders => {
+          const freshOrders = data.data.orders;
+          const recentlyMutated = recentlyMutatedOrders.current;
+          
+          if (recentlyMutated.size === 0) {
+            // No recent mutations, use fresh data
+            return freshOrders;
+          }
+          
+          // Merge: keep local state for recently mutated orders
+          return freshOrders.map(freshOrder => {
+            if (recentlyMutated.has(freshOrder._id)) {
+              // Find the local version
+              const localOrder = prevOrders.find(o => o._id === freshOrder._id);
+              if (localOrder) {
+                // Keep local version if it has a pending cancellation request
+                if (localOrder.cancellationRequest?.status === 'pending') {
+                  return localOrder;
+                }
+              }
+            }
+            return freshOrder;
+          });
+        });
+        
         setPagination(data.data.pagination);
       } else {
         throw new Error(data.message || 'Failed to fetch orders');
@@ -252,7 +294,6 @@ export default function MyOrdersPage() {
       setPagination(null);
     } finally {
       if (showLoader) setLoading(false);
-      setRefreshing(false);
     }
   };
 
@@ -271,11 +312,6 @@ export default function MyOrdersPage() {
       customEndDate: ''
     });
     setCurrentPage(1);
-  };
-
-  const refreshOrders = async () => {
-    setRefreshing(true);
-    await fetchOrders(false);
   };
 
   const handleCancelOrder = async (orderId: string) => {
@@ -299,18 +335,71 @@ export default function MyOrdersPage() {
       const data = await response.json();
 
       if (response.ok) {
+        // Close dialog first
         setShowCancelDialog(false);
-        setOrderToCancel(null);
         
-        // Show success message
-        setResultDialog({
-          open: true,
-          success: true,
-          message: 'Order cancelled successfully. Your inventory has been released.'
-        });
-        
-        // Refresh orders to get updated data
-        await fetchOrders(false);
+        // Check if this is an immediate cancellation or a request pending approval
+        if (data.requiresApproval) {
+          // Mark this order as recently mutated
+          recentlyMutatedOrders.current.add(orderToCancel);
+          
+          // Order requires seller approval - update local state to show pending cancellation
+          setOrders(prevOrders => 
+            prevOrders.map(order => 
+              order._id === orderToCancel 
+                ? { 
+                    ...order, 
+                    canCancel: false, // Remove cancel button (can't request twice)
+                    cancellationRequest: {
+                      requestedBy: 'buyer' as const,
+                      reason: 'Buyer requested cancellation',
+                      requestedAt: new Date().toISOString(),
+                      status: 'pending' as const
+                    }
+                  }
+                : order
+            )
+          );
+          
+          setOrderToCancel(null);
+          
+          // Clear the mutation flag after 60 seconds (2 auto-refresh cycles)
+          setTimeout(() => {
+            recentlyMutatedOrders.current.delete(orderToCancel);
+          }, 60000);
+          
+          // Show success message
+          setResultDialog({
+            open: true,
+            success: true,
+            message: 'Cancellation request submitted. Waiting for seller approval.'
+          });
+        } else {
+          // Order cancelled immediately (was pending)
+          // Update local order status, payment status, and remove cancel/track buttons
+          setOrders(prevOrders => 
+            prevOrders.map(order => 
+              order._id === orderToCancel 
+                ? { 
+                    ...order, 
+                    status: 'cancelled' as const, 
+                    paymentStatus: 'refunded' as const,
+                    canCancel: false, 
+                    canTrack: false 
+                  }
+                : order
+            )
+          );
+          
+          setOrderToCancel(null);
+          
+          // Show success message
+          setResultDialog({
+            open: true,
+            success: true,
+            message: data.message || 'Order cancelled successfully.'
+          });
+        }
       } else {
         setShowCancelDialog(false);
         setOrderToCancel(null);
@@ -425,15 +514,6 @@ export default function MyOrdersPage() {
                 Track and manage your orders
               </p>
             </div>
-            <button
-              onClick={refreshOrders}
-              disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
-              style={{ fontFamily: 'Poppins, sans-serif' }}
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
           </div>
         </div>
 
@@ -504,8 +584,6 @@ export default function MyOrdersPage() {
                     style={{ fontFamily: 'Poppins, sans-serif' }}
                   >
                     <option value="all">All Statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
                     <option value="preparing">Preparing</option>
                     <option value="shipped">Shipped</option>
                     <option value="delivered">Delivered</option>
@@ -693,10 +771,24 @@ export default function MyOrdersPage() {
                         {formatCurrency(order.finalAmount)}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${statusColors[order.status]}`}>
-                          {getStatusIcon(order.status)}
-                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${statusColors[order.status]}`}>
+                            {getStatusIcon(order.status)}
+                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          </span>
+                          {order.cancellationRequest?.status === 'pending' && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border bg-orange-100 text-orange-800 border-orange-200">
+                              <Clock className="w-3 h-3" />
+                              Cancel Pending
+                            </span>
+                          )}
+                          {order.cancellationRequest?.status === 'rejected' && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border bg-red-100 text-red-800 border-red-200">
+                              <XCircle className="w-3 h-3" />
+                              Cancel Rejected
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
@@ -716,6 +808,18 @@ export default function MyOrdersPage() {
                             >
                               <Truck className="w-3 h-3" />
                               Track
+                            </Link>
+                          )}
+                          {(order.status === 'delivered' || order.status === 'completed') && (
+                            <Link
+                              href={`/buyer-orders/${order._id}?tab=review`}
+                              className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                              style={{ fontFamily: 'Poppins, sans-serif' }}
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                              Review
                             </Link>
                           )}
                           {order.canCancel && (
@@ -748,10 +852,24 @@ export default function MyOrdersPage() {
                     >
                       #{order.orderNumber}
                     </Link>
-                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${statusColors[order.status]}`}>
-                      {getStatusIcon(order.status)}
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                    </span>
+                    <div className="flex flex-col gap-1 items-end">
+                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${statusColors[order.status]}`}>
+                        {getStatusIcon(order.status)}
+                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      </span>
+                      {order.cancellationRequest?.status === 'pending' && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border bg-orange-100 text-orange-800 border-orange-200">
+                          <Clock className="w-3 h-3" />
+                          Cancel Pending
+                        </span>
+                      )}
+                      {order.cancellationRequest?.status === 'rejected' && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border bg-red-100 text-red-800 border-red-200">
+                          <XCircle className="w-3 h-3" />
+                          Cancel Rejected
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="space-y-2 mb-4">
@@ -783,6 +901,22 @@ export default function MyOrdersPage() {
                       >
                         <Truck className="w-4 h-4" />
                         Track Order
+                      </Link>
+                    )}
+                    {(order.status === 'delivered' || order.status === 'completed') && (
+                      <Link
+                        href={`/buyer-orders/${order._id}?tab=review`}
+                        className={`inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          order.hasReview 
+                            ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' 
+                            : 'text-green-600 bg-green-50 hover:bg-green-100'
+                        }`}
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        {order.hasReview ? 'View/Edit Review' : 'Write Review'}
                       </Link>
                     )}
                     {order.canCancel && (
@@ -855,16 +989,14 @@ export default function MyOrdersPage() {
       {/* Cancel Order Confirmation Dialog */}
       <Dialog open={showCancelDialog} onOpenChange={(open) => !cancelling && setShowCancelDialog(open)}>
         <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <DialogTitle className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Cancel Order?
+          </DialogTitle>
           <div className="flex flex-col items-center gap-4">
             {/* Icon */}
             <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
               <XCircle className="w-10 h-10 text-red-600" />
             </div>
-            
-            {/* Title */}
-            <h3 className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Cancel Order?
-            </h3>
             
             {/* Message */}
             <p className="text-gray-600 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -900,6 +1032,9 @@ export default function MyOrdersPage() {
       {/* Result Dialog */}
       <Dialog open={resultDialog.open} onOpenChange={(open) => setResultDialog({ ...resultDialog, open })}>
         <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <DialogTitle className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            {resultDialog.success ? 'Success!' : 'Error'}
+          </DialogTitle>
           <div className="flex flex-col items-center gap-4">
             {/* Icon */}
             <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
@@ -911,11 +1046,6 @@ export default function MyOrdersPage() {
                 <XCircle className="w-10 h-10 text-red-600" />
               )}
             </div>
-            
-            {/* Title */}
-            <h3 className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              {resultDialog.success ? 'Success!' : 'Error'}
-            </h3>
             
             {/* Message */}
             <p className="text-gray-600 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>

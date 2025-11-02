@@ -2,7 +2,6 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import CartItem from '@/models/CartItem';
 import jwt from 'jsonwebtoken';
-import { cache, cacheKeys } from '@/lib/redis';
 
 interface DecodedToken {
   userId: string;
@@ -14,6 +13,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'DELETE') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  // Set cache-control headers to prevent stale reads
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
 
   try {
     await dbConnect();
@@ -44,13 +48,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Cart item not found' });
     }
 
-    // Invalidate cart cache
-    await cache.del(cacheKeys.cart(userId));
-    await cache.del(cacheKeys.cartCount(userId));
+    // Get updated cart count
+    const totalCount = await CartItem.countDocuments({ userId }).maxTimeMS(1000);
 
     return res.status(200).json({
       success: true,
-      message: 'Item removed from cart successfully'
+      message: 'Item removed from cart successfully',
+      count: totalCount
     });
 
   } catch (error) {

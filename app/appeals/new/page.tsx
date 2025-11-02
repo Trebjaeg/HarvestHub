@@ -454,7 +454,7 @@ export default function NewAppealPage() {
                   <input
                     type="file"
                     id="evidence-upload"
-                    accept="image/*"
+                    accept="image/*,.heic,.heif"
                     multiple
                     onChange={handleImageUpload}
                     className="hidden"

@@ -3,29 +3,16 @@ import dbConnect from '../../../lib/mongodb';
 import User from '../../../models/User';
 import Product from '../../../models/Product';
 import TopFarmersConfig, { ITopFarmersConfig } from '../../../models/TopFarmersConfig';
-import { applyRateLimit, getRateLimitHeaders } from '@/lib/app-rate-limiter';
+import { applyRateLimit } from '@/lib/app-rate-limiter';
 
 // Types for better type safety
-interface FarmerDocument {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  profilePicture?: string;
-  specialties?: string[];
-  averageRating: number;
+interface FarmerStats {
   totalSales: number;
+  averageRating: number;
   productCount: number;
   reviewCount: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface ProductDocument {
-  _id: string;
-  category: string;
-  salesCount: number;
-  averageRating: number;
+  categories: string[];
+  score: number;
 }
 
 interface FilterCriteria {
@@ -124,48 +111,80 @@ export async function GET(request: NextRequest) {
     // Calculate pagination
     const skip = (page - 1) * limit;
 
-    // Get or compute top farmer rankings
-    const rankings = await getTopFarmerRankings(config);
+    // Get or compute top farmer rankings with real-time data
+    const rankings = await getTopFarmerRankingsRealTime(config);
+
+    // Sort farmers by their computed sales (real-time from products)
+    const farmerIds = Object.entries(rankings)
+      .sort(([, a], [, b]) => {
+        // Sort by totalSales primarily
+        const salesDiff = (b as any).totalSales - (a as any).totalSales;
+        if (salesDiff !== 0) return salesDiff;
+        
+        // Then by rating if sales are equal
+        const ratingDiff = (b as any).averageRating - (a as any).averageRating;
+        if (ratingDiff !== 0) return ratingDiff;
+        
+        // Finally by product count
+        return (b as any).productCount - (a as any).productCount;
+      })
+      .map(([id]) => id);
+
+    // Apply additional filters but maintain ranking order
+    const filteredQuery = { ...query, _id: { $in: farmerIds } };
 
     // Get farmers with their computed statistics
-    const farmers = await User.find(query)
-      .sort(sortObject)
-      .skip(skip)
-      .limit(limit)
-      .select('firstName lastName email profilePicture specialties averageRating totalSales productCount reviewCount createdAt updatedAt')
+    const farmers = await User.find(filteredQuery)
+      .select('firstName lastName name email profilePicture profileImage specialties createdAt updatedAt')
       .lean();
 
-    // Enhance farmers with computed statistics and rankings
-    const enhancedFarmers = await Promise.all(
-      farmers.map(async (farmer: any, index: number) => {
-        const farmerId = farmer._id.toString();
-        const farmerProducts = await Product.find({ 
-          farmerId: farmer._id,
-          status: 'active'
-        }).select('category salesCount averageRating').lean();
+    // Create a map for quick lookup
+    const farmerMap = new Map(farmers.map((f: any) => [f._id.toString(), f]));
 
-        const categories = [...new Set(farmerProducts.map((p: any) => p.category))];
-        const totalProductSales = farmerProducts.reduce((sum: number, p: any) => sum + (p.salesCount || 0), 0);
-        const avgProductRating = farmerProducts.length > 0 
-          ? farmerProducts.reduce((sum: number, p: any) => sum + (p.averageRating || 0), 0) / farmerProducts.length
-          : 0;
+    // Enhance farmers with real-time computed statistics from their products
+    const enhancedFarmers = farmerIds
+      .filter(id => {
+        const stats = rankings[id];
+        // Only show farmers with at least 1 product
+        return farmerMap.has(id) && stats && stats.productCount > 0;
+      })
+      .slice(skip, skip + limit)
+      .map((farmerId: string, index: number) => {
+        const farmer: any = farmerMap.get(farmerId);
+        const stats = rankings[farmerId];
+        
+        if (!farmer || !stats) return null;
+
+        // Use name field if firstName/lastName are not available
+        const firstName = farmer.firstName || farmer.name || 'Unknown';
+        const lastName = farmer.lastName || '';
+
+        // Get profile picture - check both fields and provide fallback
+        const profilePicture = farmer.profilePicture || 
+                              farmer.profileImage || 
+                              '/images/default-farmer.png';
 
         return {
           ...farmer,
+          firstName,
+          lastName,
           rank: skip + index + 1,
-          categories: categories.slice(0, 3), // Show top 3 categories
-          productCount: farmerProducts.length,
-          totalSales: totalProductSales,
-          averageRating: avgProductRating,
-          topFarmerScore: rankings ? rankings[farmerId] || 0 : 0,
-          profilePicture: farmer.profilePicture || '/images/default-farmer.png'
+          categories: stats.categories || [],
+          productCount: stats.productCount || 0,
+          totalSales: stats.totalSales || 0,
+          averageRating: stats.averageRating || 0,
+          reviewCount: stats.reviewCount || 0,
+          topFarmerScore: stats.score || 0,
+          profilePicture // Use the resolved profile picture
         };
       })
-    );
+      .filter(f => f !== null);
 
-    // Get total count for pagination
-    const totalFarmers = await User.countDocuments(query);
-    const totalPages = Math.ceil(totalFarmers / limit);
+    // Get total count for pagination (only farmers with products)
+    const totalFarmers = farmerIds.filter(id => {
+      const stats = rankings[id];
+      return farmerMap.has(id) && stats && stats.productCount > 0;
+    }).length;
 
     // Get dynamic performance filters with counts
     const performanceFilters = await getDynamicPerformanceFilters(config, query);
@@ -189,10 +208,10 @@ export async function GET(request: NextRequest) {
       },
       pagination: {
         totalFarmers,
-        totalPages,
+        totalPages: Math.ceil(totalFarmers / limit),
         currentPage: page,
         itemsPerPage: limit,
-        hasNextPage: page < totalPages,
+        hasNextPage: page < Math.ceil(totalFarmers / limit),
         hasPrevPage: page > 1
       },
       message: 'Top farmers fetched successfully'
@@ -269,19 +288,20 @@ async function createDefaultTopFarmersConfig() {
     },
     sorting: {
       options: [
-        { id: 'top_rated', name: 'Top Rated', field: 'averageRating', direction: 'desc', enabled: true, order: 0 },
-        { id: 'most_reviewed', name: 'Most Reviewed', field: 'reviewCount', direction: 'desc', enabled: true, order: 1 },
-        { id: 'newest', name: 'Newest', field: 'createdAt', direction: 'desc', enabled: true, order: 2 },
-        { id: 'name', name: 'Name', field: 'firstName', direction: 'asc', enabled: true, order: 3 }
+        { id: 'best_seller_rank', name: 'Best Sellers (Most Sales)', field: 'totalSales', direction: 'desc', enabled: true, order: 0 },
+        { id: 'top_rated', name: 'Top Rated', field: 'averageRating', direction: 'desc', enabled: true, order: 1 },
+        { id: 'most_reviewed', name: 'Most Reviewed', field: 'reviewCount', direction: 'desc', enabled: true, order: 2 },
+        { id: 'newest', name: 'Newest', field: 'createdAt', direction: 'desc', enabled: true, order: 3 },
+        { id: 'name', name: 'Name', field: 'firstName', direction: 'asc', enabled: true, order: 4 }
       ],
-      defaultSort: 'top_rated'
+      defaultSort: 'best_seller_rank'
     },
     topFarmersCriteria: {
-      salesWeight: 0.3,
-      ratingWeight: 0.3,
-      productCountWeight: 0.2,
-      reviewCountWeight: 0.1,
-      recentActivityWeight: 0.1,
+      salesWeight: 0.5,
+      ratingWeight: 0.25,
+      productCountWeight: 0.15,
+      reviewCountWeight: 0.05,
+      recentActivityWeight: 0.05,
       minSalesForTopFarmer: 5,
       minRatingForTopFarmer: 4.0,
       minProductsForTopFarmer: 3,
@@ -298,23 +318,30 @@ async function createDefaultTopFarmersConfig() {
 
 // Build top farmers query based on configuration
 async function buildTopFarmersQuery(config: ITopFarmersConfig, filters: FilterCriteria) {
-  const { topFarmersCriteria } = config;
   const query: Record<string, any> = {
-    role: 'farmer',
+    role: { $in: ['farmer', 'seller'] },  // ✅ Include both farmers AND sellers
     status: 'active',
     isVerified: true
   };
 
-  // Apply performance filter
+  // NO MINIMUM REQUIREMENTS - Show all farmers with products
+  // They will compete based on actual sales, ratings, etc.
+
+  // Apply performance filter ONLY if user selects specific filter
   if (filters.performance && filters.performance !== 'all') {
+    const { topFarmersCriteria } = config;
+    
     switch (filters.performance) {
       case 'top_rated':
+        // Only filter if user specifically wants top rated
         query.averageRating = { $gte: topFarmersCriteria.minRatingForTopFarmer };
         break;
       case 'top_sellers':
+        // Only filter if user specifically wants top sellers
         query.totalSales = { $gte: topFarmersCriteria.minSalesForTopFarmer };
         break;
       case 'most_productive':
+        // Only filter if user specifically wants most productive
         query.productCount = { $gte: topFarmersCriteria.minProductsForTopFarmer };
         break;
       case 'trending':
@@ -322,13 +349,14 @@ async function buildTopFarmersQuery(config: ITopFarmersConfig, filters: FilterCr
         query.updatedAt = { $gte: recentDate };
         break;
       case 'most_reviewed':
-        query.reviewCount = { $gte: 5 };
+        // Only filter if user specifically wants most reviewed
+        query.reviewCount = { $gte: 1 }; // At least 1 review
         break;
     }
   }
 
-  // Apply rating filter
-  if (filters.rating !== undefined) {
+  // Apply rating filter ONLY if user selects it
+  if (filters.rating !== undefined && filters.rating > 0) {
     query.averageRating = { $gte: filters.rating };
   }
 
@@ -366,7 +394,7 @@ async function getTopFarmerRankings(config: ITopFarmersConfig) {
   // Compute top farmer scores
   const rankings: Record<string, number> = {};
   
-  farmers.forEach((farmer: FarmerDocument) => {
+  farmers.forEach((farmer: any) => {
     const salesScore = Math.min(farmer.totalSales || 0, 1000) / 1000;
     const ratingScore = Math.min(farmer.averageRating || 0, 5) / 5;
     const productScore = Math.min(farmer.productCount || 0, 100) / 100;
@@ -388,6 +416,107 @@ async function getTopFarmerRankings(config: ITopFarmersConfig) {
   rankingsCache = rankings;
   rankingsCacheTime = now;
   
+  return rankings;
+}
+
+// Compute top farmer rankings in real-time from actual product sales
+async function getTopFarmerRankingsRealTime(config: ITopFarmersConfig): Promise<Record<string, FarmerStats>> {
+  const { topFarmersCriteria } = config;
+  
+  // Get all verified active farmers/sellers
+  const farmers = await User.find({
+    role: { $in: ['farmer', 'seller'] },  // ✅ Include both farmers AND sellers
+    status: 'active',
+    isVerified: true
+  }).select('_id updatedAt').lean();
+
+  const rankings: Record<string, FarmerStats> = {};
+  
+  // Import Order model for computing sales
+  const Order = (await import('../../../models/Order')).default;
+  
+  // Compute real-time stats for each farmer from their products AND orders
+  await Promise.all(
+    farmers.map(async (farmer) => {
+      const farmerId = farmer._id.toString();
+      
+      // Get all active products for this farmer
+      const farmerProducts = await Product.find({ 
+        farmerId: farmer._id,
+        isActive: true
+      }).select('_id category rating reviews').lean();
+
+      if (farmerProducts.length === 0) {
+        rankings[farmerId] = {
+          totalSales: 0,
+          averageRating: 0,
+          productCount: 0,
+          reviewCount: 0,
+          categories: [],
+          score: 0
+        };
+        return;
+      }
+
+      // Get product IDs for this farmer
+      const productIds = farmerProducts.map(p => (p._id as any).toString());
+
+      // Compute REAL sales from completed orders
+      const completedOrders = await Order.find({
+        sellerId: farmerId,
+        status: { $in: ['completed', 'delivered'] }
+      }).select('products').lean();
+
+      // Calculate total items sold across all orders
+      let totalSales = 0;
+      completedOrders.forEach((order) => {
+        const orderProducts = (order as any).products || [];
+        orderProducts.forEach((item: any) => {
+          if (productIds.includes(item.productId)) {
+            totalSales += item.quantity || 0;
+          }
+        });
+      });
+      
+      // Compute average rating across all products
+      const productsWithRating = farmerProducts.filter((p: any) => p.rating && p.rating > 0);
+      const averageRating = productsWithRating.length > 0
+        ? productsWithRating.reduce((sum, p: any) => sum + (p.rating || 0), 0) / productsWithRating.length
+        : 0;
+      
+      // Count total reviews across all products
+      const reviewCount = farmerProducts.reduce((sum, p: any) => sum + ((p.reviews as any)?.length || 0), 0);
+      
+      // Get unique categories
+      const categories = [...new Set(farmerProducts.map((p: any) => p.category as string))].slice(0, 3);
+      
+      // Compute weighted score
+      const salesScore = Math.min(totalSales, 1000) / 1000;
+      const ratingScore = Math.min(averageRating, 5) / 5;
+      const productScore = Math.min(farmerProducts.length, 100) / 100;
+      const reviewScore = Math.min(reviewCount, 100) / 100;
+      
+      const daysSinceUpdate = (Date.now() - new Date((farmer as any).updatedAt).getTime()) / (24 * 60 * 60 * 1000);
+      const recentScore = Math.max(0, 1 - (daysSinceUpdate / topFarmersCriteria.timeframeDays));
+      
+      const score = 
+        salesScore * topFarmersCriteria.salesWeight +
+        ratingScore * topFarmersCriteria.ratingWeight +
+        productScore * topFarmersCriteria.productCountWeight +
+        reviewScore * topFarmersCriteria.reviewCountWeight +
+        recentScore * topFarmersCriteria.recentActivityWeight;
+      
+      rankings[farmerId] = {
+        totalSales,
+        averageRating: Number(averageRating.toFixed(1)),
+        productCount: farmerProducts.length,
+        reviewCount,
+        categories,
+        score
+      };
+    })
+  );
+
   return rankings;
 }
 
