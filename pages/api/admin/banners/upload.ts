@@ -1,8 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import formidable, { File } from 'formidable';
 import fs from 'fs';
+import jwt from 'jsonwebtoken';
+import User from '../../../../models/User';
+import dbConnect from '../../../../lib/mongodb';
 import { uploadToSpaces, deleteFromSpaces } from '../../../../lib/digitalocean-spaces';
-import { verifyAdminAuth } from '../../../../lib/admin-auth-server';
 
 // Disable body parsing for file upload
 export const config = {
@@ -25,9 +27,17 @@ export default async function handler(
   }
 
   try {
-    // Verify admin authentication
-    const adminUser = await verifyAdminAuth(req);
-    if (!adminUser) {
+    // Verify admin authentication manually
+    await dbConnect();
+    const token = req.cookies['auth-token'] || req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ message: 'Unauthorized - No token provided' });
+    }
+    
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const adminUser = await User.findById(decoded.userId);
+    
+    if (!adminUser || (adminUser.role !== 'admin' && adminUser.role !== 'superadmin')) {
       return res.status(401).json({ message: 'Unauthorized - Admin access required' });
     }
 
@@ -72,7 +82,7 @@ export default async function handler(
     const fileName = `banners/banner_${timestamp}_${sanitizedName}`;
 
     // Upload to DigitalOcean Spaces
-    const uploadResult = await uploadToSpaces(fileBuffer, fileName, uploadedFile.mimetype || 'image/jpeg');
+    const uploadUrl = await uploadToSpaces(fileBuffer, fileName, uploadedFile.mimetype || 'image/jpeg');
 
     // Delete temp file
     fs.unlinkSync(uploadedFile.filepath);
@@ -81,8 +91,8 @@ export default async function handler(
       success: true,
       message: 'Image uploaded successfully',
       data: {
-        url: uploadResult.url,
-        key: uploadResult.key,
+        url: uploadUrl,
+        key: fileName,
         size: uploadedFile.size,
         type: uploadedFile.mimetype,
       },

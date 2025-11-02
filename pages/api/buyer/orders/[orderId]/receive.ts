@@ -65,17 +65,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Send notification to seller
     try {
-      await notifyOrderStatusUpdate({
-        order: {
-          _id: order._id.toString(),
-          orderNumber: order.orderNumber,
-          status: 'delivered',
-          buyerId: order.buyerId,
-          sellerId: order.sellerId
-        },
-        buyerName: order.buyerName || 'Buyer',
-        sellerName: order.sellerName || 'Seller'
-      });
+      await notifyOrderStatusUpdate(
+        order.sellerId,
+        order.orderNumber,
+        order._id.toString(),
+        'delivered',
+        order.buyerName || 'Customer'
+      );
     } catch (notifError) {
       console.error('Failed to send notification:', notifError);
       // Don't fail the request if notification fails

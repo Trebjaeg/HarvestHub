@@ -163,7 +163,7 @@ async function handlePUT(req: NextApiRequest, res: NextApiResponse, id: string) 
       const { cache } = await import('../../../../lib/redis');
       
       // Clear all product list caches
-      memoryCache.clear('products:');
+      memoryCache.clear();
       await cache.del('products:*');
       console.log('✅ Product cache cleared after update');
     } catch (cacheError) {
@@ -256,7 +256,7 @@ async function handleDELETE(req: NextApiRequest, res: NextApiResponse, id: strin
       const { cache } = await import('../../../../lib/redis');
       
       // Clear all product list caches
-      memoryCache.clear('products:');
+      memoryCache.clear();
       await cache.del('products:*');
       console.log('✅ Product cache cleared after deletion');
     } catch (cacheError) {

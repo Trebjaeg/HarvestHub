@@ -118,7 +118,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         createNotification({
           userId: order.buyerId,
           userRole: 'buyer',
-          type: 'cancellation_approved',
+          type: 'order_cancelled',
           title: 'Cancellation Approved',
           message: `Your cancellation request for order ${order.orderNumber} has been approved`,
           orderId: order._id.toString(),
@@ -219,7 +219,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       createNotification({
         userId: order.buyerId,
         userRole: 'buyer',
-        type: 'cancellation_rejected',
+        type: 'system',
         title: 'Cancellation Rejected',
         message: `Your cancellation request for order ${order.orderNumber} has been rejected by the seller`,
         orderId: order._id.toString(),

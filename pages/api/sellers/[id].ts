@@ -104,7 +104,7 @@ async function getSeller(req: NextApiRequest, res: NextApiResponse, sellerId: st
     }
 
     // Get recent reviews - try to fetch but don't fail if it doesn't work
-    let reviewsWithDetails = [];
+    let reviewsWithDetails: any[] = [];
     try {
       const sellerObjectId = new mongoose.Types.ObjectId(sellerId);
       const recentReviews = await Review.find({ 

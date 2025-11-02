@@ -2,8 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import Order from '@/models/Order';
 import jwt from 'jsonwebtoken';
-import { notifyOrderStatusUpdate } from '@/lib/message-utils';
-import InventoryManager from '@/lib/inventory-manager';
+import { createNotification } from '@/lib/notification-utils';
+import { releaseCommittedInventory } from '@/lib/inventory-manager';
 
 /**
  * POST /api/buyer/orders/[orderId]/refuse
@@ -86,22 +86,16 @@ export default async function handler(
 
     await order.save();
 
-    // Release reserved inventory back to available stock
+    // Release committed inventory back to available stock
     try {
-      const inventoryManager = InventoryManager.getInstance();
-      
-      for (const item of order.products) {
-        const productId = typeof item.productId === 'object' && item.productId._id 
+      const items = order.products.map((item: any) => ({
+        productId: typeof item.productId === 'object' && item.productId._id 
           ? item.productId._id.toString() 
-          : item.productId.toString();
-        
-        await inventoryManager.releaseReservation(
-          productId,
-          item.quantity,
-          orderId
-        );
-      }
+          : item.productId.toString(),
+        quantity: item.quantity
+      }));
       
+      await releaseCommittedInventory(items);
       console.log(`✅ Released inventory for refused order ${orderId}`);
     } catch (inventoryError) {
       console.error('❌ Failed to release inventory for refused order:', inventoryError);
@@ -110,12 +104,16 @@ export default async function handler(
 
     // Notify seller about the refusal
     try {
-      await notifyOrderStatusUpdate(
-        order.sellerId.toString(),
-        orderId,
-        'cancelled',
-        `Buyer refused delivery. Reason: ${reason.trim()}`
-      );
+      await createNotification({
+        userId: order.sellerId.toString(),
+        userRole: 'seller',
+        type: 'order_cancelled',
+        title: 'Order Refused',
+        message: `Buyer refused delivery of order ${order.orderNumber}. Reason: ${reason.trim()}`,
+        orderId: order._id.toString(),
+        orderNumber: order.orderNumber,
+        relatedUserId: buyerId
+      });
       console.log(`✅ Sent refusal notification to seller ${order.sellerId}`);
     } catch (notifyError) {
       console.error('❌ Failed to send refusal notification:', notifyError);
