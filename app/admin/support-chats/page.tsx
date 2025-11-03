@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageCircle, Search, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -26,7 +26,7 @@ interface Message {
   isRead: boolean;
 }
 
-const SupportManagement: React.FC = () => {
+export default function AdminSupportChatsPage() {
   const [conversations, setConversations] = useState<SupportConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<SupportConversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -101,16 +101,9 @@ const SupportManagement: React.FC = () => {
 
       if (data.success) {
         setConversations(data.conversations || []);
-      } else {
-        // Log the error to see what's happening
-        console.error('❌ Admin API Error:', {
-          status: response.status,
-          message: data.message,
-          url: response.url
-        });
       }
     } catch (error) {
-      console.error('❌ Failed to fetch conversations:', error);
+      console.error('Failed to fetch conversations');
     } finally {
       setLoading(false);
     }
@@ -178,10 +171,12 @@ const SupportManagement: React.FC = () => {
       } else {
         setMessages(prev => prev.filter(msg => msg._id !== tempId));
         setInputMessage(messageText);
+        alert('Failed to send message. Please try again.');
       }
     } catch (error) {
       setMessages(prev => prev.filter(msg => msg._id !== tempId));
       setInputMessage(messageText);
+      alert('Network error. Please check your connection.');
     } finally {
       setSending(false);
     }
@@ -190,14 +185,6 @@ const SupportManagement: React.FC = () => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchConversations();
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   const getInitials = (name: string) => {
     return name
@@ -220,13 +207,13 @@ const SupportManagement: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-12rem)] flex bg-white rounded-lg shadow-lg overflow-hidden" style={{ fontFamily: 'Poppins, sans-serif' }}>
+    <div className="h-[calc(100vh-4rem)] flex bg-white rounded-lg shadow-lg overflow-hidden" style={{ fontFamily: 'Poppins, sans-serif' }}>
       {/* Left Sidebar - Conversations List */}
       <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex w-full md:w-96 bg-white border-r border-gray-200 flex-col`}>
         {/* Header */}
         <div className="bg-gradient-to-r from-[#103C2E] to-[#1a5f3f] p-4">
           <div className="flex items-center justify-between mb-3">
-            <h1 className="text-white font-semibold text-lg">Support Messages</h1>
+            <h1 className="text-white font-semibold text-lg">Support Chats</h1>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -254,7 +241,7 @@ const SupportManagement: React.FC = () => {
             <div className="p-8 text-center text-gray-500">
               <MessageCircle className="w-16 h-16 mx-auto text-gray-300 mb-3" />
               <p className="text-sm font-medium">No support conversations yet</p>
-              <p className="text-xs mt-1">Support requests from Kali will appear here</p>
+              <p className="text-xs mt-1">Support requests will appear here</p>
             </div>
           ) : (
             conversations.map((conv) => (
@@ -333,11 +320,7 @@ const SupportManagement: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   {messages.map((msg, idx) => {
-                    // Check if message is from admin - check both role and if sender is current admin
-                    const currentAdminId = getCurrentAdminId();
-                    const isCurrentAdmin = msg.senderId === currentAdminId;
-                    const isAdminRole = msg.senderRole === 'admin';
-                    const isAdmin = isAdminRole || isCurrentAdmin;
+                    const isAdmin = msg.senderRole === 'admin';
                     const isAI = msg.senderRole === 'ai';
                     const isPending = msg._id?.startsWith('temp-');
 
@@ -358,7 +341,7 @@ const SupportManagement: React.FC = () => {
                               {msg.senderName}
                             </p>
                           )}
-                          <p className="text-sm break-words leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                          <p className="text-sm break-words leading-relaxed">{msg.message}</p>
                           <div className={`flex items-center justify-between gap-2 mt-1.5 ${isAdmin ? 'text-white/70' : 'text-gray-500'}`}>
                             <p className="text-xs">
                               {new Date(msg.createdAt).toLocaleTimeString('en-US', {
@@ -421,14 +404,12 @@ const SupportManagement: React.FC = () => {
               <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#103C2E] to-[#1a5f3f] flex items-center justify-center shadow-2xl">
                 <MessageCircle className="w-16 h-16 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Support Messages</h3>
-              <p className="text-gray-600 text-sm">Select a conversation from Kali support requests</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Admin Support Center</h3>
+              <p className="text-gray-600 text-sm">Select a conversation to view support messages</p>
             </div>
           </div>
         )}
       </div>
     </div>
   );
-};
-
-export default SupportManagement;
+}

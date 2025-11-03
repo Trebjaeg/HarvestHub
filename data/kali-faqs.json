@@ -1,0 +1,106 @@
+{
+  "general": [
+    {
+      "id": "faq-1",
+      "question": "How do I track my order?",
+      "answer": "Go to 'My Orders' in your buyer dashboard to see real-time tracking information. Each order shows its current status (Pending, Confirmed, Preparing, Shipped, Delivered, or Completed). You'll receive automatic notifications through the app when your order status changes.",
+      "category": "orders",
+      "keywords": ["track", "order", "status", "delivery"]
+    },
+    {
+      "id": "faq-2",
+      "question": "Can I cancel my order?",
+      "answer": "Yes, you can cancel orders that haven't been processed by the seller yet. Go to 'My Orders', find the order you want to cancel, and click the 'Cancel Order' button if it's available. Orders can typically be cancelled within the first hour or before the seller marks them as 'Processing'.",
+      "category": "orders",
+      "keywords": ["cancel", "order", "refund"]
+    },
+    {
+      "id": "faq-3",
+      "question": "What payment methods do you accept?",
+      "answer": "HarvestHub currently accepts Cash on Delivery (COD) only. You pay for your order in cash when it's delivered to your address. Make sure to have the exact amount ready or sufficient cash for change.",
+      "category": "payment",
+      "keywords": ["payment", "cod", "cash", "pay"]
+    },
+    {
+      "id": "faq-4",
+      "question": "How long does delivery take?",
+      "answer": "Delivery times depend on your location and the seller's location. Orders are delivered through Lalamove. Typical delivery takes 1-3 days for nearby areas within the same city, and 3-6 days for farther locations. You can track your Lalamove rider in real-time once your order is shipped.",
+      "category": "shipping",
+      "keywords": ["delivery", "shipping", "time", "lalamove"]
+    },
+    {
+      "id": "faq-5",
+      "question": "What if my order arrives damaged?",
+      "answer": "Inspect your order before accepting it from the Lalamove rider. If items arrive damaged or spoiled, you have the right to refuse the delivery. Take clear photos immediately and contact us through the 'My Orders' section by clicking 'Report Issue' or email admin@harvesthubph.app with your order number and photos.",
+      "category": "orders",
+      "keywords": ["damaged", "broken", "quality", "refund"]
+    },
+    {
+      "id": "faq-6",
+      "question": "How do I reset my password?",
+      "answer": "Click on 'Forgot Password' on the login page, enter your email address, and follow the instructions sent to your email. If you don't receive the email, check your spam folder or contact support.",
+      "category": "account",
+      "keywords": ["password", "reset", "login", "forgot"]
+    },
+    {
+      "id": "faq-7",
+      "question": "How do I update my delivery address?",
+      "answer": "Go to your Profile settings, select 'My Addresses', and click 'Add Address'. Fill in the complete address details including street, barangay, city, province, and postal code. You can save multiple addresses and set one as your default for faster checkout.",
+      "category": "account",
+      "keywords": ["address", "delivery", "location", "update"]
+    },
+    {
+      "id": "faq-8",
+      "question": "Do you offer refunds?",
+      "answer": "HarvestHub does not process refunds. Since we use Cash on Delivery (COD), you only pay when you receive your order. Always inspect items before accepting delivery. If products are damaged, spoiled, or not as described, refuse the delivery and report the issue immediately.",
+      "category": "payment",
+      "keywords": ["refund", "return", "money back"]
+    },
+    {
+      "id": "faq-9",
+      "question": "How do I contact a seller?",
+      "answer": "You can message sellers directly through your order page. Go to 'My Orders', click on the specific order, and select 'Contact Seller'. You can ask questions about product details, delivery schedules, or order concerns. Sellers typically respond within 24 hours.",
+      "category": "support",
+      "keywords": ["contact", "seller", "message", "chat"]
+    },
+    {
+      "id": "faq-10",
+      "question": "How do I leave a product review?",
+      "answer": "After your order is delivered and marked as completed, go to 'My Orders', find the product, and click 'Write Review'. Rate the product from 1-5 stars and share your experience. You can upload up to 5 photos.",
+      "category": "reviews",
+      "keywords": ["review", "rating", "feedback", "comment"]
+    }
+  ],
+  "quickResponses": [
+    {
+      "id": "quick-1",
+      "label": "Track my order",
+      "message": "How do I track my order?"
+    },
+    {
+      "id": "quick-2",
+      "label": "Payment methods",
+      "message": "What payment methods do you accept?"
+    },
+    {
+      "id": "quick-3",
+      "label": "Delivery time",
+      "message": "How long does delivery take?"
+    },
+    {
+      "id": "quick-4",
+      "label": "Cancel order",
+      "message": "Can I cancel my order?"
+    },
+    {
+      "id": "quick-5",
+      "label": "Damaged items",
+      "message": "What if my order arrives damaged?"
+    },
+    {
+      "id": "quick-6",
+      "label": "Reset password",
+      "message": "How do I reset my password?"
+    }
+  ]
+}

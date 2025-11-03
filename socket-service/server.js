@@ -163,6 +163,102 @@ async function start() {
       socket.emit('conversation_joined', { conversationId });
     });
 
+    // Join support conversation room (NEW)
+    socket.on('join_support', async ({ supportConversationId }) => {
+      if (!supportConversationId || !socket.data.userId) return;
+
+      try {
+        // Verify user has access to this support conversation
+        const supportColl = db.collection('supportconversations');
+        const conversation = await supportColl.findOne({ 
+          _id: new ObjectId(supportConversationId) 
+        });
+
+        if (!conversation) {
+          socket.emit('error', { message: 'Support conversation not found' });
+          return;
+        }
+
+        // Allow access if user is the conversation owner or is an admin
+        const isOwner = conversation.userId === String(socket.data.userId);
+        const isAdmin = socket.data.userRole === 'admin';
+
+        if (!isOwner && !isAdmin) {
+          socket.emit('error', { message: 'Unauthorized access to support conversation' });
+          return;
+        }
+
+        socket.join(`support:${supportConversationId}`);
+        socket.emit('support_joined', { supportConversationId });
+      } catch (err) {
+        socket.emit('error', { message: 'Failed to join support conversation' });
+      }
+    });
+
+    // Leave support conversation room (NEW)
+    socket.on('leave_support', ({ supportConversationId }) => {
+      if (supportConversationId) {
+        socket.leave(`support:${supportConversationId}`);
+      }
+    });
+
+    // Handle support messages (NEW)
+    socket.on('support_message', async (data) => {
+      try {
+        if (!socket.data.userId) {
+          return socket.emit('message_error', { message: 'Not authenticated' });
+        }
+
+        const { supportConversationId, message } = data;
+        
+        if (!supportConversationId) {
+          return socket.emit('message_error', { message: 'Missing supportConversationId' });
+        }
+
+        // Verify user has access to this support conversation
+        const supportColl = db.collection('supportconversations');
+        const conversation = await supportColl.findOne({ 
+          _id: new ObjectId(supportConversationId) 
+        });
+
+        if (!conversation) {
+          return socket.emit('message_error', { message: 'Support conversation not found' });
+        }
+
+        const isOwner = conversation.userId === String(socket.data.userId);
+        const isAdmin = socket.data.userRole === 'admin';
+
+        if (!isOwner && !isAdmin) {
+          return socket.emit('message_error', { message: 'Unauthorized' });
+        }
+
+        // Broadcast the message object to all clients in the support room
+        // The message was already saved to DB by the API route
+        const messageToEmit = data.message || message;
+        
+        // Emit to support room (includes both user and admin)
+        io.to(`support:${supportConversationId}`).emit('new_message', messageToEmit);
+
+        // Also emit to user's personal room if they're not in the support room
+        if (conversation.userId) {
+          io.to(`user:${conversation.userId}`).emit('new_message', messageToEmit);
+        }
+
+        // Emit to all admins
+        const usersColl = db.collection('users');
+        const admins = await usersColl.find({ role: 'admin' }).toArray();
+        admins.forEach(admin => {
+          io.to(`user:${admin._id.toString()}`).emit('new_message', messageToEmit);
+        });
+
+        // Confirm to sender
+        socket.emit('message_sent', messageToEmit);
+      } catch (err) {
+        console.error('Error handling support_message:', err);
+        socket.emit('message_error', { message: 'Failed to send support message' });
+      }
+    });
+
     socket.on('join_order', async (orderId) => {
       if (!orderId) return;
       socket.join(`order:${orderId}`);
