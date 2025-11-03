@@ -13,7 +13,6 @@ function AuthPageContent() {
   useEffect(() => {
     // Only redirect if user is already authenticated and we're done loading
     if (isAuthenticated && !isLoading) {
-      console.log('🔐 AuthPage: User already authenticated, redirecting to /home');
       router.replace('/home');
     }
   }, [isAuthenticated, isLoading, router, searchParams]);

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import LalamoveTracker from '@/components/LalamoveTracker';
 
 interface OrderDetails {
   _id: string;
@@ -30,6 +30,9 @@ interface OrderDetails {
   orderDate: string;
   estimatedDelivery?: string;
   sellerName: string;
+  lalamove_order_id?: string;
+  lalamove_quotation_id?: string;
+  lalamove_share_link?: string;
 }
 
 export default function OrderConfirmationPage() {
@@ -49,23 +52,46 @@ export default function OrderConfirmationPage() {
     fetchOrderDetails();
   }, [orderId]);
 
-  const fetchOrderDetails = async () => {
+  // Auto-refresh order details every 15 seconds (invisible background update)
+  useEffect(() => {
+    if (!orderId) return;
+
+    const interval = setInterval(() => {
+      fetchOrderDetails(false); // false = invisible loading
+    }, 15000); // 15 seconds - faster than list view
+
+    return () => clearInterval(interval);
+  }, [orderId]);
+
+  const fetchOrderDetails = async (showLoader = true) => {
     try {
+      if (showLoader) setLoading(true);
+
       const response = await fetch(`/api/orders/${orderId}`, {
-        credentials: 'include'
+        credentials: 'include',
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
       });
 
       if (response.ok) {
         const data = await response.json();
         setOrder(data.order);
+        setError('');
       } else {
-        setError('Order not found');
+        if (showLoader) {
+          setError('Order not found');
+        }
       }
     } catch (error) {
       console.error('Error fetching order:', error);
-      setError('Failed to load order details');
+      if (showLoader) {
+        setError('Failed to load order details');
+      }
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   };
 
@@ -122,6 +148,13 @@ export default function OrderConfirmationPage() {
             </div>
           </div>
         </div>
+
+        {/* Lalamove Tracking */}
+        <LalamoveTracker 
+          lalamoveOrderId={order.lalamove_order_id}
+          quotationId={order.lalamove_quotation_id}
+          orderStatus={order.status}
+        />
 
         {/* Order Details */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">

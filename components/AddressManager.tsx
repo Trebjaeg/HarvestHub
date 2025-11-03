@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthUserData } from '@/hooks/useAuthUserData';
-import LoadingDots from '@/components/ui/LoadingDots';
 
 interface Address {
   _id?: string;
@@ -13,9 +12,40 @@ interface Address {
   city: string;
   province: string;
   zipCode?: string;
+  latitude?: number;
+  longitude?: number;
   isDefault: boolean;
   type: 'delivery' | 'pickup' | 'both';
 }
+
+// Philippine provinces and cities data
+const PROVINCE_CITIES: Record<string, string[]> = {
+  'Metro Manila': [
+    'Manila', 'Quezon City', 'Makati', 'Pasig', 'Taguig', 'Mandaluyong', 
+    'Pasay', 'Caloocan', 'Marikina', 'San Juan', 'Muntinlupa', 'Parañaque', 
+    'Las Piñas', 'Valenzuela', 'Malabon', 'Navotas', 'Pateros'
+  ],
+  'Rizal': [
+    'Antipolo', 'Cainta', 'Taytay', 'Angono', 'Binangonan', 'Rodriguez', 
+    'San Mateo', 'Tanay', 'Teresa', 'Morong', 'Baras', 'Cardona', 'Jalajala', 'Pililla'
+  ],
+  'Cavite': [
+    'Bacoor', 'Imus', 'Dasmariñas', 'Cavite City', 'Las Piñas', 'General Trias', 
+    'Rosario', 'Silang', 'Carmona', 'General Mariano Alvarez', 'Trece Martires'
+  ],
+  'Laguna': [
+    'Calamba', 'Santa Rosa', 'Biñan', 'San Pedro', 'Los Baños', 'Cabuyao', 
+    'San Pablo', 'Sta. Cruz', 'Pagsanjan', 'Liliw'
+  ],
+  'Bulacan': [
+    'Malolos', 'Meycauayan', 'San Jose del Monte', 'Marilao', 'Bocaue', 
+    'Balagtas', 'Guiguinto', 'Pandi', 'Santa Maria', 'Obando'
+  ],
+  'Pampanga': [
+    'San Fernando', 'Angeles', 'Mabalacat', 'Apalit', 'Macabebe', 'Masantol', 
+    'Mexico', 'Santa Rita', 'Guagua', 'Lubao'
+  ]
+};
 
 export default function AddressManager({ userRole }: { userRole: 'buyer' | 'seller' | 'farmer' }) {
   const { user } = useAuthUserData();
@@ -31,6 +61,8 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
     city: '',
     province: '',
     zipCode: '',
+    latitude: undefined,
+    longitude: undefined,
     isDefault: false,
     type: userRole === 'buyer' ? 'delivery' : 'pickup'
   });
@@ -123,6 +155,8 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
       city: address.city,
       province: address.province,
       zipCode: address.zipCode || '',
+      latitude: address.latitude,
+      longitude: address.longitude,
       isDefault: address.isDefault,
       type: address.type
     });
@@ -130,14 +164,66 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
     setShowForm(true);
   };
 
-  const handleDelete = async (addressId: string) => {
-    if (!confirm('Are you sure you want to delete this address?')) return;
+  const resetForm = () => {
+    setFormData({
+      label: '',
+      fullName: '',
+      phone: '',
+      street: '',
+      city: '',
+      province: '',
+      zipCode: '',
+      latitude: undefined,
+      longitude: undefined,
+      isDefault: false,
+      type: userRole === 'buyer' ? 'delivery' : 'pickup'
+    });
+    setEditingId(null);
+  };
 
+  const handleSetDefault = async (id: string) => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     try {
-      const response = await fetch(`/api/user/addresses/${addressId}`, {
+      const response = await fetch(`/api/user/addresses/${id}/set-default`, {
+        method: 'PATCH',
+        credentials: 'include',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        await fetchAddresses();
+      } else {
+        const error = await response.json();
+        alert(error.message || 'Failed to set default address');
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        alert('Request timed out. Please try again.');
+      } else {
+        console.error('Error setting default address:', error);
+        alert('An error occurred while setting default address');
+      }
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this address?')) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    try {
+      const response = await fetch(`/api/user/addresses/${id}`, {
         method: 'DELETE',
         credentials: 'include',
         signal: controller.signal
@@ -162,75 +248,24 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
     }
   };
 
-  const handleSetDefault = async (addressId: string) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-    try {
-      const response = await fetch(`/api/user/addresses/${addressId}/set-default`, {
-        method: 'PATCH',
-        credentials: 'include',
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        await fetchAddresses();
-      }
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
-        console.error('Request timed out setting default address');
-      } else {
-        console.error('Error setting default address:', error);
-      }
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      label: '',
-      fullName: '',
-      phone: '',
-      street: '',
-      city: '',
-      province: '',
-      zipCode: '',
-      isDefault: false,
-      type: userRole === 'buyer' ? 'delivery' : 'pickup'
-    });
-    setEditingId(null);
-  };
-
   if (loading) {
     return (
-      <div className="flex justify-center py-8">
-        <LoadingDots size="md" color="#4A7C59" />
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4A7C59]"></div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            {userRole === 'buyer' ? 'Delivery Addresses' : 'Pickup Locations'}
-          </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            {userRole === 'buyer' 
-              ? 'Manage your delivery addresses (up to 3)' 
-              : 'Manage your pickup locations where buyers can collect orders (up to 3)'}
-          </p>
-        </div>
-        {addresses.length < 3 && !showForm && (
+        <h2 className="text-xl font-semibold text-gray-900">Manage Addresses</h2>
+        {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="bg-[#4A7C59] hover:bg-[#3d6549] text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            className="bg-[#4A7C59] hover:bg-[#3d6549] text-white py-2 px-4 rounded-lg font-medium transition-colors"
           >
-            + Add Address
+            Add Address
           </button>
         )}
       </div>
@@ -306,6 +341,47 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Province *
+                </label>
+                <select
+                  value={formData.province}
+                  onChange={(e) => {
+                    setFormData({ 
+                      ...formData, 
+                      province: e.target.value,
+                      city: '' // Reset city when province changes
+                    });
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent"
+                  required
+                >
+                  <option value="">Select Province</option>
+                  {Object.keys(PROVINCE_CITIES).map((province) => (
+                    <option key={province} value={province}>{province}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  City/Municipality *
+                </label>
+                <select
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  disabled={!formData.province}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent disabled:bg-gray-100"
+                  required
+                >
+                  <option value="">Select City</option>
+                  {formData.province && PROVINCE_CITIES[formData.province]?.map((city) => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+              </div>
+
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Street Address *
@@ -318,36 +394,6 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent"
                   required
                   maxLength={500}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City/Municipality *
-                </label>
-                <input
-                  type="text"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  placeholder="City/Municipality"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent"
-                  required
-                  maxLength={100}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Province *
-                </label>
-                <input
-                  type="text"
-                  value={formData.province}
-                  onChange={(e) => setFormData({ ...formData, province: e.target.value })}
-                  placeholder="Province"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent"
-                  required
-                  maxLength={100}
                 />
               </div>
 
@@ -366,17 +412,19 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
               </div>
             </div>
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="isDefault"
-                checked={formData.isDefault}
-                onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
-                className="w-4 h-4 text-[#4A7C59] focus:ring-[#4A7C59] border-gray-300 rounded"
-              />
-              <label htmlFor="isDefault" className="ml-2 text-sm text-gray-700">
-                Set as default address
-              </label>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isDefault"
+                  checked={formData.isDefault}
+                  onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
+                  className="w-4 h-4 text-[#4A7C59] focus:ring-[#4A7C59] border-gray-300 rounded"
+                />
+                <label htmlFor="isDefault" className="ml-2 text-sm text-gray-700">
+                  Set as default address
+                </label>
+              </div>
             </div>
 
             <div className="flex gap-3 pt-2">

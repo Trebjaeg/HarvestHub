@@ -53,10 +53,6 @@ export const useProducts = (initialOptions: UseProductsOptions = {}): UseProduct
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
       const url = `${baseUrl}/api/products?${params.toString()}`;
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🛒 Fetching products from:', url);
-      }
-      
       const response = await fetch(url, {
         credentials: 'include',
         headers: {

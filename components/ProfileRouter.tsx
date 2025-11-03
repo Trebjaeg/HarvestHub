@@ -63,10 +63,6 @@ export default function ProfileRouter() {
         }
 
         const data: ProfileData = await response.json();
-        
-        console.log('🔐 ProfileRouter: User role:', data.user.role);
-        console.log('🔐 ProfileRouter: Dashboard route:', data.dashboardRoute);
-        console.log('🔐 ProfileRouter: Permissions:', data.permissions);
 
         // Route to the appropriate dashboard based on role
         router.push(data.dashboardRoute);

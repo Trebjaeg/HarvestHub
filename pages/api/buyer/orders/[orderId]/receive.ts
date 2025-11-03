@@ -56,9 +56,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Update order status to "delivered"
+    // Update order status to "delivered" and payment status to "paid"
     order.status = 'delivered';
     order.actualDelivery = new Date();
+    order.paymentStatus = 'paid'; // ✅ AUTO-UPDATE TO PAID when received/delivered
     order.updatedAt = new Date();
 
     await order.save();

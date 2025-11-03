@@ -11,7 +11,8 @@ import inventoryManager from '@/lib/inventory-manager';
 import mongoose from 'mongoose';
 import { notifyNewOrder } from '@/lib/notification-utils';
 import { emitNewMessage } from '@/lib/socket-client';
-import { createOrder as createLalamoveOrder } from '@/lib/lalamove-service';
+import { LalamoveConfig, OrderStatusMapping } from '@/config/lalamove';
+import { mockLalamoveService } from '@/services/mock-lalamove';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
@@ -24,7 +25,6 @@ export const config = {
   },
 };
 
-// Generate unique order number
 function generateOrderNumber(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
   const random = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -58,6 +58,50 @@ interface SellerDoc {
   email: string;
 }
 
+const orderIdempotencyCache = new Map<string, { orderId: string; timestamp: number }>();
+const IDEMPOTENCY_TTL = 300000; // 5 minutes
+
+async function createLalamoveOrder(quotationId: string, orderNumber: string) {
+  try {
+    if (LalamoveConfig.mode === 'SIMULATOR') {
+      // Use simulator service
+      const lalamoveOrder = await mockLalamoveService.createOrder(
+        quotationId,
+        `HarvestHub Order ${orderNumber} - Fresh produce delivery`,
+        { orderNumber }
+      );
+      
+      return {
+        orderId: lalamoveOrder.orderId,
+        status: lalamoveOrder.status,
+        shareLink: lalamoveOrder.shareLink
+      };
+    } else {
+      // Use live Lalamove API
+      const response = await fetch('/api/lalamove/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          quotationId,
+          remarks: `HarvestHub Order ${orderNumber} - Fresh produce delivery`,
+          metadata: { orderNumber }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create Lalamove order');
+      }
+
+      return await response.json();
+    }
+  } catch (error) {
+    console.error('Failed to create Lalamove order:', error);
+    throw error;
+  }
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -67,10 +111,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!res.headersSent) {
       res.status(408).json({ message: 'Request timeout - order creation is taking too long' });
     }
-  }, 20000); // 20 second timeout for complex order creation
+  }, 20000);
 
   try {
-    // Get user from auth token
     const token = req.cookies['auth-token'];
     if (!token) {
       clearTimeout(timeoutId);
@@ -81,7 +124,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
       userId = decoded.userId;
-    } catch (error) {
+    } catch {
       clearTimeout(timeoutId);
       return res.status(401).json({ message: 'Invalid token' });
     }
@@ -90,7 +133,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { items, shippingAddress, paymentMethod, shippingFee, lalamoveQuotationId } = req.body;
 
-    // Validate required fields
     if (!items || !Array.isArray(items) || items.length === 0) {
       clearTimeout(timeoutId);
       return res.status(400).json({ message: 'No items provided' });
@@ -107,7 +149,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: 'Payment method not specified' });
     }
 
-    // Get buyer details - optimized with lean() and timeout
+    if (!lalamoveQuotationId) {
+      clearTimeout(timeoutId);
+      return res.status(400).json({ message: 'Delivery quotation required' });
+    }
+
+    const idempotencyKey = `${userId}-${JSON.stringify(items)}-${shippingAddress.street}`;
+    const cached = orderIdempotencyCache.get(idempotencyKey);
+    if (cached && Date.now() - cached.timestamp < IDEMPOTENCY_TTL) {
+      clearTimeout(timeoutId);
+      return res.status(200).json({
+        message: 'Order already placed',
+        orderId: cached.orderId,
+        orderIds: [cached.orderId]
+      });
+    }
+
     const buyer = await User.findById(userId)
       .select('fullName email')
       .maxTimeMS(2000)
@@ -118,7 +175,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Group items by seller
     const itemsBySeller = new Map<string, OrderItem[]>();
     const allSellerIds = new Set<string>();
     const allProductIds = new Set<string>();
@@ -132,7 +188,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       allProductIds.add(item.productId);
     }
 
-    // Fetch all sellers and products in parallel - MAJOR OPTIMIZATION
     const [sellers, products] = await Promise.all([
       User.find({ _id: { $in: Array.from(allSellerIds) } })
         .select('fullName email')
@@ -146,7 +201,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .exec()
     ]);
 
-    // Create maps for O(1) lookup
     const sellerMap = new Map(sellers.map((s: SellerDoc) => [String(s._id), s]));
     const productMap = new Map(products.map((p: ProductDoc) => [String(p._id), p]));
 
@@ -166,23 +220,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       paymentMethod: string;
       paymentStatus: string;
       status: string;
+      deliveryStatus: string;
       orderDate: Date;
-      delivery_provider: string;
-      lalamove_quotation_id?: string;
+      deliveryProvider: string;
+      lalamoveQuotationId?: string;
+      lalamoveOrderId?: string;
+      lalamoveShareLink?: string;
     }> = [];
     const allOrderItems: Array<{ productId: string; quantity: number }> = [];
 
-    // Prepare all orders (without saving yet)
     for (const [sellerId, sellerItems] of itemsBySeller) {
       const seller = sellerMap.get(sellerId);
       if (!seller) {
-        console.warn(`Seller ${sellerId} not found, skipping...`);
         continue;
       }
 
       const productsWithDetails = sellerItems.map((item: OrderItem) => {
         const product = productMap.get(item.productId);
-        // Collect items for inventory reservation
         allOrderItems.push({ productId: item.productId, quantity: item.quantity });
         return {
           productId: item.productId,
@@ -193,7 +247,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         };
       });
 
-      // Calculate order total for this seller
       const orderSubtotal = sellerItems.reduce((sum: number, item: OrderItem) => 
         sum + (item.quantity * item.pricePerUnit), 0);
 
@@ -208,8 +261,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         sellerName: sellerDoc.fullName || sellerDoc.email,
         products: productsWithDetails,
         totalAmount: orderSubtotal,
-        deliveryFee: shippingFee,
-        finalAmount: orderSubtotal + shippingFee,
+        deliveryFee: shippingFee || 0,
+        finalAmount: orderSubtotal + (shippingFee || 0),
         deliveryAddress: {
           fullName: shippingAddress.fullName,
           phone: shippingAddress.phone,
@@ -223,18 +276,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         paymentMethod,
         paymentStatus: paymentMethod === 'cod' ? 'pending' : 'pending',
         status: 'preparing',
+        deliveryStatus: 'preparing',
         orderDate: new Date(),
-        delivery_provider: 'lalamove',
-        lalamove_quotation_id: lalamoveQuotationId
+        deliveryProvider: 'lalamove',
+        lalamoveQuotationId: lalamoveQuotationId
       });
     }
 
-    // Start a transaction for atomic inventory reservation + order creation
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      // Step 1: Reserve inventory (atomic operation)
       const reserveResult = await inventoryManager.reserveInventory(allOrderItems, session);
       
       if (!reserveResult.success) {
@@ -246,55 +298,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
       }
 
-      // Step 2: Create orders (within transaction)
       const insertedOrders = await Order.insertMany(ordersToCreate, { session });
       createdOrders.push(...insertedOrders.map(o => o._id.toString()));
 
-      // Step 3: Create Lalamove delivery order (after DB orders created)
+      // Create Lalamove order for the first order (main order)
       if (lalamoveQuotationId && insertedOrders.length > 0) {
         try {
-          const firstSeller = sellers[0] as SellerDoc;
-          const sellerUser = await User.findById(firstSeller._id).select('phone address latitude longitude fullName').lean();
-
           const lalamoveOrderResult = await createLalamoveOrder(
             lalamoveQuotationId,
-            {
-              name: (sellerUser?.fullName as string) || firstSeller.fullName || 'Seller',
-              phone: (sellerUser?.phone as string) || '+639123456789'
-            },
-            {
-              name: shippingAddress.fullName,
-              phone: shippingAddress.phone
-            },
-            `Order ${insertedOrders[0].orderNumber} - Fresh produce delivery`,
-            `Please handle with care. Contains: ${insertedOrders[0].products.map((p: OrderProduct) => p.productName).join(', ')}`,
             insertedOrders[0].orderNumber
           );
 
-          // Update order with Lalamove order ID
+          // Map Lalamove status to internal delivery status
+          const internalDeliveryStatus = OrderStatusMapping[lalamoveOrderResult.status as keyof typeof OrderStatusMapping] || 'dispatching';
+
           await Order.updateOne(
             { _id: insertedOrders[0]._id },
             {
               $set: {
-                lalamove_order_id: lalamoveOrderResult.orderId,
-                delivery_status: lalamoveOrderResult.status
+                lalamoveOrderId: lalamoveOrderResult.orderId,
+                lalamoveShareLink: lalamoveOrderResult.shareLink,
+                deliveryStatus: internalDeliveryStatus
               }
             },
             { session }
           );
-
-          console.log(`Lalamove order created: ${lalamoveOrderResult.orderId}`);
         } catch (lalamoveError) {
-          console.error('Error creating Lalamove order:', lalamoveError);
-          // Don't fail the entire order - just log the error
-          // Order can still be fulfilled manually
+          console.error('Lalamove order creation failed:', lalamoveError);
+          // Continue with order creation but mark as standard delivery
+          await Order.updateOne(
+            { _id: insertedOrders[0]._id },
+            {
+              $set: {
+                deliveryProvider: 'standard',
+                deliveryStatus: 'preparing'
+              }
+            },
+            { session }
+          );
         }
       }
 
-      // Commit transaction - both inventory reservation and order creation succeed together
       await session.commitTransaction();
 
-      // Send notifications to sellers (asynchronous, don't block response)
+      orderIdempotencyCache.set(idempotencyKey, { orderId: createdOrders[0], timestamp: Date.now() });
+      if (orderIdempotencyCache.size > 100) {
+        const firstKey = orderIdempotencyCache.keys().next().value;
+        orderIdempotencyCache.delete(firstKey);
+      }
+
       insertedOrders.forEach(order => {
         const productNames = order.products.map((p: OrderProduct) => p.productName);
         notifyNewOrder(
@@ -304,10 +356,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           order.buyerName,
           productNames,
           order.totalAmount
-        ).catch(err => console.error('Error sending notification:', err));
+        ).catch(() => {});
       });
 
-      // Create initial chat messages for each order (buyer-seller conversation)
       const chatMessages = insertedOrders.map(order => {
         const conversationId = generateConversationId(userId, order.sellerId);
         const productList = order.products.map((p: OrderProduct) => `${p.productName} (${p.quantity} ${p.unit})`).join(', ');
@@ -327,11 +378,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         };
       });
 
-      // Insert chat messages and emit real-time events
       if (chatMessages.length > 0) {
         ChatMessage.insertMany(chatMessages)
           .then(async (insertedMessages) => {
-            // Emit new message events to both buyer and seller in real-time
             for (let i = 0; i < insertedMessages.length; i++) {
               const msg = insertedMessages[i];
               const order = insertedOrders[i];
@@ -350,23 +399,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 createdAt: msg.createdAt.toISOString(),
               };
 
-              // Emit to seller (receiver) - new conversation notification
               await emitNewMessage(order.sellerId, messageData);
-              
-              // Emit to buyer (sender) - confirmation they initiated the conversation
               await emitNewMessage(userId, messageData);
             }
           })
-          .catch(err => console.error('Error creating chat messages:', err));
+          .catch(() => {});
       }
 
-      // Send order confirmation email asynchronously (don't wait for it)
       if (buyer.email && insertedOrders.length > 0) {
-        // Get the first order for email (or combine all if needed)
         const firstOrder = insertedOrders[0];
         const buyerDoc = buyer as { fullName?: string; email: string };
       
-        // Calculate estimated delivery (7 days from now)
         const estimatedDelivery = new Date();
         estimatedDelivery.setDate(estimatedDelivery.getDate() + 7);
 
@@ -392,27 +435,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             postalCode: shippingAddress.zipCode || 'N/A'
           },
           estimatedDelivery
-        }).catch(err => console.error('Error sending order confirmation email:', err));
+        }).catch(() => {});
       }
 
-      // Remove ordered items from cart - run async without blocking response
       const productIds = items.map((item: OrderItem) => item.productId);
       CartItem.deleteMany({
         userId,
         productId: { $in: productIds }
-      }).catch(err => console.error('Error removing cart items:', err));
+      }).catch(() => {});
 
       clearTimeout(timeoutId);
       return res.status(200).json({
         message: 'Order(s) placed successfully',
-        orderId: createdOrders[0], // Return first order ID for redirect
+        orderId: createdOrders[0],
         orderIds: createdOrders
       });
 
     } catch (transactionError) {
-      // Rollback transaction on any error
       await session.abortTransaction();
-      console.error('Transaction error:', transactionError);
       clearTimeout(timeoutId);
       if (!res.headersSent) {
         return res.status(500).json({ 
@@ -425,7 +465,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   } catch (error) {
     clearTimeout(timeoutId);
-    console.error('Error creating order:', error);
     if (!res.headersSent) {
       return res.status(500).json({ message: 'Internal server error' });
     }

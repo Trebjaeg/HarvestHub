@@ -6,24 +6,16 @@ import { useAuth } from '../contexts/AuthContext';
 import AuthPage from "./auth/page";
 
 export default function RootPage() {
+  const { isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
-  const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    console.log('🏠 RootPage: Auth state changed', { 
-      isLoading, 
-      hasUser: !!user,
-      userEmail: user?.email 
-    });
-    
-    // If user is authenticated, redirect to home
-    if (!isLoading && user) {
-      console.log('🏠 RootPage: Redirecting authenticated user to /home');
+    if (isLoading) return;
+
+    if (isAuthenticated && user) {
       router.push('/home');
-    } else if (!isLoading && !user) {
-      console.log('🏠 RootPage: User not authenticated, staying on auth page');
     }
-  }, [user, isLoading, router]);
+  }, [isAuthenticated, isLoading, user, router]);
 
   // Show loading while checking auth status
   if (isLoading) {
