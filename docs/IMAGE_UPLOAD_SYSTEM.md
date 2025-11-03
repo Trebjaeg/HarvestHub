@@ -156,7 +156,7 @@ const handleImageUpload = async (file: File) => {
 ```tsx
 <input
   type="file"
-  accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
+  accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,image/img"
   capture="environment"  // For mobile camera
   onChange={handleImageUpload}
 />

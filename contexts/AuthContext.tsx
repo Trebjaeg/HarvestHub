@@ -9,7 +9,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'user' | 'admin' | 'superadmin';
+  role: 'user' | 'admin' | 'superadmin' | 'seller' | 'farmer';
   status: 'active' | 'suspended' | 'deleted';
   emailVerified: boolean;
   profileImage?: string;
@@ -18,6 +18,7 @@ export interface User {
   suspendedAt?: Date | string | null;
   suspendedBy?: string | null;
   suspensionExpiresAt?: Date | string | null;
+  sellerStatus?: 'none' | 'pending' | 'verified' | 'rejected';
 }
 
 interface AuthContextType {

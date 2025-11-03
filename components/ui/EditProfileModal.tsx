@@ -268,7 +268,7 @@ export default function EditProfileModal({ isOpen, onClose, profile, onSave }: E
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*,.heic,.heif"
+                  accept="image/*,.heic,.heif,.img"
                   onChange={handleImageUpload}
                   className="hidden"
                 />

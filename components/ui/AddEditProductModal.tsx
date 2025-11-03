@@ -9,6 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useRef, useEffect } from 'react';
 import { Upload, X } from 'lucide-react';
 import Image from 'next/image';
+import imageCompression from 'browser-image-compression';
+// Dynamic import for heic2any to avoid SSR issues
+declare const heic2any: any;
 
 interface Product {
   _id?: string;
@@ -105,6 +108,75 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
     }));
   };
 
+  // Helper function to convert HEIC to JPEG
+  const convertHeicToJpeg = async (file: File): Promise<File> => {
+    try {
+      // Dynamic import to avoid SSR issues
+      const heic2any = (await import('heic2any')).default;
+      
+      const convertedBlob = await heic2any({
+        blob: file,
+        toType: 'image/jpeg',
+        quality: 0.9
+      });
+
+      const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+      return new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
+        type: 'image/jpeg'
+      });
+    } catch (error) {
+      console.error('HEIC conversion failed:', error);
+      throw new Error('Failed to convert HEIC image');
+    }
+  };
+
+  // Helper function to compress image
+  const compressImage = async (file: File): Promise<File> => {
+    try {
+      const options = {
+        maxSizeMB: 2, // Compress to max 2MB
+        maxWidthOrHeight: 1920, // Max dimension 1920px
+        useWebWorker: true,
+        fileType: 'image/jpeg' as const,
+        quality: 0.8 // 80% quality
+      };
+
+      console.log(`Compressing image: ${file.name}, Original size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      
+      const compressedFile = await imageCompression(file, options);
+      
+      console.log(`Compressed image: ${compressedFile.name}, New size: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+      
+      return compressedFile;
+    } catch (error) {
+      console.error('Image compression failed:', error);
+      // If compression fails, return original file
+      return file;
+    }
+  };
+
+  // Helper function to process image (convert HEIC and compress)
+  const processImage = async (file: File, index: number, total: number): Promise<File> => {
+    setUploadProgress(`Processing image ${index + 1} of ${total}...`);
+    
+    let processedFile = file;
+    
+    // Convert HEIC/HEIF to JPEG
+    if (file.type === 'image/heic' || file.type === 'image/heif' || 
+        file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+      setUploadProgress(`Converting HEIC image ${index + 1} of ${total}...`);
+      processedFile = await convertHeicToJpeg(processedFile);
+    }
+    
+    // Compress if file is larger than 2MB
+    if (processedFile.size > 2 * 1024 * 1024) {
+      setUploadProgress(`Compressing image ${index + 1} of ${total}...`);
+      processedFile = await compressImage(processedFile);
+    }
+    
+    return processedFile;
+  };
+
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -120,14 +192,14 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
       
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        setUploadProgress(`Uploading ${i + 1} of ${totalFiles}...`);
         
         // Validate file type - be permissive for mobile camera uploads
         const lowerName = file.name.toLowerCase();
         const isImageFile = file.type.startsWith('image/') || 
                            lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg') ||
                            lowerName.endsWith('.png') || lowerName.endsWith('.webp') ||
-                           lowerName.endsWith('.heic') || lowerName.endsWith('.heif');
+                           lowerName.endsWith('.heic') || lowerName.endsWith('.heif') ||
+                           lowerName.endsWith('.img');
         
         if (!isImageFile) {
           failedFiles.push(`${file.name}: Not an image file`);
@@ -141,10 +213,20 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
         }
 
         try {
+          // First, try basic file validation
+          if (!file.type && !file.name) {
+            throw new Error('Invalid file detected');
+          }
+          
+          // Process image (convert HEIC and compress if needed)
+          const processedFile = await processImage(file, i, totalFiles);
+          
+          setUploadProgress(`Uploading ${i + 1} of ${totalFiles}...`);
+          
           // Upload via backend API with proper streaming
-            const formData = new FormData();
-            // Preserve original filename when appending
-            formData.append('file', file, file.name);
+          const formData = new FormData();
+          // Use processed file instead of original
+          formData.append('file', processedFile, processedFile.name);
           formData.append('folder', 'products');
 
           const response = await fetch('/api/upload/product-image', {
@@ -155,19 +237,38 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
-            throw new Error(errorData.message || errorData.error || `Upload failed (${response.status})`);
+            console.error('Upload failed for file:', processedFile.name, {
+              status: response.status,
+              statusText: response.statusText,
+              errorData
+            });
+            
+            let userFriendlyMessage = '';
+            if (response.status === 400 && errorData.error === 'FILE_TYPE_NOT_ALLOWED') {
+              userFriendlyMessage = 'Image format not supported. Please try a different image.';
+            } else if (response.status === 413) {
+              userFriendlyMessage = 'Image file is too large. Please try a smaller image.';
+            } else if (response.status >= 500) {
+              userFriendlyMessage = 'Server error. Please try again.';
+            } else {
+              userFriendlyMessage = errorData.message || errorData.error || `Upload failed (${response.status})`;
+            }
+            
+            throw new Error(userFriendlyMessage);
           }
 
           const data = await response.json();
           
           if (data.url) {
             uploadedUrls.push(data.url);
+            console.log(`✓ Successfully uploaded: ${processedFile.name} -> ${data.url}`);
           } else {
             throw new Error(data.message || data.error || 'No URL returned from upload');
           }
-        } catch (fileError: any) {
-          console.error('Upload error for file:', file.name, fileError);
-          const errorMsg = fileError.message || 'Network error';
+        } catch (fileError: unknown) {
+          const error = fileError as Error;
+          console.error('Upload error for file:', file.name, error);
+          const errorMsg = error.message || 'Network error';
           failedFiles.push(`${file.name}: ${errorMsg}`);
         }
       }
@@ -428,7 +529,16 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
                         </svg>
                       )}
                     </div>
-                    <p className="text-sm text-blue-700 font-poppins">{uploadProgress}</p>
+                    <div className="flex-1">
+                      <p className="text-sm text-blue-700 font-poppins">{uploadProgress}</p>
+                      {uploading && (
+                        <div className="mt-2 text-xs text-blue-600 space-y-1">
+                          <div>• HEIC/HEIF images are automatically converted to JPEG</div>
+                          <div>• Large images are compressed for faster upload</div>
+                          <div>• Quality is optimized for web display</div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -472,7 +582,7 @@ export default function AddEditProductModal({ isOpen, onClose, product, onSave, 
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*,.heic,.heif"
+                accept="image/*,.heic,.heif,.img,.jfif,.pjpeg,.pjp"
                 multiple
                 onChange={handleImageUpload}
                 className="hidden"

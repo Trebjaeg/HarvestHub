@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { RoleProvider } from "@/contexts/RoleContext";
 import I18nProvider from "@/components/I18nProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
@@ -26,7 +27,9 @@ export default function RootLayout({
         <ErrorBoundary>
           <I18nProvider>
             <AuthProvider>
-              {children}
+              <RoleProvider>
+                {children}
+              </RoleProvider>
             </AuthProvider>
           </I18nProvider>
         </ErrorBoundary>

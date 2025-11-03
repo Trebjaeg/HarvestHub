@@ -405,7 +405,7 @@ export default function EditAdminProfileModal({ isOpen, onClose, profile, onSave
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*,.heic,.heif"
+                  accept="image/*,.heic,.heif,.img"
                   onChange={handleImageUpload}
                   className="hidden"
                 />

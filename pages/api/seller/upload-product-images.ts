@@ -43,11 +43,19 @@ export default async function handler(req: any, res: any) {
       
       for (const file of imageFiles) {
         if (file && file.filepath) {
-          // Validate file type
+          // Validate file type - be VERY permissive for mobile uploads
           const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
           const lowerName = (file.originalFilename || '').toLowerCase();
           const looksLikeHeic = lowerName.endsWith('.heic') || lowerName.endsWith('.heif');
-          if (!(allowedTypes.includes(file.mimetype || '') || looksLikeHeic)) {
+          const looksLikeImg = lowerName.endsWith('.img') || lowerName.endsWith('.jpg') || 
+                               lowerName.endsWith('.jpeg') || lowerName.endsWith('.png') ||
+                               lowerName.endsWith('.webp') || lowerName.endsWith('.jfif') ||
+                               lowerName.endsWith('.pjpeg') || lowerName.endsWith('.pjp');
+          const mimeType = file.mimetype || '';
+          const looksLikeImageMime = mimeType.startsWith('image/') || mimeType === '' || mimeType === 'application/octet-stream';
+          
+          // Accept if ANY of these conditions are true (very permissive for mobile)
+          if (!(allowedTypes.includes(mimeType) || looksLikeHeic || looksLikeImg || looksLikeImageMime)) {
             // Clean up temporary file
             fs.unlinkSync(file.filepath);
             continue; // Skip invalid files

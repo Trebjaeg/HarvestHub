@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { useNotificationSocket } from '@/hooks/useNotificationSocket';
+import { useAuth, User } from '@/contexts/AuthContext';
 
 interface Notification {
   id: string;
@@ -33,6 +34,7 @@ export default function NotificationsPanel({ isOpen, onClose, onUnreadCountChang
   const [activeTab, setActiveTab] = useState<NotificationTab>('all');
   const panelRef = useRef<HTMLDivElement>(null);
   const { socket } = useNotificationSocket();
+  const { user } = useAuth();
 
   // Fetch notifications (with optional silent mode for background refresh)
   const fetchNotifications = async (pageNum: number = 1, silent: boolean = false) => {
@@ -255,6 +257,31 @@ export default function NotificationsPanel({ isOpen, onClose, onUnreadCountChang
   };
 
   const getNotificationLink = (notification: Notification) => {
+    // Check if user is a seller - using interface extension like other components
+    interface ExtendedUser extends User {
+      sellerStatus?: string;
+      sellerApplicationStatus?: string;
+    }
+    const extendedUser = user as ExtendedUser;
+    
+    // Enhanced seller detection - check role first, then sellerStatus
+    const isSeller = user && (
+      extendedUser.role === 'seller' ||
+      extendedUser.role === 'farmer' ||
+      extendedUser.sellerStatus === 'verified' ||
+      extendedUser.sellerApplicationStatus === 'approved'
+    );
+
+    // Debug logging to see what's happening
+    console.log('🔍 NotificationsPanel Seller Detection:', {
+      isSeller,
+      userRole: extendedUser.role,
+      sellerStatus: extendedUser.sellerStatus,
+      sellerAppStatus: extendedUser.sellerApplicationStatus,
+      allUserKeys: Object.keys(extendedUser),
+      notificationType: notification.type
+    });
+
     if (notification.orderId) {
       return `/orders/${notification.orderId}`;
     }
@@ -266,9 +293,15 @@ export default function NotificationsPanel({ isOpen, onClose, onUnreadCountChang
       // Try to get sender ID from metadata or relatedUserId
       const senderId = notification.metadata?.senderId || notification.metadata?.relatedUserId;
       if (senderId) {
-        return `/inbox?userId=${senderId}`;
+        // Route based on user role
+        const targetRoute = isSeller ? `/message?userId=${senderId}` : `/inbox?userId=${senderId}`;
+        console.log('🎯 NotificationsPanel routing to:', targetRoute, 'for user type:', isSeller ? 'SELLER' : 'BUYER');
+        return targetRoute;
       }
-      return '/inbox'; // Default to inbox homepage
+      // Default based on role
+      const defaultRoute = isSeller ? '/message' : '/inbox';
+      console.log('🎯 NotificationsPanel default routing to:', defaultRoute, 'for user type:', isSeller ? 'SELLER' : 'BUYER');
+      return defaultRoute;
     }
     return '#';
   };
@@ -421,7 +454,7 @@ export default function NotificationsPanel({ isOpen, onClose, onUnreadCountChang
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
             </svg>
             <p className="text-sm font-medium">No {activeTab !== 'all' ? activeTab : ''} notifications</p>
-            <p className="text-xs mt-1">You're all caught up!</p>
+            <p className="text-xs mt-1">You&apos;re all caught up!</p>
           </div>
         ) : (
           <>

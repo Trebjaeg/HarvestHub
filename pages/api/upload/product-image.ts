@@ -42,27 +42,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: 'No image uploaded' });
     }
 
-    // Validate file type - be very permissive for mobile uploads
+    // Validate file type - be VERY permissive for mobile uploads
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     const lowerName = (file.originalFilename || '').toLowerCase();
     const looksLikeImage = lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg') || 
                            lowerName.endsWith('.png') || lowerName.endsWith('.webp') ||
-                           lowerName.endsWith('.heic') || lowerName.endsWith('.heif');
+                           lowerName.endsWith('.heic') || lowerName.endsWith('.heif') ||
+                           lowerName.endsWith('.img') || lowerName.endsWith('.jfif') ||
+                           lowerName.endsWith('.pjpeg') || lowerName.endsWith('.pjp');
     const mimeType = file.mimetype || '';
-    const looksLikeImageMime = mimeType.startsWith('image/') || mimeType === '';
+    const looksLikeImageMime = mimeType.startsWith('image/') || mimeType === '' || mimeType === 'application/octet-stream';
     
-    // Accept if: 1) mimetype is in allowed list, 2) extension looks like image, 3) mimetype starts with image/
-    if (!(allowedTypes.includes(mimeType) || (looksLikeImage && looksLikeImageMime))) {
+    // Accept if: 1) mimetype is in allowed list, 2) extension looks like image, 3) mimetype starts with image/ OR is empty/octet-stream
+    // Mobile devices often send files with missing or incorrect MIME types, so be very permissive
+    if (!(allowedTypes.includes(mimeType) || looksLikeImage || looksLikeImageMime)) {
       console.error('File validation failed:', { 
         mimetype: file.mimetype, 
         filename: file.originalFilename,
-        size: file.size 
+        size: file.size,
+        looksLikeImage,
+        looksLikeImageMime,
+        allowedTypes
       });
       return res.status(400).json({ 
-        message: `Invalid file type. Got: ${file.mimetype || 'unknown'}. File: ${file.originalFilename}`,
+        message: `Invalid file type. Please try a different image format.`,
+        debug: {
+          mimetype: file.mimetype || 'none',
+          filename: file.originalFilename || 'none',
+          looksLikeImage,
+          looksLikeImageMime
+        },
         error: 'FILE_TYPE_NOT_ALLOWED'
       });
     }
+
+    console.log('File validation passed:', {
+      mimetype: file.mimetype,
+      filename: file.originalFilename,
+      size: file.size,
+      looksLikeImage,
+      looksLikeImageMime
+    });
 
     // Read file buffer
     const fileBuffer = fs.readFileSync(file.filepath);

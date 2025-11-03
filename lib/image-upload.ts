@@ -3,14 +3,19 @@
  * Handles image compression, format conversion, EXIF orientation, and upload with retry logic
  */
 
-// Supported image formats
+// Supported image formats - be very permissive for mobile devices
 export const SUPPORTED_IMAGE_TYPES = [
   'image/jpeg',
   'image/jpg', 
   'image/png',
   'image/webp',
   'image/heic',
-  'image/heif'
+  'image/heif',
+  'image/img',  // Added support for .img files
+  'application/octet-stream', // Mobile devices sometimes send this
+  '', // Some mobile devices don't send MIME type
+  'image/pjpeg', // Progressive JPEG
+  'image/x-png', // Alternative PNG MIME type
 ];
 
 export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
@@ -85,11 +90,22 @@ export function validateImageFile(file: File): { valid: boolean; error?: string 
     return { valid: false, error: 'No file selected' };
   }
 
-  // Check file type
-  if (!SUPPORTED_IMAGE_TYPES.includes(file.type.toLowerCase())) {
+  // Check file type - be very permissive for mobile uploads
+  const fileName = file.name?.toLowerCase() || '';
+  const fileType = file.type?.toLowerCase() || '';
+  
+  // Check if it looks like an image by extension
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.img', '.jfif', '.pjpeg', '.pjp'];
+  const hasImageExtension = imageExtensions.some(ext => fileName.endsWith(ext));
+  
+  // Check if MIME type suggests it's an image
+  const hasImageMimeType = SUPPORTED_IMAGE_TYPES.includes(fileType) || fileType.startsWith('image/');
+  
+  // Accept if either extension looks like image OR MIME type suggests image
+  if (!hasImageExtension && !hasImageMimeType) {
     return { 
       valid: false, 
-      error: `File type not supported. Please upload JPEG, PNG, WEBP, or HEIC images.` 
+      error: `File type not supported. Please upload JPEG, PNG, WEBP, HEIC, or IMG images.` 
     };
   }
 

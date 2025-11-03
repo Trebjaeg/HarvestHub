@@ -718,6 +718,24 @@ const TopFarmersPageContent = () => {
                                         fill
                                         className="object-cover"
                                         sizes="40px"
+                                        onError={(e) => {
+                                          const target = e.target as HTMLImageElement;
+                                          const parent = target.parentElement;
+                                          if (parent) {
+                                            target.style.display = 'none';
+                                            const defaultAvatarDiv = document.createElement('div');
+                                            defaultAvatarDiv.className = 'w-full h-full flex items-center justify-center';
+                                            defaultAvatarDiv.innerHTML = `
+                                              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" class="text-gray-400">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                                                <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                                                <path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" />
+                                              </svg>
+                                            `;
+                                            parent.appendChild(defaultAvatarDiv);
+                                          }
+                                        }}
                                       />
                                     ) : (
                                       <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
@@ -817,16 +835,42 @@ const TopFarmersPageContent = () => {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center space-x-3 mb-3">
                               <div className="relative w-12 h-12 flex-shrink-0">
-                                <Image
-                                  src={farmer.profilePicture}
-                                  alt={`${farmer.firstName} ${farmer.lastName}`}
-                                  fill
-                                  className="rounded-full object-cover"
-                                  sizes="48px"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).src = '/images/default-farmer.png';
-                                  }}
-                                />
+                                <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
+                                  {farmer.profilePicture && farmer.profilePicture !== '/images/default-farmer.png' ? (
+                                    <Image
+                                      src={farmer.profilePicture}
+                                      alt={`${farmer.firstName} ${farmer.lastName}`}
+                                      fill
+                                      className="object-cover rounded-full"
+                                      sizes="48px"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        const parent = target.parentElement;
+                                        if (parent) {
+                                          target.style.display = 'none';
+                                          const defaultAvatarDiv = document.createElement('div');
+                                          defaultAvatarDiv.className = 'w-full h-full flex items-center justify-center';
+                                          defaultAvatarDiv.innerHTML = `
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" class="text-gray-400">
+                                              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                              <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                                              <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                                              <path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" />
+                                            </svg>
+                                          `;
+                                          parent.appendChild(defaultAvatarDiv);
+                                        }
+                                      }}
+                                    />
+                                  ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                      <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                                      <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                                      <path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" />
+                                    </svg>
+                                  )}
+                                </div>
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="text-base font-medium text-gray-900 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>
