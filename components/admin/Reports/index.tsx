@@ -1,20 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useTranslation } from 'react-i18next';
 import LoadingDots from '@/components/ui/LoadingDots';
 import { useRouter } from 'next/navigation';
-
-interface ReportData {
-  totalUsers: number;
-  totalFarmers: number;
-  totalProducts: number;
-  totalOrders: number;
-  revenue: number;
-  period: string;
-}
 
 interface Report {
   _id: string;
@@ -36,46 +26,13 @@ interface Report {
 }
 
 const Reports: React.FC = () => {
-  const { t } = useTranslation();
   const router = useRouter();
-  const [reportData, setReportData] = useState<ReportData | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('30d');
-  const [filter, setFilter] = useState<'all' | 'pending' | 'investigating' | 'resolved' | 'dismissed'>('all');
-  const [activeTab, setActiveTab] = useState<'analytics' | 'product-reports'>('analytics');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'investigating' | 'resolved' | 'dismissed' | 'transferred'>('all');
 
-  useEffect(() => {
-    if (activeTab === 'analytics') {
-      fetchReportData();
-    } else {
-      fetchReports();
-    }
-  }, [selectedPeriod, activeTab, filter]);
-
-  const fetchReportData = async () => {
-    try {
-      setLoading(true);
-      // TODO: Replace with actual API call
-      // Mock data for now
-      setReportData({
-        totalUsers: 1250,
-        totalFarmers: 350,
-        totalProducts: 2800,
-        totalOrders: 5600,
-        revenue: 125000,
-        period: selectedPeriod
-      });
-    } catch (error) {
-      console.error('Error fetching report data:', error);
-      setError('Failed to load report data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -101,7 +58,11 @@ const Reports: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
 
   const updateReportStatus = async (reportId: string, status: string) => {
     try {
@@ -128,6 +89,33 @@ const Reports: React.FC = () => {
     router.push(`/product/${productId}?reportId=${reportId}`);
   };
 
+  // Helper function to check if a report was transferred from an appeal
+  const isTransferredFromAppeal = (report: Report): boolean => {
+    return report.description?.startsWith('TRANSFERRED FROM APPEAL:') || false;
+  };
+
+  // Helper function to extract original appeal information
+  const getTransferInfo = (report: Report): { appealReason?: string; transferReason?: string } => {
+    if (!isTransferredFromAppeal(report)) return {};
+    
+    const description = report.description || '';
+    const lines = description.split('\n');
+    
+    let appealReason = '';
+    let transferReason = '';
+    
+    for (const line of lines) {
+      if (line.includes('TRANSFERRED FROM APPEAL:')) {
+        appealReason = line.replace('TRANSFERRED FROM APPEAL:', '').trim();
+      }
+      if (line.includes('Transfer Reason:')) {
+        transferReason = line.replace('Transfer Reason:', '').trim();
+      }
+    }
+    
+    return { appealReason, transferReason };
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -145,6 +133,7 @@ const Reports: React.FC = () => {
 
   const filteredReports = reports.filter(report => {
     if (filter === 'all') return true;
+    if (filter === 'transferred') return isTransferredFromAppeal(report);
     return report.status === filter;
   });
 
@@ -168,152 +157,22 @@ const Reports: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Tabs */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            Reports & Analytics
-          </h2>
-          <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            {activeTab === 'analytics' ? 'Platform analytics and metrics' : 'Product reports and moderation'}
-          </p>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="flex bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'analytics'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-            style={{ fontFamily: 'Poppins, sans-serif' }}
-          >
-            Analytics
-          </button>
-          <button
-            onClick={() => setActiveTab('product-reports')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === 'product-reports'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-            style={{ fontFamily: 'Poppins, sans-serif' }}
-          >
-            Product Reports
-          </button>
-        </div>
-      </div>
-
-      {/* Analytics Tab */}
-      {activeTab === 'analytics' && (
-        <>
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2">
-              <select 
-                value={selectedPeriod} 
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="border rounded px-3 py-2"
-                style={{ fontFamily: 'Poppins, sans-serif' }}
-              >
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
-                <option value="1y">Last year</option>
-              </select>
-              <Button className="bg-green-600 hover:bg-green-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                Export Report
-              </Button>
-            </div>
-          </div>
-
-          {reportData && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Total Users</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ fontFamily: 'Poppins, sans-serif' }}>{reportData.totalUsers.toLocaleString()}</div>
-                  <div className="text-xs text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>+12% from last period</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Total Farmers</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ fontFamily: 'Poppins, sans-serif' }}>{reportData.totalFarmers.toLocaleString()}</div>
-                  <div className="text-xs text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>+8% from last period</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Total Products</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ fontFamily: 'Poppins, sans-serif' }}>{reportData.totalProducts.toLocaleString()}</div>
-                  <div className="text-xs text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>+15% from last period</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Revenue</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold" style={{ fontFamily: 'Poppins, sans-serif' }}>${reportData.revenue.toLocaleString()}</div>
-                  <div className="text-xs text-green-600" style={{ fontFamily: 'Poppins, sans-serif' }}>+22% from last period</div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle style={{ fontFamily: 'Poppins, sans-serif' }}>User Growth</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  Chart placeholder - User growth over time
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle style={{ fontFamily: 'Poppins, sans-serif' }}>Revenue Trends</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  Chart placeholder - Revenue trends
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </>
-      )}
-
-      {/* Product Reports Tab */}
-      {activeTab === 'product-reports' && (
-        <>
+      {/* Complaints Section */}
+      <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
               <select 
                 value={filter} 
-                onChange={(e) => setFilter(e.target.value as any)}
+                onChange={(e) => setFilter(e.target.value as 'all' | 'pending' | 'investigating' | 'resolved' | 'dismissed' | 'transferred')}
                 className="border rounded px-3 py-2"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
-                <option value="all">All Reports</option>
+                <option value="all">All Complaints</option>
                 <option value="pending">Pending</option>
                 <option value="investigating">Investigating</option>
                 <option value="resolved">Resolved</option>
                 <option value="dismissed">Dismissed</option>
+                <option value="transferred">📨 Transferred from Appeals</option>
               </select>
             </div>
           </div>
@@ -321,7 +180,12 @@ const Reports: React.FC = () => {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle style={{ fontFamily: 'Poppins, sans-serif' }}>Product Reports ({filteredReports.length})</CardTitle>
+                <CardTitle style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  {filter === 'transferred' ? 'Transferred Appeals' : 'Complaints'} ({filteredReports.length})
+                  {filter === 'transferred' && (
+                    <span className="text-sm font-normal text-purple-600 ml-2">📨 Originally from Appeals section</span>
+                  )}
+                </CardTitle>
                 <p className="text-sm text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -348,18 +212,32 @@ const Reports: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredReports.map((report) => (
+                    {filteredReports.map((report) => {
+                      const isTransferred = isTransferredFromAppeal(report);
+                      const transferInfo = getTransferInfo(report);
+                      
+                      return (
                       <tr 
                         key={report._id} 
-                        className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                        className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${isTransferred ? 'bg-purple-50 border-purple-200' : ''}`}
                         onClick={() => viewProductDetails(report.productId, report._id)}
                       >
                         <td className="py-3 px-4">
                           <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{report.reporterName}</div>
                           <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>{report.reporterEmail}</div>
+                          {isTransferred && (
+                            <div className="text-xs text-purple-600 font-medium mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                              📨 Transferred from Appeals
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-4">
                           <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{report.productName}</div>
+                          {isTransferred && transferInfo.appealReason && (
+                            <div className="text-xs text-purple-600 mt-1 italic" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                              Original: {transferInfo.appealReason.substring(0, 50)}{transferInfo.appealReason.length > 50 ? '...' : ''}
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-4">
                           <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>{report.sellerName}</div>
@@ -435,7 +313,8 @@ const Reports: React.FC = () => {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -460,14 +339,20 @@ const Reports: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>No reports found</h3>
-                  <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>There are no reports to display.</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    {filter === 'transferred' ? 'No transferred appeals found' : 'No complaints found'}
+                  </h3>
+                  <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    {filter === 'transferred' 
+                      ? 'There are no appeals that have been transferred to the complaints section yet.'
+                      : 'There are no complaints to display. This includes product reports and wrong report disputes.'
+                    }
+                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
-        </>
-      )}
+      </div>
     </div>
   );
 };

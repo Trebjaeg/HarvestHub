@@ -257,7 +257,7 @@ export default function NewAppealPage() {
           <p className="text-gray-600 mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
             Your account is not currently suspended. You can only submit an account appeal if your account has been suspended.
           </p>
-          <Button onClick={() => router.push('/home')} className="w-full font-poppins">
+          <Button onClick={() => router.push('/')} className="w-full font-poppins">
             Go to Home
           </Button>
         </div>

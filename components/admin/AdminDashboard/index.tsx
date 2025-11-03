@@ -313,7 +313,7 @@ const AdminDashboard: React.FC = () => {
           <Button
             onClick={() => {
               console.log('Mobile Home button clicked');
-              router.push('/home');
+              router.push('/');
               setSidebarOpen(false); // Close sidebar on mobile after selection
             }}
             variant="outline"
@@ -367,7 +367,7 @@ const AdminDashboard: React.FC = () => {
             </button>
             
             <Button
-              onClick={() => router.push('/home')}
+              onClick={() => router.push('/')}
               variant="outline"
               className="border-gray-200 hover:border-[#D2B48C] hover:bg-[#F5F5DC] text-gray-600 hover:text-[#8B7355] transition-colors font-medium"
               style={{ fontFamily: 'Poppins, sans-serif' }}
@@ -487,7 +487,7 @@ const AdminDashboard: React.FC = () => {
                 },
                 { 
                   id: 'reports', 
-                  label: 'Reports', 
+                  label: 'Complaints', 
                   icon: (
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-report">
                       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>

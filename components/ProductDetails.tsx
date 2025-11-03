@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import FavoriteButton from '@/components/FavoriteButton';
 import ReviewItem from '@/components/ReviewItem';
+import AuthModal from '@/components/AuthModal';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -49,6 +50,7 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
   const [takingDown, setTakingDown] = useState(false);
   const [showTakedownDialog, setShowTakedownDialog] = useState(false);
   const [startingChat, setStartingChat] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const reportId = searchParams?.get('reportId');
@@ -542,6 +544,34 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
           </div>
         </div>
       </div>
+    );
+  }
+
+  // Show auth modal for non-authenticated users
+  if (!isAuthenticated) {
+    return (
+      <>
+        <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center py-20">
+              <p className="text-gray-600 text-lg mb-4">Please log in to view product details</p>
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="bg-green-800 hover:bg-green-900 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                Login / Sign Up
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          message="You need to be logged in to view product details."
+          actionDescription="Please log in or sign up to continue browsing."
+        />
+      </>
     );
   }
 

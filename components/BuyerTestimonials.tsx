@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuthUserData } from '../hooks/useAuthUserData';
+import AuthModal from './AuthModal';
 
 interface Testimonial {
   _id: string;
@@ -35,6 +38,20 @@ const BuyerTestimonials: React.FC<BuyerTestimonialsProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  
+  // Authentication state and router
+  const { isAuthenticated } = useAuthUserData();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const router = useRouter();
+
+  // Handle Start Shopping button click
+  const handleStartShoppingClick = () => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+    } else {
+      router.push('/shop');
+    }
+  };
 
   // Default avatar SVG component
   const DefaultAvatar = () => (
@@ -180,7 +197,57 @@ const BuyerTestimonials: React.FC<BuyerTestimonialsProps> = ({
     );
   }
 
-  // Empty state
+  // Empty state - Show different content based on authentication
+  if (!isAuthenticated) {
+    // Non-authenticated users always see login prompt
+    return (
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-6" style={{ color: '#614124', fontFamily: 'Poppins, sans-serif' }}>
+          What Our Buyer Says
+        </h2>
+        <div className="text-center py-12 bg-white rounded-2xl shadow-sm">
+          <div className="max-w-md mx-auto">
+            <svg 
+              className="w-20 h-20 mx-auto mb-4 text-gray-300" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={1.5} 
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" 
+              />
+            </svg>
+            <h3 className="text-xl font-semibold mb-2 text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              No Reviews Yet
+            </h3>
+            <p className="text-gray-500 mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Please log in to access this resource
+            </p>
+            <button 
+              onClick={handleStartShoppingClick}
+              className="inline-block bg-green-600 text-white px-6 py-3 rounded-full font-medium hover:bg-green-700 transition-colors cursor-pointer"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+            >
+              Start Shopping
+            </button>
+          </div>
+        </div>
+
+        {/* Auth Modal */}
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          message="You need to be logged in to access the shop."
+          actionDescription="Please log in or sign up to start shopping."
+        />
+      </div>
+    );
+  }
+
+  // Authenticated users - show actual empty state or error only if there are really no reviews
   if (error || testimonials.length === 0) {
     return (
       <div className="mt-8">
@@ -208,13 +275,13 @@ const BuyerTestimonials: React.FC<BuyerTestimonialsProps> = ({
             <p className="text-gray-500 mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
               {error || 'Be the first to share your experience! Your feedback helps other buyers make informed decisions.'}
             </p>
-            <Link 
-              href="/shop" 
-              className="inline-block bg-green-600 text-white px-6 py-3 rounded-full font-medium hover:bg-green-700 transition-colors"
+            <button 
+              onClick={handleStartShoppingClick}
+              className="inline-block bg-green-600 text-white px-6 py-3 rounded-full font-medium hover:bg-green-700 transition-colors cursor-pointer"
               style={{ fontFamily: 'Poppins, sans-serif' }}
             >
               Start Shopping
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -406,6 +473,14 @@ const BuyerTestimonials: React.FC<BuyerTestimonialsProps> = ({
           scrollbar-width: none;
         }
       `}</style>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        message="You need to be logged in to access the shop."
+        actionDescription="Please log in or sign up to start shopping."
+      />
     </div>
   );
 };

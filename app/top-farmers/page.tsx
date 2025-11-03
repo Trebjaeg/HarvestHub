@@ -278,7 +278,7 @@ const TopFarmersPageContent = () => {
           <div className="md:hidden">
             <div className="flex items-center justify-center text-sm">
               <div className="flex items-center space-x-3 text-xs overflow-x-auto">
-                <Link href="/home" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Home</Link>
+                <Link href="/" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Home</Link>
                 <Link href="/shop" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Shop</Link>
                 <Link href="/deals" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Deals</Link>
                 <Link href="/best-seller" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Best Seller</Link>
@@ -290,7 +290,7 @@ const TopFarmersPageContent = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center justify-center text-sm">
             <div className="flex items-center space-x-16">
-              <Link href="/home" className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Home</Link>
+              <Link href="/" className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Home</Link>
               <Link href="/shop" className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Shop</Link>
               <Link href="/deals" className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Deals</Link>
               <Link href="/best-seller" className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Best Seller</Link>

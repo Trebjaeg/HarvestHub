@@ -65,7 +65,7 @@ const AppealSchema = new Schema({
   // Appeal status
   status: {
     type: String,
-    enum: ['pending', 'under_review', 'approved', 'rejected'],
+    enum: ['pending', 'under_review', 'approved', 'rejected', 'transferred'],
     default: 'pending'
   },
   priority: {

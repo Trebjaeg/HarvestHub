@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
-import AuthPage from "./auth/page";
+import HomePage from "./home/page";
 
 export default function RootPage() {
   const router = useRouter();
@@ -16,13 +16,8 @@ export default function RootPage() {
       userEmail: user?.email 
     });
     
-    // If user is authenticated, redirect to home
-    if (!isLoading && user) {
-      console.log('🏠 RootPage: Redirecting authenticated user to /home');
-      router.push('/home');
-    } else if (!isLoading && !user) {
-      console.log('🏠 RootPage: User not authenticated, staying on auth page');
-    }
+    // For authenticated users, no need to redirect - just show home page content
+    // Landing page is now accessible to everyone by default
   }, [user, isLoading, router]);
 
   // Show loading while checking auth status
@@ -56,10 +51,10 @@ export default function RootPage() {
     );
   }
 
-  // Show auth page for non-authenticated users
+  // Show the landing page for everyone (authenticated and non-authenticated users)
   return (
     <div>
-      <AuthPage />
+      <HomePage />
     </div>
   );
 }

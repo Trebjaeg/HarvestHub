@@ -12,7 +12,7 @@ import PromoBanner from '../../components/PromoBanner';
 import BuyerTestimonials from '../../components/BuyerTestimonials';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 import NotificationsPanel from '../../components/NotificationsPanel';
-import { ProtectedRoute } from '../../components/ProtectedRoute';
+import AuthModal from '../../components/AuthModal';
 import { useAuthUserData } from '../../hooks/useAuthUserData';
 import { useProducts } from '../../hooks/useProducts';
 
@@ -34,6 +34,79 @@ const HomePageContent = () => {
   const [unreadCount, setUnreadCount] = useState(notificationCount);
   const notifButtonRef = useRef<HTMLButtonElement>(null);
   const mobileNotifButtonRef = useRef<HTMLButtonElement>(null);
+  
+  // Auth modal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMessage, setAuthModalMessage] = useState("You need to be logged in to access this feature.");
+  const [authModalAction, setAuthModalAction] = useState("Please log in or sign up to continue.");
+
+  // Function to show auth modal with custom message
+  const showAuthRequired = (message?: string, actionDescription?: string) => {
+    if (message) setAuthModalMessage(message);
+    if (actionDescription) setAuthModalAction(actionDescription);
+    setShowAuthModal(true);
+  };
+
+  // Function to handle protected actions
+  const handleProtectedAction = (action: string, callback?: () => void) => {
+    if (!isAuthenticated) {
+      let message = "You need to be logged in to access this feature.";
+      let actionDesc = "Please log in or sign up to continue.";
+      
+      switch (action) {
+        case 'cart':
+          message = "You need to be logged in to add items to your cart.";
+          actionDesc = "Please log in or sign up to start shopping.";
+          break;
+        case 'profile':
+          message = "You need to be logged in to access your profile.";
+          actionDesc = "Please log in or sign up to manage your account.";
+          break;
+        case 'notifications':
+          message = "You need to be logged in to view notifications.";
+          actionDesc = "Please log in or sign up to stay updated.";
+          break;
+        case 'shop':
+          message = "You need to be logged in to access the shop.";
+          actionDesc = "Please log in or sign up to start shopping.";
+          break;
+        case 'deals':
+          message = "You need to be logged in to view deals.";
+          actionDesc = "Please log in or sign up to access exclusive deals.";
+          break;
+        case 'best-seller':
+          message = "You need to be logged in to view best sellers.";
+          actionDesc = "Please log in or sign up to discover our best selling products.";
+          break;
+        case 'top-farmers':
+          message = "You need to be logged in to view top farmers.";
+          actionDesc = "Please log in or sign up to connect with our top farmers.";
+          break;
+        case 'category':
+          message = "You need to be logged in to browse categories.";
+          actionDesc = "Please log in or sign up to explore our product categories.";
+          break;
+        case 'search':
+          message = "You need to be logged in to search products.";
+          actionDesc = "Please log in or sign up to search and discover products.";
+          break;
+        case 'contact':
+          message = "You need to be logged in to contact support.";
+          actionDesc = "Please log in or sign up to get help and support.";
+          break;
+        case 'help':
+          message = "You need to be logged in to view help resources.";
+          actionDesc = "Please log in or sign up to access our help center.";
+          break;
+        default:
+          break;
+      }
+      
+      showAuthRequired(message, actionDesc);
+    } else if (callback) {
+      callback();
+    }
+  };
   
   // Fetch cart count on initial load
   useEffect(() => {
@@ -139,7 +212,7 @@ const HomePageContent = () => {
       title: "Fresh & Healthy",
       subtitle: "Farm to table quality",
       buttonText: "Shop Now",
-      link: "/home"
+      link: "/"
     },
     {
       id: 2,
@@ -223,6 +296,10 @@ const HomePageContent = () => {
   };
 
   const handleSuggestionClick = (suggestion: {type: 'product' | 'seller', name: string, id?: string}) => {
+    if (!isAuthenticated) {
+      handleProtectedAction('search', () => {});
+      return;
+    }
     setSearchInput(suggestion.name);
     setShowSuggestions(false);
     // Navigate to shop with search query
@@ -231,6 +308,10 @@ const HomePageContent = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      handleProtectedAction('search', () => {});
+      return;
+    }
     if (searchInput.trim()) {
       setShowSuggestions(false);
       router.push(`/shop?search=${encodeURIComponent(searchInput.trim())}`);
@@ -327,37 +408,63 @@ const HomePageContent = () => {
             </div>
             
             <div className="flex items-center space-x-3">
-              <Link href="/my-profile" className="flex items-center space-x-1" title="Profile">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-white">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                </svg>
-              </Link>
+              {isAuthenticated ? (
+                <Link href="/my-profile" className="flex items-center space-x-1" title="Profile">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-white">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                </Link>
+              ) : (
+                <button 
+                  onClick={() => handleProtectedAction('profile')}
+                  className="flex items-center space-x-1" 
+                  title="Profile"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-white">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                </button>
+              )}
               
-              <Link href="/cart" data-cart-icon className={`relative transition-transform ${cartShake ? 'animate-shake' : ''}`}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                </svg>
-                {isAuthenticated && cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </span>
-                )}
-              </Link>
+              {isAuthenticated ? (
+                <Link href="/cart" data-cart-icon className={`relative transition-transform ${cartShake ? 'animate-shake' : ''}`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                  </svg>
+                  {cartCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
+                </Link>
+              ) : (
+                <button 
+                  onClick={() => handleProtectedAction('cart')}
+                  className="relative transition-transform"
+                  title="Cart"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-white">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                  </svg>
+                </button>
+              )}
               
-              <button 
-                ref={mobileNotifButtonRef}
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="relative"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                </svg>
-                {isAuthenticated && unreadCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-              </button>
+              {isAuthenticated && (
+                <button 
+                  ref={mobileNotifButtonRef}
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                  </svg>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+              )}
               
               <div className="relative">
                 <LanguageSwitcher variant="header" />
@@ -394,42 +501,68 @@ const HomePageContent = () => {
             </div>
             
             <div className="flex items-center space-x-3">
-              <Link href="/my-profile" className="flex items-center space-x-2 hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105" title="Profile">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-white">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                </svg>
-                <span className="text-white text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Profile</span>
-              </Link>
+              {isAuthenticated ? (
+                <Link href="/my-profile" className="flex items-center space-x-2 hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105" title="Profile">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-white">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                  <span className="text-white text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Profile</span>
+                </Link>
+              ) : (
+                <button 
+                  onClick={() => handleProtectedAction('profile')}
+                  className="flex items-center space-x-2 hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105" 
+                  title="Login"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-white">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                  <span className="text-white text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Login/Sign Up</span>
+                </button>
+              )}
               
-              <Link href="/cart" data-cart-icon className={`relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center space-x-2 ${cartShake ? 'animate-shake' : ''}`}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                </svg>
-                <span className="text-white text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Cart</span>
-                {isAuthenticated && cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </span>
-                )}
-              </Link>
+              {isAuthenticated ? (
+                <Link href="/cart" data-cart-icon className={`relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center space-x-2 ${cartShake ? 'animate-shake' : ''}`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                  </svg>
+                  <span className="text-white text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Cart</span>
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
+                </Link>
+              ) : (
+                <button 
+                  onClick={() => handleProtectedAction('cart')}
+                  className="relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center space-x-2"
+                  title="Cart"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-white">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                  </svg>
+                  <span className="text-white text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Shop</span>
+                </button>
+              )}
               
-              <button 
-                ref={notifButtonRef}
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center space-x-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                </svg>
-                <span className="text-white text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Notifications</span>
-                {isAuthenticated && unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-              </button>
-              
-              <div className="relative">
+              {isAuthenticated && (
+                <button 
+                  ref={notifButtonRef}
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 flex items-center space-x-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                  </svg>
+                  <span className="text-white text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Notifications</span>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+              )}              <div className="relative">
                 <LanguageSwitcher variant="header" />
               </div>
             </div>
@@ -537,11 +670,27 @@ const HomePageContent = () => {
           <div className="md:hidden">
             <div className="flex items-center justify-center text-sm">
               <div className="flex items-center space-x-3 text-xs overflow-x-auto">
-                <Link href="/home" className="font-medium py-2 border-b-2 whitespace-nowrap" style={{ color: '#614124', borderColor: '#614124' }}>Home</Link>
-                <Link href="/shop" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Shop</Link>
-                <Link href="/deals" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Deals</Link>
-                <Link href="/best-seller" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Best Seller</Link>
-                <Link href="/top-farmers" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Top Farmers</Link>
+                <Link href="/" className="font-medium py-2 border-b-2 whitespace-nowrap" style={{ color: '#614124', borderColor: '#614124' }}>Home</Link>
+                {isAuthenticated ? (
+                  <Link href="/shop" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Shop</Link>
+                ) : (
+                  <button onClick={() => handleProtectedAction('shop')} className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Shop</button>
+                )}
+                {isAuthenticated ? (
+                  <Link href="/deals" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Deals</Link>
+                ) : (
+                  <button onClick={() => handleProtectedAction('deals', () => {})} className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Deals</button>
+                )}
+                {isAuthenticated ? (
+                  <Link href="/best-seller" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Best Seller</Link>
+                ) : (
+                  <button onClick={() => handleProtectedAction('best-seller', () => {})} className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Best Seller</button>
+                )}
+                {isAuthenticated ? (
+                  <Link href="/top-farmers" className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Top Farmers</Link>
+                ) : (
+                  <button onClick={() => handleProtectedAction('top-farmers', () => {})} className="py-2 whitespace-nowrap" style={{ color: '#614124' }}>Top Farmers</button>
+                )}
               </div>
             </div>
           </div>
@@ -549,11 +698,27 @@ const HomePageContent = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center justify-center text-sm">
             <div className="flex items-center space-x-16">
-              <Link href="/home" className="font-medium py-2 border-b-2" style={{ color: '#614124', borderColor: '#614124' }}>Home</Link>
-              <Link href="/shop" className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Shop</Link>
-              <Link href="/deals" className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Deals</Link>
-              <Link href="/best-seller" className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Best Seller</Link>
-              <Link href="/top-farmers" className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Top Farmers</Link>
+              <Link href="/" className="font-medium py-2 border-b-2" style={{ color: '#614124', borderColor: '#614124' }}>Home</Link>
+              {isAuthenticated ? (
+                <Link href="/shop" className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Shop</Link>
+              ) : (
+                <button onClick={() => handleProtectedAction('shop')} className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Shop</button>
+              )}
+              {isAuthenticated ? (
+                <Link href="/deals" className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Deals</Link>
+              ) : (
+                <button onClick={() => handleProtectedAction('deals', () => {})} className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Deals</button>
+              )}
+              {isAuthenticated ? (
+                <Link href="/best-seller" className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Best Seller</Link>
+              ) : (
+                <button onClick={() => handleProtectedAction('best-seller', () => {})} className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Best Seller</button>
+              )}
+              {isAuthenticated ? (
+                <Link href="/top-farmers" className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Top Farmers</Link>
+              ) : (
+                <button onClick={() => handleProtectedAction('top-farmers', () => {})} className="py-2 hover:border-b-2 transition-all" style={{ color: '#614124' }}>Top Farmers</button>
+              )}
             </div>
           </div>
         </div>
@@ -771,25 +936,47 @@ const HomePageContent = () => {
           <h2 className="text-3xl font-normal text-center mb-12" style={{ color: '#614124', fontWeight: '500' }}>{t('home.categories')}</h2>
           <div className="grid grid-cols-2 md:grid-cols-6 gap-12 mx-auto">
             {categories.map((category) => (
-              <Link 
-                key={category.id} 
-                href={`/home/category/${category.id}`} 
-                className="text-center group"
-              >
-                <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-gray-200 group-hover:border-[#103C2E] transition-all duration-300 group-hover:scale-105">
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    width={96}
-                    height={96}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-                <h3 className="mb-2 group-hover:text-[#103C2E] transition-colors font-semibold text-sm" style={{ color: '#614124' }}>
-                  {category.name}
-                </h3>
-                <p className="text-xs leading-relaxed" style={{ color: '#614124' }}>{category.description}</p>
-              </Link>
+              isAuthenticated ? (
+                <Link 
+                  key={category.id} 
+                  href={`/home/category/${category.id}`} 
+                  className="text-center group"
+                >
+                  <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-gray-200 group-hover:border-[#103C2E] transition-all duration-300 group-hover:scale-105">
+                    <Image
+                      src={category.image}
+                      alt={category.name}
+                      width={96}
+                      height={96}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                  <h3 className="mb-2 group-hover:text-[#103C2E] transition-colors font-semibold text-sm" style={{ color: '#614124' }}>
+                    {category.name}
+                  </h3>
+                  <p className="text-xs leading-relaxed" style={{ color: '#614124' }}>{category.description}</p>
+                </Link>
+              ) : (
+                <button 
+                  key={category.id} 
+                  onClick={() => handleProtectedAction('category', () => {})}
+                  className="text-center group cursor-pointer"
+                >
+                  <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-gray-200 group-hover:border-[#103C2E] transition-all duration-300 group-hover:scale-105">
+                    <Image
+                      src={category.image}
+                      alt={category.name}
+                      width={96}
+                      height={96}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                  <h3 className="mb-2 group-hover:text-[#103C2E] transition-colors font-semibold text-sm" style={{ color: '#614124' }}>
+                    {category.name}
+                  </h3>
+                  <p className="text-xs leading-relaxed" style={{ color: '#614124' }}>{category.description}</p>
+                </button>
+              )
             ))}
           </div>
         </div>
@@ -1130,6 +1317,14 @@ const HomePageContent = () => {
           buttonRef={(notifButtonRef.current ? notifButtonRef : mobileNotifButtonRef) as React.RefObject<HTMLButtonElement>}
         />
       )}
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        message={authModalMessage}
+        actionDescription={authModalAction}
+      />
       
       {/* Cart Shake Animation */}
       <style jsx global>{`
@@ -1250,15 +1445,27 @@ const HomePageContent = () => {
                   Quick Links
                 </h3>
                 <div className="space-y-1.5 md:space-y-2">
-                  <Link href="/about" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                  <Link href="/about-us" className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
                     About Us
                   </Link>
-                  <Link href={getContactSupportLink()} className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
-                    Contact Us
-                  </Link>
-                  <Link href={getHotQuestionsLink()} className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
-                    Hot Questions
-                  </Link>
+                  {isAuthenticated ? (
+                    <Link href={getContactSupportLink()} className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                      Contact Us
+                    </Link>
+                  ) : (
+                    <button onClick={() => handleProtectedAction('contact', () => {})} className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm text-left">
+                      Contact Us
+                    </button>
+                  )}
+                  {isAuthenticated ? (
+                    <Link href={getHotQuestionsLink()} className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm">
+                      Hot Questions
+                    </Link>
+                  ) : (
+                    <button onClick={() => handleProtectedAction('help', () => {})} className="block text-white/90 hover:text-white transition-colors text-xs md:text-sm text-left">
+                      Hot Questions
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1293,11 +1500,9 @@ const HomePageContent = () => {
 
 const HomePage = () => {
   return (
-    <ProtectedRoute>
-      <I18nProvider>
-        <HomePageContent />
-      </I18nProvider>
-    </ProtectedRoute>
+    <I18nProvider>
+      <HomePageContent />
+    </I18nProvider>
   );
 };
 

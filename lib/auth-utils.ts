@@ -56,13 +56,13 @@ export function isValidReturnUrl(returnUrl: string, baseUrl?: string): boolean {
 /**
  * Sanitizes and validates a returnUrl, providing a safe fallback
  * @param returnUrl - The potentially unsafe URL
- * @param fallback - Fallback URL (default: /home)
+ * @param fallback - Fallback URL (default: /)
  * @param baseUrl - Base URL for validation
  * @returns A safe, validated URL
  */
 export function sanitizeReturnUrl(
   returnUrl: string | null | undefined, 
-  fallback: string = '/home',
+  fallback: string = '/',
   baseUrl?: string
 ): string {
   if (!returnUrl) {
@@ -97,8 +97,6 @@ export function sanitizeReturnUrl(
  */
 export function isProtectedPath(pathname: string): boolean {
   const protectedRoutes = [
-    '/home',
-    '/shop',
     '/profile', 
     '/my-profile',
     '/dashboard',
@@ -107,7 +105,9 @@ export function isProtectedPath(pathname: string): boolean {
     '/sellerdashboard',
     '/buyerdashboard', 
     '/buyer-profile',
-    '/seller-profile'
+    '/seller-profile',
+    '/cart',
+    '/checkout'
   ];
   
   return protectedRoutes.some(route => pathname.startsWith(route));
@@ -131,9 +131,16 @@ export function isAdminPath(pathname: string): boolean {
 export function isPublicPath(pathname: string): boolean {
   const publicRoutes = [
     '/',
+    '/home',
     '/auth',
     '/privacy',
     '/terms',
+    '/about-us',
+    '/help',
+    '/deals',
+    '/best-seller',
+    '/top-farmers',
+    '/shop',
     '/api/auth/login',
     '/api/auth/register',
     '/api/auth/reset-password',
@@ -202,7 +209,6 @@ export function isBuyerPath(pathname: string): boolean {
   const buyerRoutes = [
     '/buyerdashboard',
     '/buyer-profile',
-    '/shop',
     '/api/buyer'
   ];
   
@@ -245,7 +251,7 @@ export function getBaseUrl(): string {
 export function preventAuthLoop(returnUrl: string): string {
   // If returnUrl is an auth route, replace with safe default
   if (isAuthPath(returnUrl)) {
-    return '/home';
+    return '/';
   }
   
   return returnUrl;
@@ -261,7 +267,7 @@ export function safeEncodeUrl(url: string): string {
     return encodeURIComponent(url);
   } catch {
     // If encoding fails, return a safe default
-    return encodeURIComponent('/home');
+    return encodeURIComponent('/');
   }
 }
 

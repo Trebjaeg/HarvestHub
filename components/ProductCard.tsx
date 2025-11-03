@@ -1,11 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { IProduct } from '../types/product';
+import { useAuthUserData } from '../hooks/useAuthUserData';
 import AlertDialog from './ui/AlertDialog';
 import ReportProductModal from './ui/ReportProductModal';
+import AuthModal from './AuthModal';
 
 // Extended interface to handle both IProduct and DealProduct types
 interface FlexibleProduct {
@@ -54,10 +55,13 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) => {
+  const { isAuthenticated } = useAuthUserData();
   const [isAnimating, setIsAnimating] = useState(false);
   const imageRef = useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalContext, setAuthModalContext] = useState<'cart' | 'view'>('cart');
   const [alertDialog, setAlertDialog] = useState({
     isOpen: false,
     title: '',
@@ -101,9 +105,25 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
   return (
     <>
     <div className={`bg-white rounded-3xl border-2 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] w-full ${className}`} style={{ height: '275px', borderColor: '#40613D', position: 'relative' }}>
-      <Link href={`/product/${product._id}`} className="block w-full h-full absolute inset-0" style={{ zIndex: 1 }}>
+      <div 
+          onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          if (!isAuthenticated) {
+            setAuthModalContext('view');
+            setShowAuthModal(true);
+            return;
+          }
+          
+          // If authenticated, navigate to product page
+          window.location.href = `/product/${product._id}`;
+        }}
+        className="block w-full h-full absolute inset-0 cursor-pointer" 
+        style={{ zIndex: 1 }}
+      >
         <span className="sr-only">View {product.name}</span>
-      </Link>
+      </div>
         {/* Product Image - Takes remaining space after info section (275px - 89px = 186px) */}
         <div ref={imageRef} className="relative bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden" style={{ height: '186px', zIndex: 2, pointerEvents: 'none' }}>
         
@@ -266,6 +286,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
               
               // Don't allow multiple clicks during animation
               if (isAnimating) return;
+
+              // Check if user is authenticated
+              if (!isAuthenticated) {
+                setAuthModalContext('cart');
+                setShowAuthModal(true);
+                return;
+              }
               
               // Start animation immediately for instant feedback
               setIsAnimating(true);
@@ -354,7 +381,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
                     const channel = new BroadcastChannel('cart-sync');
                     channel.postMessage({ type: 'cart-changed' });
                     channel.close();
-                  } catch (e) {
+                  } catch {
                     // BroadcastChannel not supported
                   }
                   
@@ -378,7 +405,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
                     message: data.message || data.error || 'Failed to add to cart'
                   });
                 }
-              } catch (error) {
+              } catch {
                 setIsAnimating(false);
                 setAlertDialog({
                   isOpen: true,
@@ -414,6 +441,20 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
             message: 'Thank you for your report. Our team will review it shortly and take appropriate action.'
           });
         }}
+      />
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        message={
+          authModalContext === 'cart' 
+            ? "You need to be logged in to add items to your cart."
+            : "You need to be logged in to view product details."
+        }
+        actionDescription={
+          authModalContext === 'cart'
+            ? "Please log in or sign up to start shopping."
+            : "Please log in or sign up to continue browsing."
+        }
       />
     </>
   );

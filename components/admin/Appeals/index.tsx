@@ -13,7 +13,7 @@ interface Appeal {
   appealType: 'account_suspension' | 'report_dispute' | 'verification_rejection' | 'other';
   subject: string;
   description: string;
-  status: 'pending' | 'under_review' | 'approved' | 'rejected';
+  status: 'pending' | 'under_review' | 'approved' | 'rejected' | 'transferred';
   createdAt: string;
   reviewedAt?: string;
   reviewedBy?: string;
@@ -26,6 +26,10 @@ const Appeals: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedAppeal, setSelectedAppeal] = useState<Appeal | null>(null);
   const [response, setResponse] = useState('');
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferAppeal, setTransferAppeal] = useState<Appeal | null>(null);
+  const [transferReason, setTransferReason] = useState('');
+  const [transferCategory, setTransferCategory] = useState('misleading_info');
 
   useEffect(() => {
     fetchAppeals();
@@ -77,6 +81,47 @@ const Appeals: React.FC = () => {
     }
   };
 
+  const transferToComplaints = async () => {
+    if (!transferAppeal || !transferReason.trim()) {
+      alert('Please provide a reason for the transfer');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/appeals/transfer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify({
+          appealId: transferAppeal._id,
+          transferReason: transferReason.trim(),
+          newCategory: transferCategory
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to transfer appeal');
+      }
+
+      // Show success message
+      alert(`Appeal successfully transferred to Complaints section. New complaint ID: ${data.data.newComplaint.id}`);
+      
+      // Refresh appeals list and close modals
+      fetchAppeals();
+      setShowTransferModal(false);
+      setTransferAppeal(null);
+      setTransferReason('');
+      setSelectedAppeal(null);
+    } catch (error: any) {
+      console.error('Error transferring appeal:', error);
+      alert('Error transferring appeal: ' + error.message);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -87,6 +132,8 @@ const Appeals: React.FC = () => {
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Approved</span>;
       case 'rejected':
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Rejected</span>;
+      case 'transferred':
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Transferred to Complaints</span>;
       default:
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{status}</span>;
     }
@@ -182,7 +229,7 @@ const Appeals: React.FC = () => {
                       {new Date(appeal.createdAt).toLocaleDateString()}
                     </td>
                     <td className="py-3 px-4">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Button
                           onClick={() => setSelectedAppeal(appeal)}
                           variant="outline"
@@ -211,6 +258,18 @@ const Appeals: React.FC = () => {
                               style={{ fontFamily: 'Poppins, sans-serif' }}
                             >
                               Reject
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setTransferAppeal(appeal);
+                                setShowTransferModal(true);
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="border-purple-200 text-purple-600 hover:bg-purple-50"
+                              style={{ fontFamily: 'Poppins, sans-serif' }}
+                            >
+                              Transfer to Complaints
                             </Button>
                           </>
                         )}
@@ -291,6 +350,18 @@ const Appeals: React.FC = () => {
                         style={{ fontFamily: 'Poppins, sans-serif' }}
                       >
                         Reject
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setTransferAppeal(appeal);
+                          setShowTransferModal(true);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-purple-200 text-purple-600 hover:bg-purple-50"
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        Transfer to Complaints
                       </Button>
                     </>
                   )}
@@ -395,6 +466,103 @@ const Appeals: React.FC = () => {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer to Complaints Modal */}
+      {showTransferModal && transferAppeal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-lg font-semibold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Transfer Appeal to Complaints
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowTransferModal(false);
+                    setTransferAppeal(null);
+                    setTransferReason('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    <strong>Appeal ID:</strong> {transferAppeal._id}
+                  </p>
+                  <p className="text-sm text-gray-600 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    <strong>User:</strong> {transferAppeal.userName} ({transferAppeal.userEmail})
+                  </p>
+                  <p className="text-sm text-gray-600 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    <strong>Subject:</strong> {transferAppeal.subject}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    Complaint Category
+                  </label>
+                  <select
+                    value={transferCategory}
+                    onChange={(e) => setTransferCategory(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                  >
+                    <option value="misleading_info">Misleading Information</option>
+                    <option value="fake_product">Fake Product</option>
+                    <option value="poor_quality">Poor Quality</option>
+                    <option value="scam">Scam</option>
+                    <option value="counterfeit">Counterfeit</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    Reason for Transfer <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={transferReason}
+                    onChange={(e) => setTransferReason(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-md"
+                    rows={3}
+                    placeholder="Explain why this appeal should be transferred to the Complaints section..."
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                  />
+                </div>
+                
+                <div className="flex gap-3 mt-6">
+                  <Button
+                    onClick={transferToComplaints}
+                    disabled={!transferReason.trim()}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white disabled:bg-gray-300"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                  >
+                    Transfer to Complaints
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowTransferModal(false);
+                      setTransferAppeal(null);
+                      setTransferReason('');
+                    }}
+                    variant="outline"
+                    className="flex-1"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

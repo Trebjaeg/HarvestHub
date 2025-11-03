@@ -1,0 +1,135 @@
+/* About Us Glassmorphism Styles - iOS Style */
+.glassmorphism-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+}
+
+.glassmorphism-card:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
+}
+
+/* Team card specific styles - iOS Style */
+.team-card {
+  background: linear-gradient(135deg, rgba(12, 37, 23, 1.0) 0%, rgba(46, 139, 87, 0.0) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+  transition: all 0.3s ease;
+}
+
+.team-card:hover {
+  background: linear-gradient(135deg, rgba(12, 37, 23, 1.0) 0%, rgba(46, 139, 87, 0.2) 100%);
+  border-color: rgba(16, 185, 129, 0.3);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(16, 185, 129, 0.2);
+}
+
+/* Featured team card styles */
+.featured-team-card {
+  transition: all 0.3s ease;
+}
+
+.featured-team-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 48px rgba(16, 185, 129, 0.2);
+}
+
+/* Value card styles - iOS Style */
+.value-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+  transition: all 0.3s ease;
+}
+
+.value-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 12px 40px rgba(16, 185, 129, 0.2);
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #10b981;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #059669;
+}
+
+/* Animation utilities */
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 0.6s ease forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+.slide-up {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: slideUp 0.6s ease forwards;
+}
+
+@keyframes slideUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .glassmorphism-card {
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+/* Ensure proper text rendering on dark backgrounds */
+.text-shadow {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Bridge and sprout container styles */
+.bridge-container {
+  filter: drop-shadow(0 4px 8px rgba(16, 185, 129, 0.2));
+  transition: filter 0.3s ease;
+}
+
+.sprout-container {
+  filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.3));
+  transition: all 0.3s ease;
+}
+
+.sprout-container:hover {
+  filter: drop-shadow(0 0 15px rgba(34, 197, 94, 0.5));
+  transform: scale(1.02);
+}

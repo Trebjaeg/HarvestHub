@@ -472,7 +472,7 @@ export default function BuyerInboxPage() {
               {/* Back button for mobile - only show when NOT in conversation list view */}
               {!showSidebar && (
                 <button
-                  onClick={() => router.push('/home')}
+                  onClick={() => router.push('/')}
                   className="md:hidden text-white hover:bg-white/10 p-1.5 rounded-lg transition-colors"
                   aria-label="Go back"
                 >

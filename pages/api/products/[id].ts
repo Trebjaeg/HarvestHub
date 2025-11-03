@@ -29,7 +29,16 @@ async function productHandler(req: NextApiRequest, res: NextApiResponse) {
 
 async function getProduct(req: NextApiRequest, res: NextApiResponse, id: string) {
   try {
-    const product: any = await Product.findOne({ _id: id, isActive: true })
+    // Validate ObjectId format
+    const { ObjectId } = await import('mongodb');
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid product ID format'
+      });
+    }
+
+    const product: any = await Product.findOne({ _id: id })
       .maxTimeMS(3000)
       .lean();
 
@@ -37,6 +46,14 @@ async function getProduct(req: NextApiRequest, res: NextApiResponse, id: string)
       return res.status(404).json({
         success: false,
         message: 'Product not found'
+      });
+    }
+
+    // Check if product is inactive
+    if (product.isActive === false) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product is no longer available'
       });
     }
 
