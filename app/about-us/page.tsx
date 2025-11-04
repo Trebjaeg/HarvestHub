@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ArrowLeft } from 'lucide-react';
 import { teamData, companyStory } from './teamData';
 import BridgeIllustration from './assets/BridgeIllustration';
 import SproutLogo from './assets/SproutLogo';
@@ -14,6 +15,7 @@ const AboutUsPage = () => {
   const storyRef = useRef<HTMLDivElement>(null);
   const valuesRef = useRef<HTMLDivElement>(null);
   const teamCardsRef = useRef<HTMLDivElement[]>([]);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   // Client-side GSAP loading to avoid SSR issues
   useEffect(() => {
@@ -211,6 +213,34 @@ const AboutUsPage = () => {
         background: 'radial-gradient(ellipse at center, rgba(6, 20, 12, 1) 0%, rgba(0, 0, 0, 1) 70%)'
       }}
     >
+      {/* Back to Home Button */}
+      <div className="fixed top-4 left-4 z-50 sm:top-6 sm:left-6">
+        <div className="relative group">
+          <Link
+            href="/"
+            className="back-to-home-btn flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-green-600/80 hover:bg-green-500 active:bg-green-700 backdrop-blur-md rounded-full shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-green-500/25 border border-green-400/30 touch-manipulation"
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            onTouchStart={() => setShowTooltip(true)}
+            onTouchEnd={() => setTimeout(() => setShowTooltip(false), 1500)}
+          >
+            <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-white" strokeWidth={2.5} />
+          </Link>
+          
+          {/* Tooltip */}
+          <div 
+            className={`absolute left-16 sm:left-18 top-1/2 transform -translate-y-1/2 px-3 py-2 bg-gray-900/95 backdrop-blur-sm text-white text-sm rounded-lg shadow-lg border border-gray-700/50 whitespace-nowrap transition-all duration-300 ${
+              showTooltip ? 'opacity-100 translate-x-0 visible' : 'opacity-0 -translate-x-2 invisible'
+            }`}
+            style={{ fontFamily: 'Poppins, sans-serif' }}
+          >
+            Back to Home
+            {/* Tooltip Arrow */}
+            <div className="absolute right-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-r-gray-900/95"></div>
+          </div>
+        </div>
+      </div>
+
       {/* Hero Section with Bridge and Sprout */}
       <section className="relative pt-20 pb-16 px-4">
         <div className="max-w-7xl mx-auto">

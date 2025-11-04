@@ -71,7 +71,7 @@ const STATUS_STEPS = [
 export default function LalamoveTrackingPage() {
   const params = useParams();
   const router = useRouter();
-  const orderId = params.orderId as string;
+  const orderId = params?.orderId as string;
   
   const [order, setOrder] = useState<LalamoveOrder | null>(null);
   const [loading, setLoading] = useState(true);

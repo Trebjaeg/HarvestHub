@@ -142,8 +142,8 @@ export default function BuyerSidebar() {
     } catch (error) {
       console.error('🚪 [BUYER] Logout error:', error);
     } finally {
-      console.log('🚪 [BUYER] Redirecting to auth page...');
-      window.location.href = '/auth';
+      console.log('🚪 [BUYER] Redirecting to landing page...');
+      window.location.href = '/';
     }
   };
 
@@ -152,45 +152,46 @@ export default function BuyerSidebar() {
   return (
     <>
       {/* Mobile Header - matches seller layout */}
-      <div className="lg:hidden bg-white shadow-sm border-b px-4 py-3 flex items-center justify-between fixed top-0 left-0 right-0 z-30">
-        <div className="flex items-center space-x-3">
+      <div className="lg:hidden bg-white shadow-sm border-b px-3 sm:px-4 py-3 flex items-center justify-between fixed top-0 left-0 right-0 z-30">
+        <div className="flex items-center space-x-2 sm:space-x-3">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC]"
+            className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC] transition-colors touch-manipulation"
+            aria-label="Toggle navigation menu"
           >
             {isMobileMenuOpen ? (
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
             ) : (
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
             )}
           </button>
-          <div>
-            <h1 className="text-lg font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-lg font-bold text-gray-800 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>
               Buyer Dashboard
             </h1>
-            <p className="text-xs text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <p className="text-xs text-gray-600 hidden sm:block" style={{ fontFamily: 'Poppins, sans-serif' }}>
               HarvestHub Buyer
             </p>
           </div>
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
           {/* Mobile Profile Icon */}
           <Link
             href="/buyer-profile"
-            className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC] transition-colors"
+            className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC] transition-colors touch-manipulation"
             title="Profile"
           >
-            <User className="w-5 h-5" />
+            <User className="w-4 h-4 sm:w-5 sm:h-5" />
           </Link>
           
           {/* Mobile Home Button */}
           <Link
             href="/home"
-            className="flex items-center space-x-1 px-3 py-2 rounded-lg border border-gray-200 hover:border-[#D2B48C] hover:bg-[#F5F5DC] text-gray-600 hover:text-[#8B7355] transition-colors"
+            className="flex items-center space-x-1 px-2 sm:px-3 py-2 rounded-lg border border-gray-200 hover:border-[#D2B48C] hover:bg-[#F5F5DC] text-gray-600 hover:text-[#8B7355] transition-colors touch-manipulation"
           >
             <Home className="w-4 h-4" />
-            <span className="text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Home</span>
+            <span className="text-xs sm:text-sm font-medium hidden sm:inline" style={{ fontFamily: 'Poppins, sans-serif' }}>Home</span>
           </Link>
         </div>
       </div>
@@ -198,22 +199,23 @@ export default function BuyerSidebar() {
       {/* Mobile Overlay - with blur effect like seller */}
       {isMobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 backdrop-blur-sm bg-white/20 z-40 top-0 left-0 w-full h-full"
+          className="lg:hidden fixed inset-0 backdrop-blur-sm bg-black/20 z-40 top-0 left-0 w-full h-full"
           onClick={() => setIsMobileMenuOpen(false)}
+          style={{ touchAction: 'none' }}
         />
       )}
 
       {/* Sidebar */}
       <div className={`
-        fixed lg:static lg:translate-x-0 z-50 w-64 bg-white shadow-lg lg:shadow-sm border-r transition-transform duration-300 ease-in-out flex flex-col
+        fixed lg:static lg:translate-x-0 z-50 w-64 max-w-[85vw] sm:max-w-64 bg-white shadow-xl lg:shadow-sm border-r transition-transform duration-300 ease-in-out flex flex-col
         inset-y-0 left-0 lg:min-h-screen
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         {/* Mobile Sidebar Header - matches seller */}
-        <div className="lg:hidden p-4 border-b flex-shrink-0">
+        <div className="lg:hidden p-3 sm:p-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-base sm:text-lg font-bold text-gray-800 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Buyer Dashboard
               </h1>
               <p className="text-xs text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -224,7 +226,8 @@ export default function BuyerSidebar() {
             {/* Close button for mobile */}
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC]"
+              className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC] transition-colors touch-manipulation flex-shrink-0"
+              aria-label="Close navigation menu"
             >
               <X className="w-5 h-5" />
             </button>
@@ -260,7 +263,7 @@ export default function BuyerSidebar() {
                 </svg>
               )}
             </div>
-            <h3 className="font-semibold text-gray-800 mt-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <h3 className="font-semibold text-gray-800 mt-3 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
               {loading ? 'Loading...' : fullName || 'Unknown User'}
             </h3>
             <p className="text-gray-600 text-sm" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -270,7 +273,7 @@ export default function BuyerSidebar() {
         </div>
 
       {/* Navigation Menu - with scrollable area */}
-      <nav className="p-4 flex-1 overflow-y-auto">
+      <nav className="p-3 sm:p-4 flex-1 overflow-y-auto">
         <ul className="space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -282,15 +285,15 @@ export default function BuyerSidebar() {
                 <Link
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors font-medium ${
+                  className={`flex items-center space-x-3 px-3 sm:px-4 py-3 rounded-lg transition-colors font-medium touch-manipulation ${
                     isActive
                       ? "bg-[#F5F5DC] text-[#8B7355] border border-[#D2B48C]"
                       : "text-gray-600 hover:bg-[#F5F5DC] hover:text-[#8B7355]"
                   }`}
                   style={{ fontFamily: 'Poppins, sans-serif' }}
                 >
-                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2}/>
-                  <span>{item.label}</span>
+                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="flex-shrink-0" />
+                  <span className="min-w-0 truncate">{item.label}</span>
                 </Link>
               </li>
             );
@@ -299,19 +302,19 @@ export default function BuyerSidebar() {
       </nav>
 
       {/* Logout Button - fixed at bottom, always visible */}
-      <div className="p-4 border-t bg-white flex-shrink-0">
+      <div className="p-3 sm:p-4 border-t bg-white flex-shrink-0">
         <button
           onClick={handleLogoutClick}
-          className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors font-medium"
+          className="w-full flex items-center space-x-3 px-3 sm:px-4 py-3 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors font-medium touch-manipulation"
           style={{ fontFamily: 'Poppins, sans-serif' }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
             <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
             <path d="M9 12h12l-3 -3" />
             <path d="M18 15l3 -3" />
           </svg>
-          <span>Logout</span>
+          <span className="min-w-0 truncate">Logout</span>
         </button>
       </div>
       </div>

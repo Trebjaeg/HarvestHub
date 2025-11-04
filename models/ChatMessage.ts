@@ -1,5 +1,17 @@
 import mongoose from 'mongoose';
 
+export interface IAttachment {
+  id: string;
+  originalName: string;
+  fileName: string;
+  url: string;
+  type: string;
+  size: number;
+  category: 'image' | 'document';
+  uploadedBy: string;
+  uploadedAt: Date;
+}
+
 export interface IChatMessage {
   _id?: string;
   conversationId: string; // Unique ID for conversation between two users
@@ -11,6 +23,7 @@ export interface IChatMessage {
   receiverName: string;
   receiverRole: 'buyer' | 'seller' | 'admin';
   message: string;
+  attachments?: IAttachment[]; // NEW: Support for file attachments
   isRead: boolean;
   readAt?: Date;
   createdAt: Date;
@@ -59,9 +72,27 @@ const ChatMessageSchema = new mongoose.Schema<IChatMessage>(
     },
     message: {
       type: String,
-      required: true,
+      required: function(this: IChatMessage) {
+        // Message is required only if there are no attachments
+        return !this.attachments || this.attachments.length === 0;
+      },
       maxlength: 2000
     },
+    attachments: [{
+      id: { type: String, required: true },
+      originalName: { type: String, required: true },
+      fileName: { type: String, required: true },
+      url: { type: String, required: true },
+      type: { type: String, required: true },
+      size: { type: Number, required: true },
+      category: { 
+        type: String, 
+        enum: ['image', 'document'], 
+        required: true 
+      },
+      uploadedBy: { type: String, required: true },
+      uploadedAt: { type: Date, required: true }
+    }],
     isRead: {
       type: Boolean,
       default: false

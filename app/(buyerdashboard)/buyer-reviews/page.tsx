@@ -57,12 +57,12 @@ function BuyerReviews() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+    <div className="p-3 sm:p-4 lg:p-6 max-w-6xl mx-auto">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
           My Reviews
         </h1>
-        <p className="text-gray-600 mt-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        <p className="text-sm sm:text-base text-gray-600 mt-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
           View all your product reviews and add follow-ups
         </p>
       </div>
@@ -72,67 +72,69 @@ function BuyerReviews() {
           <LoadingDots size="lg" color="#4A7C59" />
         </div>
       ) : reviews.length === 0 ? (
-        <Card className="p-8 text-center">
+        <Card className="p-6 sm:p-8 text-center">
           <div className="flex flex-col items-center gap-4">
-            <Star className="w-16 h-16 text-gray-300" />
-            <h3 className="text-xl font-semibold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <Star className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300" />
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
               No reviews yet
             </h3>
-            <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              You haven't written any reviews yet. Complete an order to leave your first review!
+            <p className="text-sm sm:text-base text-gray-600 max-w-md" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              You haven&apos;t written any reviews yet. Complete an order to leave your first review!
             </p>
             <Link href="/buyer-orders">
-              <Button className="bg-[#4A7C59] hover:bg-[#3d6849]">
+              <Button className="bg-[#4A7C59] hover:bg-[#3d6849] active:bg-[#3d6849] touch-manipulation">
                 View My Orders
               </Button>
             </Link>
           </div>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {reviews.map((review) => (
-            <Card key={review._id} className="p-6">
-              <div className="flex gap-4">
+            <Card key={review._id} className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row gap-4">
                 {/* Product Image */}
                 {review.productImage && (
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 self-center sm:self-start">
                     <img
                       src={review.productImage}
                       alt={review.productName}
-                      className="w-24 h-24 object-cover rounded-lg"
+                      className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg"
                     />
                   </div>
                 )}
 
                 {/* Review Content */}
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   {/* Product Name */}
                   <Link href={`/product/${review.productId}`}>
-                    <h3 className="text-lg font-semibold text-gray-900 hover:text-[#4A7C59] mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 hover:text-[#4A7C59] mb-2 break-words" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       {review.productName}
                     </h3>
                   </Link>
 
                   {/* Rating */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="flex">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={`w-5 h-5 ${
-                            star <= review.rating
-                              ? 'text-yellow-400 fill-yellow-400'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      ))}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                              star <= review.rating
+                                ? 'text-yellow-400 fill-yellow-400'
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      {review.verified && (
+                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          Verified
+                        </span>
+                      )}
                     </div>
-                    {review.verified && (
-                      <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        Verified Purchase
-                      </span>
-                    )}
-                    <span className="text-sm text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    <span className="text-xs sm:text-sm text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       {new Date(review.createdAt).toLocaleDateString()}
                     </span>
                   </div>
@@ -145,7 +147,7 @@ function BuyerReviews() {
                   )}
 
                   {/* Review Comment */}
-                  <p className="text-gray-700 mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  <p className="text-sm sm:text-base text-gray-700 mb-3 break-words" style={{ fontFamily: 'Poppins, sans-serif' }}>
                     {review.comment}
                   </p>
 
@@ -157,7 +159,7 @@ function BuyerReviews() {
                           key={idx}
                           src={img}
                           alt={`Review image ${idx + 1}`}
-                          className="w-20 h-20 object-cover rounded-lg"
+                          className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg"
                         />
                       ))}
                     </div>
@@ -199,12 +201,12 @@ function BuyerReviews() {
 
                   {/* Action Button */}
                   {review.status === 'active' && review.productId && (
-                    <div className="flex gap-2 justify-end">
+                    <div className="flex justify-center sm:justify-end mt-4">
                       <Link href={`/product/${review.productId}`}>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-[#4A7C59] border-[#4A7C59] hover:bg-[#4A7C59]/10"
+                          className="text-[#4A7C59] border-[#4A7C59] hover:bg-[#4A7C59]/10 active:bg-[#4A7C59]/10 touch-manipulation text-xs sm:text-sm"
                         >
                           View Product & Add Follow-up
                         </Button>

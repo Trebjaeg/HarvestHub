@@ -227,7 +227,8 @@ const ReportProductModal: React.FC<ReportProductModalProps> = ({
             >
               {isSubmitting ? (
                 <>
-                  <LoadingDots label="Submitting" />
+                  <LoadingDots />
+                  <span>Submitting</span>
                 </>
               ) : (
                 'Submit Report'

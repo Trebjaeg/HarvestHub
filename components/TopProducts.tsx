@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { IProduct } from '../types/product';
@@ -25,20 +25,7 @@ const TopProducts: React.FC<TopProductsProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchTopProducts();
-    
-    // Set up auto-refresh if interval is provided
-    if (refreshInterval > 0) {
-      const intervalId = setInterval(() => {
-        fetchTopProducts(true); // Silent refresh
-      }, refreshInterval);
-      
-      return () => clearInterval(intervalId);
-    }
-  }, [refreshInterval, minRating, minReviews]);
-
-  const fetchTopProducts = async (silent = false) => {
+  const fetchTopProducts = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
       setError(null);
@@ -67,7 +54,20 @@ const TopProducts: React.FC<TopProductsProps> = ({
     } finally {
       if (!silent) setLoading(false);
     }
-  };
+  }, [maxItems, minRating, minReviews]);
+
+  useEffect(() => {
+    fetchTopProducts();
+    
+    // Set up auto-refresh if interval is provided
+    if (refreshInterval > 0) {
+      const intervalId = setInterval(() => {
+        fetchTopProducts(true); // Silent refresh
+      }, refreshInterval);
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [refreshInterval, fetchTopProducts]);
 
   const handleNext = () => {
     if (currentIndex + maxItems < products.length) {

@@ -257,13 +257,13 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-900">Manage Addresses</h2>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Manage Addresses</h2>
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="bg-[#4A7C59] hover:bg-[#3d6549] text-white py-2 px-4 rounded-lg font-medium transition-colors"
+            className="w-full sm:w-auto bg-[#4A7C59] hover:bg-[#3d6549] active:bg-[#3d6549] text-white py-2 px-4 rounded-lg font-medium transition-colors touch-manipulation"
           >
             Add Address
           </button>
@@ -272,12 +272,12 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
 
       {/* Add/Edit Form */}
       {showForm && (
-        <div className="bg-white border-2 border-[#4A7C59] rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-white border-2 border-[#4A7C59] rounded-lg p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
             {editingId ? 'Edit Address' : 'Add New Address'}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Address Label *
@@ -427,10 +427,10 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
               </div>
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="submit"
-                className="flex-1 bg-[#4A7C59] hover:bg-[#3d6549] text-white py-2 rounded-lg font-medium transition-colors"
+                className="w-full bg-[#4A7C59] hover:bg-[#3d6549] active:bg-[#3d6549] text-white py-2.5 sm:py-2 rounded-lg font-medium transition-colors touch-manipulation"
               >
                 {editingId ? 'Update Address' : 'Save Address'}
               </button>
@@ -440,7 +440,7 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                   setShowForm(false);
                   resetForm();
                 }}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium transition-colors"
+                className="w-full bg-gray-200 hover:bg-gray-300 active:bg-gray-300 text-gray-700 py-2.5 sm:py-2 rounded-lg font-medium transition-colors touch-manipulation"
               >
                 Cancel
               </button>
@@ -451,20 +451,20 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
 
       {/* Addresses List */}
       {addresses.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg">
+          <svg className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
           <h3 className="mt-2 text-sm font-medium text-gray-900">No addresses</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-500 px-4 sm:px-0">
             {userRole === 'buyer' 
               ? 'Get started by adding a delivery address' 
               : 'Get started by adding a pickup location'}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{" "}
           {addresses.map((address) => (
             <div
               key={address._id}
@@ -496,24 +496,24 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                 <p>{address.city}, {address.province} {address.zipCode}</p>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <button
                   onClick={() => handleEdit(address)}
-                  className="flex-1 text-sm text-[#4A7C59] hover:bg-[#4A7C59] hover:text-white border border-[#4A7C59] py-1.5 rounded transition-colors"
+                  className="flex-1 text-sm text-[#4A7C59] hover:bg-[#4A7C59] hover:text-white active:bg-[#4A7C59] active:text-white border border-[#4A7C59] py-1.5 rounded transition-colors touch-manipulation"
                 >
                   Edit
                 </button>
                 {!address.isDefault && (
                   <button
                     onClick={() => handleSetDefault(address._id!)}
-                    className="flex-1 text-sm text-gray-600 hover:bg-gray-100 border border-gray-300 py-1.5 rounded transition-colors"
+                    className="flex-1 text-sm text-gray-600 hover:bg-gray-100 active:bg-gray-100 border border-gray-300 py-1.5 rounded transition-colors touch-manipulation"
                   >
                     Set Default
                   </button>
                 )}
                 <button
                   onClick={() => handleDelete(address._id!)}
-                  className="text-sm text-red-600 hover:bg-red-50 border border-red-300 px-3 py-1.5 rounded transition-colors"
+                  className="text-sm text-red-600 hover:bg-red-50 active:bg-red-50 border border-red-300 px-3 py-1.5 rounded transition-colors touch-manipulation"
                 >
                   Delete
                 </button>

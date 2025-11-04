@@ -241,18 +241,18 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl w-[90vw] max-h-[90vh] overflow-y-auto bg-gray-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] duration-300">
-        <DialogHeader className="pb-6 border-b border-gray-200">
-          <DialogTitle className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+      <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto bg-gray-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] duration-300 m-2 sm:m-4">
+        <DialogHeader className="pb-4 sm:pb-6 border-b border-gray-200">
+          <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
             Edit Buyer Profile
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-6">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm transform transition-all duration-500 ease-in-out opacity-0 animate-fade-in-up" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
-            <div className="flex items-center gap-6">
-              <div className="relative group">
-                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 transition-all duration-300 ease-in-out group-hover:border-green-300 flex items-center justify-center">
+        <div className="space-y-4 sm:space-y-6 py-4 sm:py-6">
+          <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm transform transition-all duration-500 ease-in-out opacity-0 animate-fade-in-up" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+              <div className="relative group flex-shrink-0">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 transition-all duration-300 ease-in-out group-hover:border-green-300 flex items-center justify-center">
                   {previewImage ? (
                     <Image
                       src={previewImage}
@@ -262,7 +262,7 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 sm:w-20 sm:h-20">
                       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                       <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
                       <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
@@ -274,12 +274,12 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadProgress.status === 'uploading' || uploadProgress.status === 'compressing' || uploadProgress.status === 'converting'}
-                  className="absolute bottom-0 right-0 w-8 h-8 bg-green-600 hover:bg-green-700 rounded-full flex items-center justify-center text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="absolute bottom-0 right-0 w-7 h-7 sm:w-8 sm:h-8 bg-green-600 hover:bg-green-700 rounded-full flex items-center justify-center text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
                 >
                   {uploadProgress.status === 'uploading' || uploadProgress.status === 'compressing' || uploadProgress.status === 'converting' ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    <Camera className="w-4 h-4" />
+                    <Camera className="w-3 h-3 sm:w-4 sm:h-4" />
                   )}
                 </button>
                 
@@ -293,8 +293,8 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
                 />
               </div>
               
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <div className="flex-1 text-center sm:text-left">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   Profile Photo
                 </h3>
                 <p className="text-gray-600 text-sm mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -350,12 +350,12 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm transform transition-all duration-500 ease-in-out opacity-0 animate-fade-in-up" style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}>
-            <h3 className="text-lg font-semibold mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 shadow-sm transform transition-all duration-500 ease-in-out opacity-0 animate-fade-in-up" style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}>
+            <h3 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
               Basic Information
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   First Name *
@@ -364,7 +364,7 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
                   value={formData.firstName}
                   onChange={(e) => handleInputChange('firstName', e.target.value)}
                   placeholder="Juan (letters only)"
-                  className={`h-11 px-4 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  className={`h-11 px-3 sm:px-4 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm sm:text-base ${
                     errors.firstName ? 'border-red-500 focus:border-red-500' : 'border-gray-300 hover:border-gray-400'
                   }`}
                   style={{ fontFamily: 'Poppins, sans-serif' }}
@@ -385,7 +385,7 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
                   value={formData.lastName}
                   onChange={(e) => handleInputChange('lastName', e.target.value)}
                   placeholder="Dela Cruz (letters only)"
-                  className={`h-11 px-4 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  className={`h-11 px-3 sm:px-4 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm sm:text-base ${
                     errors.lastName ? 'border-red-500 focus:border-red-500' : 'border-gray-300 hover:border-gray-400'
                   }`}
                   style={{ fontFamily: 'Poppins, sans-serif' }}
@@ -398,7 +398,7 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
                 )}
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-2">
                 <Label className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   Email Address *
                 </Label>
@@ -406,7 +406,7 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`h-11 px-4 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  className={`h-11 px-3 sm:px-4 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm sm:text-base ${
                     errors.email ? 'border-red-500 focus:border-red-500' : 'border-gray-300 hover:border-gray-400'
                   }`}
                   style={{ fontFamily: 'Poppins, sans-serif' }}
@@ -419,7 +419,7 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
                 )}
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-2">
                 <Label className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   Phone Number
                 </Label>
@@ -428,7 +428,7 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   placeholder="09123456789 (11 digits)"
-                  className={`h-11 px-4 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  className={`h-11 px-3 sm:px-4 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm sm:text-base ${
                     errors.phone ? 'border-red-500 focus:border-red-500' : 'border-gray-300 hover:border-gray-400'
                   }`}
                   style={{ fontFamily: 'Poppins, sans-serif' }}
@@ -442,7 +442,7 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
               </div>
             </div>
             
-            <div className="mt-6 space-y-2">
+            <div className="mt-4 sm:mt-6 space-y-2">
               <Label className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Address
               </Label>
@@ -450,25 +450,25 @@ export default function EditBuyerProfileModal({ isOpen, onClose, profile, onSave
                 value={formData.address}
                 onChange={(e) => handleInputChange('address', e.target.value)}
                 placeholder="Complete address including barangay, city, and province"
-                className="min-h-[80px] px-4 py-3 border border-gray-300 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 hover:border-gray-400 resize-none"
+                className="min-h-[80px] px-3 sm:px-4 py-3 border border-gray-300 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 hover:border-gray-400 resize-none text-sm sm:text-base"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               />
             </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 transform transition-all duration-500 ease-in-out opacity-0 animate-fade-in-up" style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}>
+        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200 transform transition-all duration-500 ease-in-out opacity-0 animate-fade-in-up" style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}>
           <Button 
             variant="outline" 
             onClick={handleCancel}
-            className="px-8 py-2.5 h-11 border border-gray-300 text-gray-700 hover:bg-gray-50 transition-all duration-200 ease-in-out transform hover:scale-105"
+            className="w-full sm:w-auto px-6 sm:px-8 py-2.5 h-11 border border-gray-300 text-gray-700 hover:bg-gray-50 transition-all duration-200 ease-in-out transform hover:scale-105 touch-manipulation"
             style={{ fontFamily: 'Poppins, sans-serif' }}
           >
             Cancel
           </Button>
           <Button 
             onClick={handleSave}
-            className="px-8 py-2.5 h-11 bg-green-600 hover:bg-green-700 text-white transition-all duration-200 ease-in-out transform hover:scale-105"
+            className="w-full sm:w-auto px-6 sm:px-8 py-2.5 h-11 bg-green-600 hover:bg-green-700 text-white transition-all duration-200 ease-in-out transform hover:scale-105 touch-manipulation"
             style={{ fontFamily: 'Poppins, sans-serif' }}
           >
             Save Changes

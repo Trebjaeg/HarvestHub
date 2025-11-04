@@ -147,6 +147,13 @@ export function isSimulatorMode(): boolean {
 }
 
 /**
+ * Check if we're in mock/simulator mode (alias for isSimulatorMode)
+ */
+export function isMockMode(): boolean {
+  return isSimulatorMode();
+}
+
+/**
  * Check if we're in live mode
  */
 export function isLiveMode(): boolean {

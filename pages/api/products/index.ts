@@ -1,10 +1,53 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
-import Product, { IProduct } from '@/models/Product';
+import Product from '@/models/Product';
 import { withSecurity, withLogging } from '@/lib/middleware';
 import { cache, cacheKeys } from '@/lib/redis';
 import { rateLimiter } from '@/lib/rate-limiter';
 import memoryCache from '@/lib/memory-cache';
+
+interface ProductQuery {
+  isActive: boolean;
+  featured?: boolean;
+  category?: string | { $in: string[] };
+  farmerId?: string;
+  $or?: Array<{ 
+    name?: { $regex: RegExp }; 
+    description?: { $regex: RegExp }; 
+    farmerName?: { $regex: RegExp };
+  }>;
+  price?: { $gte?: number; $lte?: number };
+  $expr?: {
+    $and: Array<{ $gt: [string, string] }>;
+  };
+}
+
+interface ProductDocument {
+  _id: string;
+  name: string;
+  category: string;
+  price: number;
+  currentPrice?: number;
+  basePrice?: number;
+  originalPrice?: number;
+  inventory_available?: number;
+  stock?: number;
+  activeDealId?: string;
+  [key: string]: unknown;
+}
+
+interface ProductResponse {
+  success: boolean;
+  products: ProductDocument[];
+  data: ProductDocument[];
+  pagination: {
+    current: number;
+    total: number;
+    count: number;
+    totalItems: number;
+    hasMore: boolean;
+  };
+}
 
 async function productsHandler(req: NextApiRequest, res: NextApiResponse) {
   await dbConnect();
@@ -21,7 +64,7 @@ async function productsHandler(req: NextApiRequest, res: NextApiResponse) {
 
 async function getProducts(req: NextApiRequest, res: NextApiResponse) {
   // Variable to hold cached data throughout the function (must be outside try block)
-  let cachedData: any = null;
+  let cachedData: ProductResponse | null = null;
 
   try {
     const {
@@ -51,20 +94,26 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
       const redisCachedData = await Promise.race([
         cache.get(cacheKeys.products(JSON.stringify({ category, featured, farmerId, search, limit, page, sort, sortBy, minPrice, maxPrice }))),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Cache timeout')), 2000))
-      ]);
+      ]) as ProductResponse | null;
       if (redisCachedData) {
         // Store in memory cache for next time (30 seconds for real-time updates)
         memoryCache.set(cacheKey, redisCachedData, 30);
         cachedData = redisCachedData;
         return res.status(200).json(redisCachedData);
       }
-    } catch (cacheError) {
+    } catch {
       // Continue without cache
     }
 
-    const query: any = { isActive: true };
+    // Base query: all active products
+    const query: ProductQuery = { isActive: true };
 
-    // Apply filters
+    // Apply filters - both featured and regular products should show all products (including those with deals)
+    if (featured === 'true') {
+      query.featured = true;
+    }
+
+    // Apply other filters
     if (category) {
       // Handle special category filters that map to multiple DB categories
       if (category === 'vegetables') {
@@ -74,11 +123,12 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
         // Handle both "Grains & Rice" and "Grains and Rice" variations
         query.category = { $in: ['Grains & Rice', 'Grains and Rice'] };
       } else {
-        query.category = category;
+        query.category = category as string;
       }
     }
-    if (featured === 'true') query.featured = true;
-    if (farmerId) query.farmerId = farmerId;
+    
+    if (farmerId) query.farmerId = farmerId as string;
+    
     if (search) {
       // Search in product name, description, and farmer name
       const searchRegex = new RegExp(search as string, 'i');
@@ -101,7 +151,7 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
     const skip = (pageNum - 1) * limitNum;
 
     // Sort options
-    let sortOption: any = {};
+    let sortOption: Record<string, 1 | -1> = {};
     
     // Handle sortBy parameter (for Top Products)
     if (sortBy === 'popular') {
@@ -147,10 +197,22 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
       .exec();
 
     // Map inventory_available to stock for backwards compatibility
-    const productsWithStock = products.map(p => ({
-      ...p,
-      stock: p.inventory_available || p.stock || 0
-    }));
+    // Also ensure currentPrice and basePrice are properly set for display
+    const productsWithStock = products.map((p) => {
+      // If product has an active deal, currentPrice will be the deal price and basePrice will be original
+      // If no deal, use price field as currentPrice
+      const currentPrice = p.currentPrice || p.price;
+      const basePrice = p.basePrice || p.originalPrice || (p.currentPrice && p.currentPrice < p.price ? p.price : undefined);
+      
+      return {
+        ...p,
+        stock: p.inventory_available || p.stock || 0,
+        currentPrice,
+        basePrice,
+        // Keep activeDealId if it exists
+        activeDealId: p.activeDealId || undefined
+      };
+    });
 
     // Estimate total (don't run expensive count query)
     // Use a simple estimate based on results
@@ -178,12 +240,13 @@ async function getProducts(req: NextApiRequest, res: NextApiResponse) {
         cache.set(cacheKeys.products(JSON.stringify({ category, featured, farmerId, search, limit, page, sort, sortBy, minPrice, maxPrice })), responseData, 30),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Cache write timeout')), 3000))
       ]);
-    } catch (cacheError) {
+    } catch {
       // Continue without cache
     }
 
     return res.status(200).json(responseData);
-  } catch (error: any) {
+  } catch (error) {
+    console.error('Products fetch error:', error);
     // Return cached data if available on error
     if (cachedData) {
       return res.status(200).json(cachedData);
@@ -232,14 +295,15 @@ async function createProduct(req: NextApiRequest, res: NextApiResponse) {
       data: product,
       message: 'Product created successfully'
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Create product error:', error);
     
-    if (error.name === 'ValidationError') {
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'ValidationError' && 'errors' in error) {
+      const validationError = error as unknown as { errors: Record<string, { message: string }> };
       return res.status(400).json({
         success: false,
         message: 'Validation error',
-        errors: Object.values(error.errors).map((err: any) => err.message)
+        errors: Object.values(validationError.errors).map((err) => err.message)
       });
     }
 

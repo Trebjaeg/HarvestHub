@@ -2,7 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Deal from '@/models/Deal';
 import Product from '@/models/Product';
-import { applyRateLimit, getRateLimitHeaders } from '@/lib/app-rate-limiter';
+import { applyRateLimit } from '@/lib/app-rate-limiter';
+
+interface ProductQuery {
+  isActive: boolean;
+  stock: { $gt: number };
+  price?: { $gte: number; $lte: number };
+  rating?: { $gte: number };
+  category?: string | { $in: string[] };
+  _id?: { $in: string[] };
+  $or?: Array<{
+    category?: string | { $in: string[] };
+    _id?: { $in: string[] };
+  }>;
+}
 
 export async function GET(request: NextRequest) {
   // Apply rate limiting: 150 requests per 15 minutes for deals browsing
@@ -37,7 +50,7 @@ export async function GET(request: NextRequest) {
     }).sort({ priority: -1, startDate: -1 });
 
     // Build product query for deals
-    let productQuery: any = {
+    const productQuery: ProductQuery = {
       isActive: true,
       stock: { $gt: 0 }
     };
@@ -53,7 +66,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply category filter based on deals
-    let dealProducts: any[] = [];
+    // Note: Removed unused dealProducts variable
     
     if (activeDeals.length > 0) {
       const categoryDeals = activeDeals.filter(deal => 
@@ -101,7 +114,7 @@ export async function GET(request: NextRequest) {
     // Apply category filter if specified
     if (category && category !== 'all') {
       if (productQuery.$or) {
-        productQuery.$or = productQuery.$or.map((condition: any) => ({
+        productQuery.$or = productQuery.$or.map((condition) => ({
           ...condition,
           category: category
         }));
@@ -111,7 +124,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build sort query
-    let sortQuery: any = {};
+    let sortQuery: Record<string, 1 | -1> = {};
     switch (sort) {
       case 'price_asc':
         sortQuery = { price: 1 };
@@ -137,15 +150,41 @@ export async function GET(request: NextRequest) {
       .sort(sortQuery)
       .skip(skip)
       .limit(limit)
+      .select('name category price stock rating reviews imageUrl image images unit farmerId farmerName farmer isOrganic tags createdAt updatedAt')
       .lean();
+
+    console.log('[Deals API] First 3 products:', products.slice(0, 3).map(p => ({
+      name: p.name,
+      image: p.image,
+      images: p.images,
+      imageUrl: p.imageUrl
+    })));
 
     // Apply deal discounts to products
     const productsWithDeals = products.map(product => {
       // Find applicable deals for this product
       const applicableDeals = activeDeals.filter(deal => {
         const categoryMatch = deal.applicableCategories?.includes(product.category);
-        const productMatch = deal.applicableProducts?.some(id => id.toString() === product._id.toString());
+        const productMatch = deal.applicableProducts?.some((id: string) => id.toString() === (product._id as string).toString());
         return categoryMatch || productMatch;
+      });
+
+      // Ensure image field is properly set - check multiple possible fields
+      let productImage = '/images/placeholder-product.jpg';
+      
+      // Priority order: image (main field) > images array > imageUrl
+      if (product.image && product.image.trim() !== '' && product.image !== '/images/placeholder-product.jpg') {
+        productImage = product.image;
+      } else if (product.images && Array.isArray(product.images) && product.images.length > 0 && product.images[0] !== '/images/placeholder-product.jpg') {
+        productImage = product.images[0];
+      } else if (product.imageUrl && product.imageUrl.trim() !== '' && product.imageUrl !== '/images/placeholder-product.jpg') {
+        productImage = product.imageUrl;
+      }
+
+      console.log('[Deals API] Product image mapping:', {
+        name: product.name,
+        original: { image: product.image, images: product.images, imageUrl: product.imageUrl },
+        mapped: productImage
       });
 
       if (applicableDeals.length > 0) {
@@ -162,7 +201,24 @@ export async function GET(request: NextRequest) {
         }
 
         return {
-          ...product,
+          _id: product._id,
+          name: product.name,
+          category: product.category,
+          price: product.price,
+          stock: product.stock,
+          rating: product.rating || 0,
+          reviews: product.reviews || 0,
+          unit: product.unit || 'kg',
+          imageUrl: productImage,
+          image: productImage,
+          images: [productImage],
+          farmerId: product.farmerId,
+          farmerName: product.farmerName,
+          farmer: product.farmer,
+          isOrganic: product.isOrganic,
+          tags: product.tags,
+          createdAt: product.createdAt,
+          updatedAt: product.updatedAt,
           currentPrice: Math.round(discountedPrice * 100) / 100,
           basePrice: product.price,
           dealId: bestDeal._id,
@@ -172,7 +228,24 @@ export async function GET(request: NextRequest) {
       }
 
       return {
-        ...product,
+        _id: product._id,
+        name: product.name,
+        category: product.category,
+        price: product.price,
+        stock: product.stock,
+        rating: product.rating || 0,
+        reviews: product.reviews || 0,
+        unit: product.unit || 'kg',
+        imageUrl: productImage,
+        image: productImage,
+        images: [productImage],
+        farmerId: product.farmerId,
+        farmerName: product.farmerName,
+        farmer: product.farmer,
+        isOrganic: product.isOrganic,
+        tags: product.tags,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
         currentPrice: product.price,
         basePrice: product.price
       };
@@ -194,7 +267,7 @@ export async function GET(request: NextRequest) {
         }
       },
       {
-        $sort: { count: -1 }
+        $sort: { count: -1 as -1 }
       }
     ];
 

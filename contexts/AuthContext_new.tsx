@@ -140,7 +140,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem('auth-token');
         sessionStorage.removeItem('auth_user');
       }
-      router.push('/auth');
+      router.push('/');
     }
   };
 

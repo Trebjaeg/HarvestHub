@@ -114,11 +114,11 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = authResult.user.id;
-    const { receiverId, message } = await request.json();
+    const { receiverId, message, attachments } = await request.json();
 
-    if (!receiverId || !message?.trim()) {
+    if (!receiverId || (!message?.trim() && (!attachments || attachments.length === 0))) {
       return NextResponse.json(
-        { error: 'Receiver ID and message are required' },
+        { error: 'Receiver ID and either message or attachments are required' },
         { status: 400 }
       );
     }
@@ -150,7 +150,8 @@ export async function POST(request: NextRequest) {
       receiverId,
       receiverName,
       receiverRole: (receiver as any).role,
-      message: message.trim(),
+      message: message?.trim() || '',
+      attachments: attachments || [],
       isRead: false
     });
 
@@ -199,12 +200,25 @@ export async function POST(request: NextRequest) {
         actionUrl: `/inbox?userId=${userId}`
       });
       
+      let notificationMessage = message?.trim() || '';
+      
+      // If no text message, describe attachments
+      if (!notificationMessage && attachments && attachments.length > 0) {
+        const imageCount = attachments.filter((att: any) => att.category === 'image').length;
+        const docCount = attachments.filter((att: any) => att.category === 'document').length;
+        
+        const parts = [];
+        if (imageCount > 0) parts.push(`${imageCount} image${imageCount > 1 ? 's' : ''}`);
+        if (docCount > 0) parts.push(`${docCount} document${docCount > 1 ? 's' : ''}`);
+        notificationMessage = `Sent ${parts.join(' and ')}`;
+      }
+      
       const notification = await createNotification({
         userId: receiverId,
         userRole: (receiver as any).role,
         type: 'message',
         title: `New message from ${senderName}`,
-        message: message.trim().substring(0, 100) + (message.trim().length > 100 ? '...' : ''),
+        message: notificationMessage.substring(0, 100) + (notificationMessage.length > 100 ? '...' : ''),
         relatedUserId: userId,
         relatedUserName: senderName,
         metadata: {
@@ -231,6 +245,7 @@ export async function POST(request: NextRequest) {
         receiverId: chatMessage.receiverId,
         receiverName: chatMessage.receiverName,
         message: chatMessage.message,
+        attachments: chatMessage.attachments || [],
         createdAt: chatMessage.createdAt,
         isRead: chatMessage.isRead
       };

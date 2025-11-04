@@ -125,37 +125,37 @@ const Reviews = () => {
   };
 
   return (
-    <div className="bg-[#ECFDF5] mt-4 mb-4 m-3 p-4 rounded-lg shadow-gray-400 shadow-sm min-h-screen">
+    <div className="bg-[#ECFDF5] mt-3 sm:mt-4 mb-3 sm:mb-4 mx-2 sm:mx-3 p-3 sm:p-4 rounded-lg shadow-gray-400 shadow-sm min-h-screen">
       {/* Header */}
-      <div className="flex items-center gap-2 mt-6 ml-2 mb-6">
+      <div className="flex items-center gap-2 mt-4 sm:mt-6 ml-1 sm:ml-2 mb-4 sm:mb-6">
         <Image
           src="/images/seller/Review.png"
           alt="Reviews"
-          width={35}
-          height={35}
-          className="mt-1"
+          width={30}
+          height={30}
+          className="w-7 h-7 sm:w-8 sm:h-8 lg:w-9 lg:h-9 mt-1"
         />
-        <h1 className="text-[#103C2E] font-bold text-3xl ml-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        <h1 className="text-[#103C2E] font-bold text-xl sm:text-2xl lg:text-3xl ml-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
           Reviews & Ratings
         </h1>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg p-6 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Average Rating
               </p>
-              <p className="text-3xl font-bold text-[#4A7C59] mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <p className="text-2xl sm:text-3xl font-bold text-[#4A7C59] mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 {stats.averageRating.toFixed(1)}
               </p>
               <div className="flex items-center mt-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    className={`w-4 h-4 ${
+                    className={`w-3 h-3 sm:w-4 sm:h-4 ${
                       star <= Math.round(stats.averageRating)
                         ? 'text-yellow-400 fill-yellow-400'
                         : 'text-gray-300'
@@ -164,46 +164,46 @@ const Reviews = () => {
                 ))}
               </div>
             </div>
-            <TrendingUp className="w-12 h-12 text-[#4A7C59] opacity-20" />
+            <TrendingUp className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-[#4A7C59] opacity-20 flex-shrink-0" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-6 shadow-sm">
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Total Reviews
               </p>
-              <p className="text-3xl font-bold text-[#4A7C59] mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <p className="text-2xl sm:text-3xl font-bold text-[#4A7C59] mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 {stats.totalReviews}
               </p>
               <p className="text-xs text-gray-500 mt-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 All time
               </p>
             </div>
-            <MessageSquare className="w-12 h-12 text-[#4A7C59] opacity-20" />
+            <MessageSquare className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-[#4A7C59] opacity-20 flex-shrink-0" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-6 shadow-sm">
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs sm:text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Response Rate
               </p>
-              <p className="text-3xl font-bold text-[#4A7C59] mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <p className="text-2xl sm:text-3xl font-bold text-[#4A7C59] mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 {stats.responseRate.toFixed(0)}%
               </p>
               <p className="text-xs text-gray-500 mt-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Replied to reviews
               </p>
             </div>
-            <Package className="w-12 h-12 text-[#4A7C59] opacity-20" />
+            <Package className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-[#4A7C59] opacity-20 flex-shrink-0" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <p className="text-sm text-gray-600 mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+          <p className="text-xs sm:text-sm text-gray-600 mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
             Rating Distribution
           </p>
           {[5, 4, 3, 2, 1].map((rating) => (
@@ -227,27 +227,27 @@ const Reviews = () => {
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-4">
+      <div className="bg-white rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 shadow-sm">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search reviews by product or buyer name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A7C59]"
+                className="w-full pl-9 sm:pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A7C59] text-sm sm:text-base"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               />
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <select
               value={filterRating}
               onChange={(e) => setFilterRating(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A7C59]"
+              className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A7C59] text-sm sm:text-base"
               style={{ fontFamily: 'Poppins, sans-serif' }}
             >
               <option value="all">All Ratings</option>
@@ -259,7 +259,7 @@ const Reviews = () => {
             </select>
             <button
               onClick={handleSearch}
-              className="px-6 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6849] transition-colors"
+              className="px-4 sm:px-6 py-2 bg-[#4A7C59] text-white rounded-lg hover:bg-[#3d6849] active:bg-[#3d6849] transition-colors touch-manipulation text-sm sm:text-base"
               style={{ fontFamily: 'Poppins, sans-serif' }}
             >
               Apply
@@ -269,13 +269,13 @@ const Reviews = () => {
       </div>
 
       {/* Reviews List */}
-      <div className="bg-white rounded-lg p-6 shadow-sm">
+      <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-8 sm:py-12">
             <LoadingDots size="md" color="#4A7C59" />
           </div>
         ) : reviews.length > 0 ? (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {reviews.map((review) => (
               <ReviewItem
                 key={review._id}

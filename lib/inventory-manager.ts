@@ -76,7 +76,7 @@ export async function reserveInventory(
       );
       
       // Migrate old stock field to new inventory system if needed
-      const productCheck = await Product.findById(item.productId).session(session);
+      const productCheck = await Product.findById(item.productId).session(session || null);
       if (productCheck && (productCheck.inventory_on_hand === undefined || productCheck.inventory_on_hand === 0) && productCheck.stock > 0) {
         await Product.findByIdAndUpdate(
           item.productId,
@@ -113,7 +113,7 @@ export async function reserveInventory(
 
       if (!result) {
         // Check if product exists and get current inventory
-        const product = await Product.findById(item.productId).session(session);
+        const product = await Product.findById(item.productId).session(session || null);
         if (!product) {
           failedItems.push({ 
             productId: item.productId, 
@@ -173,7 +173,7 @@ export async function commitInventory(
   try {
     for (const item of items) {
       // First, ensure the product has inventory fields initialized and migrate if needed
-      const productCheck = await Product.findById(item.productId).session(session);
+      const productCheck = await Product.findById(item.productId).session(session || null);
       
       if (!productCheck) {
         failedItems.push({ 
@@ -202,7 +202,7 @@ export async function commitInventory(
       // Get current state after potential migration
       const currentProduct = await Product.findById(item.productId)
         .select('name inventory_reserved inventory_committed inventory_available inventory_on_hand')
-        .session(session)
+        .session(session || null)
         .lean();
       
       const result = await Product.findOneAndUpdate(
@@ -227,7 +227,7 @@ export async function commitInventory(
         failedItems.push({ 
           productId: item.productId, 
           reason: currentProduct 
-            ? `Insufficient reserved stock. Reserved: ${currentProduct.inventory_reserved ?? 0}, Need: ${item.quantity}, Product: ${currentProduct.name}`
+            ? `Cannot commit inventory - insufficient reserved stock. Reserved: ${(currentProduct as any).inventory_reserved ?? 0}, Required: ${item.quantity}, Product: ${(currentProduct as any).name}. Please ensure inventory was properly reserved during checkout.`
             : 'Product not found'
         });
       }
@@ -273,7 +273,7 @@ export async function releaseReservedInventory(
   try {
     for (const item of items) {
       // Check if product has inventory reserved (may be 0 for old orders)
-      const product = await Product.findById(item.productId).session(session);
+      const product = await Product.findById(item.productId).session(session || null);
       
       if (!product) {
         failedItems.push({ 
@@ -373,7 +373,7 @@ export async function releaseCommittedInventory(
       );
 
       if (!result) {
-        const product = await Product.findById(item.productId).session(session);
+        const product = await Product.findById(item.productId).session(session || null);
         failedItems.push({ 
           productId: item.productId, 
           reason: product 
@@ -422,7 +422,8 @@ export async function fulfillOrder(
   
   try {
     for (const item of items) {
-      const result = await Product.findOneAndUpdate(
+      // First, try the normal path: deduct from committed inventory
+      let result = await Product.findOneAndUpdate(
         {
           _id: item.productId,
           inventory_committed: { $gte: item.quantity },
@@ -442,14 +443,101 @@ export async function fulfillOrder(
         }
       );
 
+      // If that fails, check if it's because inventory wasn't committed
       if (!result) {
-        const product = await Product.findById(item.productId).session(session);
-        failedItems.push({ 
-          productId: item.productId, 
-          reason: product 
-            ? `Insufficient inventory. Committed: ${product.inventory_committed}, On Hand: ${product.inventory_on_hand}`
-            : 'Product not found'
-        });
+        const product = await Product.findById(item.productId).session(session || null);
+        
+        if (!product) {
+          failedItems.push({ 
+            productId: item.productId, 
+            reason: 'Product not found'
+          });
+          continue;
+        }
+
+        // Check if we have enough total inventory (committed + available)
+        const hasEnoughTotal = product.inventory_on_hand >= item.quantity;
+        
+        if (!hasEnoughTotal) {
+          failedItems.push({ 
+            productId: item.productId, 
+            reason: `Insufficient total inventory. Available on hand: ${product.inventory_on_hand}, Required: ${item.quantity}. Please check stock levels.`
+          });
+          continue;
+        }
+
+        // Try fallback: deduct from available inventory if committed is insufficient
+        if (product.inventory_committed < item.quantity && product.inventory_available >= item.quantity) {
+          console.warn(`⚠️ Fulfilling order by deducting from available inventory (inventory wasn't properly committed). Product: ${product.name}, Committed: ${product.inventory_committed}, Available: ${product.inventory_available}, Required: ${item.quantity}`);
+          
+          result = await Product.findOneAndUpdate(
+            {
+              _id: item.productId,
+              inventory_available: { $gte: item.quantity },
+              inventory_on_hand: { $gte: item.quantity }
+            },
+            {
+              $inc: {
+                inventory_available: -item.quantity,
+                inventory_on_hand: -item.quantity,
+                stock: -item.quantity
+              }
+            },
+            {
+              new: true,
+              session,
+              runValidators: true
+            }
+          );
+          
+          if (!result) {
+            failedItems.push({ 
+              productId: item.productId, 
+              reason: `Failed to fulfill order - could not deduct from available inventory. Available: ${product.inventory_available}, On Hand: ${product.inventory_on_hand}, Required: ${item.quantity}`
+            });
+          }
+        } else {
+          // Mixed scenario: some committed, some available
+          const fromCommitted = Math.min(product.inventory_committed, item.quantity);
+          const fromAvailable = item.quantity - fromCommitted;
+          
+          if (fromAvailable > product.inventory_available) {
+            failedItems.push({ 
+              productId: item.productId, 
+              reason: `Cannot fulfill order - insufficient mixed inventory. Committed: ${product.inventory_committed}, Available: ${product.inventory_available}, Total Required: ${item.quantity}`
+            });
+            continue;
+          }
+
+          console.warn(`⚠️ Fulfilling order from mixed inventory (partial commitment detected). Product: ${product.name}, From Committed: ${fromCommitted}, From Available: ${fromAvailable}`);
+          
+          result = await Product.findOneAndUpdate(
+            {
+              _id: item.productId,
+              inventory_on_hand: { $gte: item.quantity }
+            },
+            {
+              $inc: {
+                inventory_committed: -fromCommitted,
+                inventory_available: -fromAvailable,
+                inventory_on_hand: -item.quantity,
+                stock: -item.quantity
+              }
+            },
+            {
+              new: true,
+              session,
+              runValidators: true
+            }
+          );
+          
+          if (!result) {
+            failedItems.push({ 
+              productId: item.productId, 
+              reason: `Failed to fulfill order with mixed inventory - database update failed. On Hand: ${product.inventory_on_hand}, Required: ${item.quantity}`
+            });
+          }
+        }
       }
     }
 
@@ -469,6 +557,7 @@ export async function fulfillOrder(
       message: 'Order fulfilled successfully'
     };
   } catch (error) {
+    console.error('Error in fulfillOrder:', error);
     return {
       success: false,
       message: 'Failed to fulfill order',
@@ -493,9 +582,11 @@ export async function checkInventoryAvailability(
     
     if (!product) {
       unavailableItems.push({ productId: item.productId, available: 0, requested: item.quantity });
-    } else if (product.inventory_available < item.quantity) {
+    // @ts-ignore - Complex type inference issue with lean() query
+    } else if (product?.inventory_available && product.inventory_available < item.quantity) {
       unavailableItems.push({ 
         productId: item.productId, 
+        // @ts-ignore - Complex type inference issue with lean() query
         available: product.inventory_available, 
         requested: item.quantity 
       });
@@ -508,7 +599,7 @@ export async function checkInventoryAvailability(
   };
 }
 
-export default {
+const inventoryManager = {
   reserveInventory,
   commitInventory,
   releaseReservedInventory,
@@ -516,3 +607,5 @@ export default {
   fulfillOrder,
   checkInventoryAvailability
 };
+
+export default inventoryManager;

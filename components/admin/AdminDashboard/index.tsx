@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useTranslation } from 'react-i18next';
 import LoadingDots from '@/components/ui/LoadingDots';
 import { useRecentActivities } from '../../../hooks/useRecentActivities';
 import { StatCardSkeleton, ActivitySkeleton, ChartSkeleton } from '@/components/ui/SkeletonLoader';
@@ -37,8 +36,13 @@ interface AdminStats {
   rejectedFarmers: number;
 }
 
+interface TargetUser {
+  firstName?: string;
+  lastName?: string;
+  email: string;
+}
+
 const AdminDashboard: React.FC = () => {
-  const { t } = useTranslation();
   const router = useRouter();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true); // Initial loading
@@ -157,10 +161,10 @@ const AdminDashboard: React.FC = () => {
     } catch (error) {
       console.error('🚪 [ADMIN] Logout error:', error);
     } finally {
-      console.log('🚪 [ADMIN] Redirecting to auth page...');
+      console.log('🚪 [ADMIN] Redirecting to landing page...');
       
       // Force a complete page reload to clear any cached state
-      window.location.href = '/auth';
+      window.location.href = '/';
     }
   };
 
@@ -210,7 +214,7 @@ const AdminDashboard: React.FC = () => {
   }
 
   // Helper function to format audit log actions for display
-  const formatActivityAction = (action: string, targetUser?: any, targetResource?: string): string => {
+  const formatActivityAction = (action: string, targetUser?: TargetUser, targetResource?: string): string => {
     const actionMap: { [key: string]: string } = {
       'user_suspended': 'User suspended',
       'user_unsuspended': 'User unsuspended',
@@ -249,23 +253,6 @@ const AdminDashboard: React.FC = () => {
     if (action.includes('listing')) return 'listing';
     if (action.includes('admin')) return 'admin';
     return 'system';
-  };
-
-  // Helper function to format time ago
-  const formatTimeAgo = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMilliseconds = now.getTime() - date.getTime();
-    const diffInMinutes = Math.floor(diffInMilliseconds / (1000 * 60));
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    const diffInDays = Math.floor(diffInHours / 24);
-
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-    if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-    
-    return date.toLocaleDateString();
   };
 
   return (
@@ -708,6 +695,16 @@ const AdminDashboard: React.FC = () => {
                 <CardHeader className="pb-3 lg:pb-4">
                   <div className="flex items-center justify-between flex-col lg:flex-row space-y-2 lg:space-y-0">
                     <CardTitle className="text-base lg:text-lg font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>Activity Trend</CardTitle>
+                    <Button
+                      onClick={refreshDashboard}
+                      variant="outline"
+                      size="sm"
+                      disabled={refreshing}
+                      className="text-xs"
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                    >
+                      {refreshing ? 'Refreshing...' : 'Refresh'}
+                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent>

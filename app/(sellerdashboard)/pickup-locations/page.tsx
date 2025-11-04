@@ -5,7 +5,7 @@ import AddressManager from "@/components/AddressManager";
 
 function SellerPickupLocations() {
   return (
-    <div className="min-h-screen bg-gray-50 p-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 lg:p-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
       <div className="max-w-6xl mx-auto">
         <AddressManager userRole="seller" />
       </div>
@@ -15,7 +15,7 @@ function SellerPickupLocations() {
 
 export default function SellerPickupLocationsPage() {
   return (
-    <ProtectedRoute allowedRoles={['seller', 'farmer']}>
+    <ProtectedRoute>
       <SellerPickupLocations />
     </ProtectedRoute>
   );

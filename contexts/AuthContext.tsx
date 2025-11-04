@@ -169,7 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       // Force a hard redirect to clear any cached state
-      window.location.href = '/auth';
+      window.location.href = '/';
     }
   };
 

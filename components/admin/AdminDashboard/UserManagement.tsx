@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
@@ -50,11 +50,7 @@ const UserManagement: React.FC = () => {
   });
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [currentPage, roleFilter, statusFilter, searchTerm]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -85,7 +81,11 @@ const UserManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, roleFilter, statusFilter, searchTerm]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleUserAction = async () => {
     if (!actionDialog.user || !actionDialog.action) return;
@@ -368,24 +368,16 @@ const UserManagement: React.FC = () => {
             </DialogTitle>
             <DialogDescription>
               {actionDialog.action === 'suspend' && 
-                (t as any)('admin.users.dialogs.suspend.description', 'This will suspend {{name}} and prevent them from accessing the platform.', {
-                  name: actionDialog.user?.name
-                })
+                `This will suspend ${actionDialog.user?.name} and prevent them from accessing the platform.`
               }
               {actionDialog.action === 'delete' && 
-                (t as any)('admin.users.dialogs.delete.description', 'This will permanently delete {{name}}\'s account. This action cannot be undone.', {
-                  name: actionDialog.user?.name
-                })
+                `This will permanently delete ${actionDialog.user?.name}'s account. This action cannot be undone.`
               }
               {actionDialog.action === 'promote' && 
-                (t as any)('admin.users.dialogs.promote.description', 'This will promote {{name}} to admin role with elevated privileges.', {
-                  name: actionDialog.user?.name
-                })
+                `This will promote ${actionDialog.user?.name} to admin role with elevated privileges.`
               }
               {actionDialog.action === 'demote' && 
-                (t as any)('admin.users.dialogs.demote.description', 'This will demote {{name}} back to regular user role.', {
-                  name: actionDialog.user?.name
-                })
+                `This will demote ${actionDialog.user?.name} back to regular user role.`
               }
             </DialogDescription>
           </DialogHeader>

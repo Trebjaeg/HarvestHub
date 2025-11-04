@@ -140,7 +140,7 @@ DealSchema.index({ priority: 1, startDate: 1 });
 DealSchema.index({ applicableCategories: 1, isActive: 1 });
 
 // Virtual for checking if deal is currently valid
-DealSchema.virtual('isValid').get(function() {
+DealSchema.virtual('isValid').get(function(this: IDeal) {
   const now = new Date();
   return this.isActive && 
          this.startDate <= now && 
@@ -149,7 +149,7 @@ DealSchema.virtual('isValid').get(function() {
 });
 
 // Method to calculate time remaining
-DealSchema.methods.getTimeRemaining = function() {
+DealSchema.methods.getTimeRemaining = function(this: IDeal) {
   const now = new Date();
   const timeDiff = this.endDate.getTime() - now.getTime();
   

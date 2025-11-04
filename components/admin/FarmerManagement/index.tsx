@@ -1,32 +1,30 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useTranslation } from 'react-i18next';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import LoadingDots from '@/components/ui/LoadingDots';
 
 interface Farmer {
   _id: string;
-  username?: string;
   name?: string;
   firstName?: string;
   lastName?: string;
   email: string;
-  farmName?: string;
-  location?: string;
   role: string;
   status: 'active' | 'suspended' | 'deleted';
-  totalProducts?: number;
   createdAt: string;
   farmerVerification?: {
-    status?: 'approved' | 'pending' | 'rejected';
+    status: 'pending' | 'approved' | 'rejected';
+    appliedAt: string;
+    reviewedAt?: string;
+    documents?: {
+      governmentId?: string;
+    };
   };
 }
 
 const FarmerManagement: React.FC = () => {
-  const { t } = useTranslation();
   const [farmers, setFarmers] = useState<Farmer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,15 +43,10 @@ const FarmerManagement: React.FC = () => {
   const fetchFarmers = async () => {
     try {
       setLoading(true);
-      setError(null);
-      
-      // Call the REAL API endpoint
       const response = await fetch('/api/admin/farmers', {
-        method: 'GET',
-        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-        },
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
       });
 
       if (!response.ok) {
@@ -64,7 +57,7 @@ const FarmerManagement: React.FC = () => {
       setFarmers(data.farmers || []);
     } catch (error) {
       console.error('Error fetching farmers:', error);
-      setError('Failed to load farmers. Please try again.');
+      setError('Failed to load farmers');
     } finally {
       setLoading(false);
     }
@@ -110,7 +103,7 @@ const FarmerManagement: React.FC = () => {
     if (farmer.firstName && farmer.lastName) {
       return `${farmer.firstName} ${farmer.lastName}`;
     }
-    return farmer.name || farmer.username || 'N/A';
+    return farmer.name || 'N/A';
   };
 
   // Filter farmers based on search and verification status
@@ -140,17 +133,27 @@ const FarmerManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <LoadingDots size="lg" color="#16a34a" />
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <LoadingDots size="lg" color="#16a34a" />
+          </div>
+          <p className="text-gray-600">Loading farmers</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center text-red-600">{error}</div>
+      <Card className="border-red-200">
+        <CardContent className="pt-6">
+          <div className="text-center text-red-600">
+            <p>{error}</p>
+            <Button onClick={fetchFarmers} className="mt-4" variant="outline">
+              Retry
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -159,13 +162,10 @@ const FarmerManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <h2 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
-          Farmer Management
-        </h2>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-2 w-full">
           <select
             value={verificationFilter}
-            onChange={(e) => setVerificationFilter(e.target.value as any)}
+            onChange={(e) => setVerificationFilter(e.target.value as 'all' | 'verified' | 'pending' | 'rejected' | 'not-applied')}
             className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full sm:w-auto"
             style={{ fontFamily: 'Poppins, sans-serif' }}
           >
@@ -175,9 +175,6 @@ const FarmerManagement: React.FC = () => {
             <option value="rejected">Rejected</option>
             <option value="not-applied">Not Applied</option>
           </select>
-          <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
-            Export Data
-          </Button>
         </div>
       </div>
 
@@ -203,20 +200,20 @@ const FarmerManagement: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Farmers</CardTitle>
+          <CardTitle style={{ fontFamily: 'Poppins, sans-serif' }}>Farmer Management ({filteredFarmers.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Desktop Table View */}
+          {/* Desktop Table */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2">Farmer</th>
-                  <th className="text-left p-2">Farm</th>
-                  <th className="text-left p-2">Location</th>
-                  <th className="text-left p-2">Products</th>
-                  <th className="text-left p-2">Status</th>
-                  <th className="text-left p-2">Actions</th>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Name</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Email</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Verification</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Status</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Joined</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -226,38 +223,38 @@ const FarmerManagement: React.FC = () => {
                       <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         {getDisplayName(farmer)}
                       </div>
-                      <div className="text-sm text-gray-500">{farmer.email}</div>
-                      {farmer.username && (
-                        <div className="text-sm text-gray-500">@{farmer.username}</div>
-                      )}
                     </td>
-                    <td className="p-2">{farmer.farmName || 'N/A'}</td>
-                    <td className="p-2">{farmer.location || 'N/A'}</td>
-                    <td className="p-2">{farmer.totalProducts}</td>
-                    <td className="p-2">
-                      <div className="flex flex-col gap-1">
-                        <Badge variant={
-                          farmer.status === 'active' ? 'default' :
-                          farmer.status === 'suspended' ? 'destructive' : 'secondary'
-                        }>
-                          {farmer.status}
-                        </Badge>
-                        {getVerificationStatusBadge(farmer.farmerVerification?.status)}
-                      </div>
+                    <td className="py-3 px-4 text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      {farmer.email}
                     </td>
-                    <td className="p-2">
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline">
-                          View
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant={farmer.status === 'active' ? 'destructive' : 'default'}
-                          onClick={() => toggleFarmerStatus(farmer._id, farmer.status)}
-                        >
-                          {farmer.status === 'active' ? 'Suspend' : 'Activate'}
-                        </Button>
-                      </div>
+                    <td className="py-3 px-4">
+                      {getVerificationStatusBadge(farmer.farmerVerification?.status)}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        farmer.status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : farmer.status === 'suspended'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {farmer.status === 'active' ? 'Active' : farmer.status === 'suspended' ? 'Suspended' : 'Deactivated'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      {new Date(farmer.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 px-4">
+                      <Button
+                        onClick={() => toggleFarmerStatus(farmer._id, farmer.status)}
+                        variant="outline"
+                        size="sm"
+                        className={farmer.status === 'active' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                        disabled={farmer.status === 'suspended'}
+                      >
+                        {farmer.status === 'active' ? 'Deactivate' : farmer.status === 'suspended' ? 'Suspended' : 'Reactivate'}
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -277,9 +274,6 @@ const FarmerManagement: React.FC = () => {
                           {getDisplayName(farmer)}
                         </h3>
                         <p className="text-sm text-gray-600 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>{farmer.email}</p>
-                        {farmer.username && (
-                          <p className="text-sm text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>@{farmer.username}</p>
-                        )}
                       </div>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         farmer.status === 'active' 
@@ -299,20 +293,16 @@ const FarmerManagement: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="flex-1">
-                        View
-                      </Button>
-                      <Button
-                        onClick={() => toggleFarmerStatus(farmer._id, farmer.status)}
-                        variant="outline"
-                        size="sm"
-                        className={`flex-1 ${farmer.status === 'active' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}`}
-                        style={{ fontFamily: 'Poppins, sans-serif' }}
-                      >
-                        {farmer.status === 'active' ? 'Deactivate' : 'Activate'}
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={() => toggleFarmerStatus(farmer._id, farmer.status)}
+                      variant="outline"
+                      size="sm"
+                      className={`w-full ${farmer.status === 'active' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}`}
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                      disabled={farmer.status === 'suspended'}
+                    >
+                      {farmer.status === 'active' ? 'Deactivate' : farmer.status === 'suspended' ? 'Suspended' : 'Reactivate'}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

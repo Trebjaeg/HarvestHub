@@ -225,7 +225,7 @@ async function handleLiveQuotation(order: any) {
   const deliveryLocation = getCoordinatesFromAddress(buyerCity, buyerProvince, buyerStreet);
 
   const pickupValidation = validateStop({
-    coordinates: { lat: pickupLocation.lat.toString(), lng: pickupLocation.lng.toString() },
+    coordinates: { lat: pickupLocation.lat, lng: pickupLocation.lng },
     address: pickupLocation.address,
     contact: {
       name: order.store.name || 'Seller',
@@ -234,7 +234,7 @@ async function handleLiveQuotation(order: any) {
   }, 'pickup');
 
   const dropoffValidation = validateStop({
-    coordinates: { lat: deliveryLocation.lat.toString(), lng: deliveryLocation.lng.toString() },
+    coordinates: { lat: deliveryLocation.lat, lng: deliveryLocation.lng },
     address: deliveryLocation.address,
     contact: {
       name: order.buyer.name,

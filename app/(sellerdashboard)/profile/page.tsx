@@ -203,15 +203,15 @@ export default function Profile() {
   return (
     <div className="max-w-7xl mx-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-        <div className="flex items-center gap-3">
-          <User className="w-6 h-6 sm:w-8 sm:h-8 text-[#103C2E]" />
-          <h1 className="text-xl sm:text-2xl font-bold text-[#103C2E]">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <User className="w-6 h-6 sm:w-8 sm:h-8 text-[#103C2E] flex-shrink-0" />
+          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#103C2E]">
             Seller Profile
           </h1>
         </div>
         <Button 
-          className="bg-[#103C2E] hover:bg-[#0d2e23] text-white w-full sm:w-auto" 
+          className="bg-[#103C2E] hover:bg-[#0d2e23] active:bg-[#0d2e23] text-white w-full sm:w-auto touch-manipulation" 
           onClick={() => setShowEditModal(true)}
         >
           <Edit className="w-4 h-4 mr-2" />
@@ -229,11 +229,11 @@ export default function Profile() {
       )}
 
         {/* Profile Header with Avatar */}
-        <Card className="p-6 bg-white border border-gray-200 mb-6">
-          <div className="flex items-center gap-6">
+        <Card className="p-4 sm:p-6 bg-white border border-gray-200 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             {/* Profile Avatar */}
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 flex items-center justify-center">
+            <div className="relative flex-shrink-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 flex items-center justify-center">
                 {loading ? (
                   <div className="w-full h-full bg-gray-200 animate-pulse"></div>
                 ) : profile?.profileImage ? (
@@ -245,7 +245,7 @@ export default function Profile() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 sm:w-20 sm:h-20">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                     <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
                     <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
@@ -258,12 +258,12 @@ export default function Profile() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingImage}
-                className="absolute bottom-0 right-0 w-8 h-8 bg-[#103C2E] hover:bg-[#0d2e23] rounded-full flex items-center justify-center text-white shadow-lg disabled:opacity-50"
+                className="absolute bottom-0 right-0 w-6 h-6 sm:w-8 sm:h-8 bg-[#103C2E] hover:bg-[#0d2e23] active:bg-[#0d2e23] rounded-full flex items-center justify-center text-white shadow-lg disabled:opacity-50 touch-manipulation"
               >
                 {uploadingImage ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <Camera className="w-4 h-4" />
+                  <Camera className="w-3 h-3 sm:w-4 sm:h-4" />
                 )}
               </button>
               
@@ -278,11 +278,11 @@ export default function Profile() {
             </div>
             
             {/* Profile Info */}
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-[#103C2E] mb-1">
+            <div className="flex-1 text-center sm:text-left min-w-0">
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#103C2E] mb-1 break-words">
                 {loading ? 'Loading...' : profile?.name || 'Unknown User'}
               </h2>
-              <p className="text-gray-600">
+              <p className="text-sm sm:text-base text-gray-600 break-words">
                 {loading ? 'Loading...' : profile?.email || 'No email provided'}
               </p>
             </div>
@@ -290,94 +290,94 @@ export default function Profile() {
         </Card>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          <Card className="p-6 bg-white border border-gray-200">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
+          <Card className="p-4 sm:p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-[#103C2E]">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-600">Total Revenue</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#103C2E] break-words">
                   {loadingStats ? '...' : `₱${stats?.totalRevenue?.toLocaleString() || '0'}`}
                 </p>
               </div>
-              <TrendingUp className="w-8 h-8 text-[#103C2E]" />
+              <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-[#103C2E] flex-shrink-0" />
             </div>
           </Card>
           
-          <Card className="p-6 bg-white border border-gray-200">
+          <Card className="p-4 sm:p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Products Sold</p>
-                <p className="text-2xl font-bold text-[#103C2E]">
-                  {loadingStats ? '...' : (stats?.productsSold || 0)}
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-600">Total Products</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#103C2E]">
+                  {loadingStats ? '...' : (stats?.totalProducts || 0)}
                 </p>
               </div>
-              <Package className="w-8 h-8 text-[#103C2E]" />
+              <Package className="w-6 h-6 sm:w-8 sm:h-8 text-[#103C2E] flex-shrink-0" />
             </div>
           </Card>
 
-          <Card className="p-6 bg-white border border-gray-200">
+          <Card className="p-4 sm:p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Orders</p>
-                <p className="text-2xl font-bold text-[#103C2E]">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-600">Total Orders</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#103C2E]">
                   {loadingStats ? '...' : (stats?.totalOrders || 0)}
                 </p>
               </div>
-              <Package className="w-8 h-8 text-[#103C2E]" />
+              <Package className="w-6 h-6 sm:w-8 sm:h-8 text-[#103C2E] flex-shrink-0" />
             </div>
           </Card>
 
-          <Card className="p-6 bg-white border border-gray-200">
+          <Card className="p-4 sm:p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Average Rating</p>
-                <p className="text-2xl font-bold text-[#103C2E]">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-600">Average Rating</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#103C2E]">
                   {loadingStats ? '...' : (stats?.averageRating?.toFixed(1) || '0.0')}
                 </p>
               </div>
-              <Star className="w-8 h-8 text-[#103C2E]" />
+              <Star className="w-6 h-6 sm:w-8 sm:h-8 text-[#103C2E] flex-shrink-0" />
             </div>
           </Card>
         </div>
 
         {/* Seller Verification Section */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <SellerVerification onStatusChange={fetchProfile} />
         </div>
 
         {/* Profile Information */}
-        <Card className="p-6 bg-white border border-gray-200">
-          <h2 className="text-lg font-semibold text-[#103C2E] mb-4">
+        <Card className="p-4 sm:p-6 bg-white border border-gray-200">
+          <h2 className="text-base sm:text-lg font-semibold text-[#103C2E] mb-4">
             Profile Information
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
-              <label className="text-sm text-gray-600">Name</label>
-              <p className="font-medium text-gray-900">
+              <label className="text-xs sm:text-sm text-gray-600">Name</label>
+              <p className="font-medium text-gray-900 text-sm sm:text-base break-words">
                 {loading ? 'Loading...' : profile?.name || 'Not provided'}
               </p>
             </div>
             <div>
-              <label className="text-sm text-gray-600">Email</label>
-              <p className="font-medium text-gray-900">
+              <label className="text-xs sm:text-sm text-gray-600">Email</label>
+              <p className="font-medium text-gray-900 text-sm sm:text-base break-words">
                 {loading ? 'Loading...' : profile?.email || 'Not provided'}
               </p>
             </div>
             <div>
-              <label className="text-sm text-gray-600">Phone</label>
-              <p className="font-medium text-gray-900">
+              <label className="text-xs sm:text-sm text-gray-600">Phone</label>
+              <p className="font-medium text-gray-900 text-sm sm:text-base break-words">
                 {loading ? 'Loading...' : profile?.phone || 'Not provided'}
               </p>
             </div>
             <div>
-              <label className="text-sm text-gray-600">Address</label>
-              <p className="font-medium text-gray-900">
+              <label className="text-xs sm:text-sm text-gray-600">Address</label>
+              <p className="font-medium text-gray-900 text-sm sm:text-base break-words">
                 {loading ? 'Loading...' : profile?.address || 'Not provided'}
               </p>
             </div>
             <div>
-              <label className="text-sm text-gray-600">Member Since</label>
-              <p className="font-medium text-gray-900">
+              <label className="text-xs sm:text-sm text-gray-600">Member Since</label>
+              <p className="font-medium text-gray-900 text-sm sm:text-base">
                 {loading ? 'Loading...' : formatDate(profile?.createdAt)}
               </p>
             </div>

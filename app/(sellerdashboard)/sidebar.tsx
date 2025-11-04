@@ -13,7 +13,6 @@ import {
   HelpCircle,
   User,
   Home,
-  ArrowLeft,
   Menu,
   X,
   MapPin,
@@ -111,7 +110,7 @@ export default function Sidebar() {
         const data = await response.json();
         setProfile(data.seller);
       }
-    } catch (error) {
+    } catch {
       // Silent error handling
     } finally {
       setLoading(false);
@@ -126,7 +125,7 @@ export default function Sidebar() {
     setShowLogoutModal(false);
     try {
       // Call logout API to clear server-side session
-      const response = await fetch('/api/auth/logout', {
+      await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -151,11 +150,11 @@ export default function Sidebar() {
         localStorage.removeItem('logout-event');
       }
       
-    } catch (error) {
+    } catch {
       // Silent error handling
     } finally {
       // Force a complete page reload to clear any cached state
-      window.location.href = '/auth';
+      window.location.href = '/';
     }
   };
 
@@ -166,7 +165,7 @@ export default function Sidebar() {
         <div className="flex items-center space-x-3">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 active:bg-gray-200 touch-manipulation"
           >
             {isMobileMenuOpen ? (
               <X className="w-6 h-6" />
@@ -188,7 +187,7 @@ export default function Sidebar() {
           {/* Mobile Profile Icon */}
           <Link
             href="/profile"
-            className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC] transition-colors"
+            className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC] active:bg-[#F5F5DC] transition-colors touch-manipulation"
             title="Profile"
           >
             <User className="w-5 h-5" />
@@ -197,7 +196,7 @@ export default function Sidebar() {
           {/* Mobile Home Button */}
           <Link
             href="/home"
-            className="flex items-center space-x-1 px-3 py-2 rounded-lg border border-gray-200 hover:border-[#D2B48C] hover:bg-[#F5F5DC] text-gray-600 hover:text-[#8B7355] transition-colors"
+            className="flex items-center space-x-1 px-3 py-2 rounded-lg border border-gray-200 hover:border-[#D2B48C] hover:bg-[#F5F5DC] active:bg-[#F5F5DC] text-gray-600 hover:text-[#8B7355] transition-colors touch-manipulation"
           >
             <Home className="w-4 h-4" />
             <span className="text-sm font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>Home</span>
@@ -234,7 +233,7 @@ export default function Sidebar() {
             {/* Close button for mobile */}
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC]"
+              className="p-2 rounded-lg text-gray-600 hover:bg-[#F5F5DC] active:bg-[#F5F5DC] touch-manipulation"
             >
               <X className="w-5 h-5" />
             </button>
@@ -292,10 +291,10 @@ export default function Sidebar() {
                 <Link
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors font-medium ${
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors font-medium touch-manipulation ${
                     isActive
                       ? "bg-[#F5F5DC] text-[#8B7355] border border-[#D2B48C]"
-                      : "text-gray-600 hover:bg-[#F5F5DC] hover:text-[#8B7355]"
+                      : "text-gray-600 hover:bg-[#F5F5DC] hover:text-[#8B7355] active:bg-[#F5F5DC] active:text-[#8B7355]"
                   }`}
                   style={{ fontFamily: 'Poppins, sans-serif' }}
                 >
@@ -312,7 +311,7 @@ export default function Sidebar() {
       <div className="p-4 border-t bg-white flex-shrink-0">
         <button
           onClick={handleLogoutClick}
-          className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors font-medium"
+          className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 active:bg-red-100 active:text-red-700 transition-colors font-medium touch-manipulation"
           style={{ fontFamily: 'Poppins, sans-serif' }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

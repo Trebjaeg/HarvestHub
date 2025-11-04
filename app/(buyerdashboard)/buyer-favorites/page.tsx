@@ -336,107 +336,115 @@ export default function FavoritesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
+    <div className="w-full max-w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        <div className="mb-4 sm:mb-6 lg:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 My Favorites
               </h1>
-              <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <p className="text-sm sm:text-base text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Products you&apos;ve saved for later
               </p>
             </div>
             <button
               onClick={refreshFavorites}
               disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-base touch-manipulation"
               style={{ fontFamily: 'Poppins, sans-serif' }}
             >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
+              <RefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
+              <span className="sm:hidden">Refresh</span>
             </button>
           </div>
         </div>
 
         {/* Search, Filters, and View Controls */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
+        <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-4">
             {/* Search and Filter Toggle */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 flex-1">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 flex-1">
+              <div className="relative flex-1 max-w-full sm:max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
                 <input
                   type="text"
                   placeholder="Search favorites..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                   style={{ fontFamily: 'Poppins, sans-serif' }}
                 />
               </div>
 
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base touch-manipulation"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
-                <Filter className="w-5 h-5" />
+                <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
                 Filters
-                <ChevronDown className={`w-4 h-4 transform transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3 h-3 sm:w-4 sm:h-4 transform transition-transform ${showFilters ? 'rotate-180' : ''}`} />
               </button>
             </div>
 
             {/* View Mode, Sort, and Actions */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
               {/* View Mode Toggle */}
               <div className="flex border border-gray-300 rounded-lg overflow-hidden">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 ${viewMode === 'grid' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'} transition-colors`}
+                  className={`p-2 flex-1 sm:flex-none ${viewMode === 'grid' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'} transition-colors touch-manipulation`}
                   title="Grid View"
                 >
-                  <Grid3X3 className="w-4 h-4" />
+                  <Grid3X3 className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="ml-1 text-xs sm:text-sm hidden sm:inline">Grid</span>
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 ${viewMode === 'list' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'} transition-colors`}
+                  className={`p-2 flex-1 sm:flex-none ${viewMode === 'list' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'} transition-colors touch-manipulation`}
                   title="List View"
                 >
-                  <List className="w-4 h-4" />
+                  <List className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="ml-1 text-xs sm:text-sm hidden sm:inline">List</span>
                 </button>
               </div>
 
               {/* Sort Dropdown */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                style={{ fontFamily: 'Poppins, sans-serif' }}
-              >
-                {sortOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center gap-2 flex-1 sm:flex-none">
+                <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Sort:
+                </label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="flex-1 sm:flex-none px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-xs sm:text-sm"
+                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                >
+                  {sortOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
           {/* Expanded Filters */}
           {showFilters && (
-            <div className="border-t pt-4 mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="border-t pt-3 sm:pt-4 mt-3 sm:mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                     Category
                   </label>
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-xs sm:text-sm"
                     style={{ fontFamily: 'Poppins, sans-serif' }}
                   >
                     {categories.map(category => (
@@ -447,7 +455,7 @@ export default function FavoritesPage() {
                   </select>
                 </div>
 
-                <div className="flex items-end">
+                <div className="sm:col-start-1 lg:col-start-3 flex items-end">
                   <button
                     onClick={() => {
                       setSearchTerm('');
@@ -455,7 +463,7 @@ export default function FavoritesPage() {
                       setSortBy('dateAdded-desc');
                       setCurrentPage(1);
                     }}
-                    className="w-full px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="w-full px-3 sm:px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-xs sm:text-sm touch-manipulation"
                     style={{ fontFamily: 'Poppins, sans-serif' }}
                   >
                     Clear Filters
@@ -468,8 +476,8 @@ export default function FavoritesPage() {
 
         {/* Results Count */}
         {pagination && (
-          <div className="mb-4">
-            <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <div className="mb-3 sm:mb-4">
+            <p className="text-xs sm:text-sm text-gray-600 px-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
               Showing {pagination.startIndex} to {pagination.endIndex} of {pagination.totalFavorites} favorites
               {(selectedCategory !== 'all' || searchTerm) ? ' (filtered)' : ''}
             </p>
@@ -478,12 +486,12 @@ export default function FavoritesPage() {
 
         {/* Favorites Display */}
         {favorites.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 lg:p-12 text-center">
+            <Heart className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 px-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
               {pagination?.totalFavorites === 0 ? "You haven't added any favorites yet" : "No favorites found"}
             </h3>
-            <p className="text-gray-600 mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <p className="text-sm sm:text-base text-gray-600 mb-6 px-2 max-w-md mx-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
               {pagination?.totalFavorites === 0 
                 ? "Start browsing products and add them to your favorites for easy access later" 
                 : "Try adjusting your filters to find what you're looking for"
@@ -492,10 +500,10 @@ export default function FavoritesPage() {
             {pagination?.totalFavorites === 0 ? (
               <Link
                 href="/shop"
-                className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors"
+                className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg transition-colors touch-manipulation text-sm sm:text-base"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
-                <Package className="w-5 h-5" />
+                <Package className="w-4 h-4 sm:w-5 sm:h-5" />
                 Browse Products
               </Link>
             ) : (
@@ -505,7 +513,7 @@ export default function FavoritesPage() {
                   setSelectedCategory('all');
                   setCurrentPage(1);
                 }}
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors"
+                className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg transition-colors touch-manipulation text-sm sm:text-base"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 Clear Filters

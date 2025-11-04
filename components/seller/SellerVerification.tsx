@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -216,9 +217,9 @@ export default function SellerVerification({
       // Refresh status
       await fetchStatus();
       onStatusChange?.();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error submitting verification:', err);
-      setError(err.message || 'Failed to submit verification');
+      setError(err instanceof Error ? err.message : 'Failed to submit verification');
     } finally {
       setUploading(false);
     }
@@ -296,12 +297,12 @@ export default function SellerVerification({
                   Valid Government ID - Front Side <span className="text-red-500">*</span>
                 </label>
                 <p className="text-xs text-gray-500 mb-3">
-                  Upload the FRONT side of your Driver's License, Passport, National ID, or other government-issued ID
+                  Upload the FRONT side of your Driver&apos;s License, Passport, National ID, or other government-issued ID
                 </p>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors">
                   {govIdFrontPreview ? (
                     <div className="relative">
-                      <img src={govIdFrontPreview} alt="Government ID Front" className="max-h-48 mx-auto rounded" />
+                      <Image src={govIdFrontPreview} alt="Government ID Front" className="max-h-48 mx-auto rounded" width={192} height={192} />
                       <Button
                         variant="outline"
                         size="sm"
@@ -353,12 +354,12 @@ export default function SellerVerification({
                   Valid Government ID - Back Side <span className="text-red-500">*</span>
                 </label>
                 <p className="text-xs text-gray-500 mb-3">
-                  Upload the BACK side of your Driver's License, National ID, or other government-issued ID
+                  Upload the BACK side of your Driver&apos;s License, National ID, or other government-issued ID
                 </p>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors">
                   {govIdBackPreview ? (
                     <div className="relative">
-                      <img src={govIdBackPreview} alt="Government ID Back" className="max-h-48 mx-auto rounded" />
+                      <Image src={govIdBackPreview} alt="Government ID Back" className="max-h-48 mx-auto rounded" width={192} height={192} />
                       <Button
                         variant="outline"
                         size="sm"
@@ -415,7 +416,7 @@ export default function SellerVerification({
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors">
                   {birPreview ? (
                     <div className="relative">
-                      <img src={birPreview} alt="BIR Document" className="max-h-48 mx-auto rounded" />
+                      <Image src={birPreview} alt="BIR Document" className="max-h-48 mx-auto rounded" width={192} height={192} />
                       <Button
                         variant="outline"
                         size="sm"
@@ -623,12 +624,12 @@ export default function SellerVerification({
             Government ID - Front Side <span className="text-red-500">*</span>
           </label>
           <p className="text-xs text-gray-500 mb-3">
-            Upload the front side of your valid government-issued ID (Driver's License, Passport, National ID, etc.)
+            Upload the front side of your valid government-issued ID (Driver&apos;s License, Passport, National ID, etc.)
           </p>
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors">
             {govIdFrontPreview ? (
               <div className="relative">
-                <img src={govIdFrontPreview} alt="Government ID - Front" className="max-h-48 mx-auto rounded" />
+                <Image src={govIdFrontPreview} alt="Government ID - Front" className="max-h-48 mx-auto rounded" width={192} height={192} />
                 <Button
                   variant="outline"
                   size="sm"
@@ -685,7 +686,7 @@ export default function SellerVerification({
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors">
             {govIdBackPreview ? (
               <div className="relative">
-                <img src={govIdBackPreview} alt="Government ID - Back" className="max-h-48 mx-auto rounded" />
+                <Image src={govIdBackPreview} alt="Government ID - Back" className="max-h-48 mx-auto rounded" width={192} height={192} />
                 <Button
                   variant="outline"
                   size="sm"
@@ -742,7 +743,7 @@ export default function SellerVerification({
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors">
             {birPreview ? (
               <div className="relative">
-                <img src={birPreview} alt="BIR Document" className="max-h-48 mx-auto rounded" />
+                <Image src={birPreview} alt="BIR Document" className="max-h-48 mx-auto rounded" width={192} height={192} />
                 <Button
                   variant="outline"
                   size="sm"

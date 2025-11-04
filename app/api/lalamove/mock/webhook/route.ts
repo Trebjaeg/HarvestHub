@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update order status in mock service
-    const success = await mockLalamoveService.updateOrderStatus(lalamoveOrderId, status, rider);
+    const success = await mockLalamoveService.updateOrderStatus(lalamoveOrderId, status);
 
     if (!success) {
       return NextResponse.json({
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
       availableStatuses: Object.values(LalamoveOrderStatus),
       statusMappings: OrderStatusMapping,
       testRiders: TEST_RIDERS,
-      allMockOrders: mockLalamoveService.getAllMockOrders()
+      allMockOrders: mockLalamoveService.getAllOrders()
     });
 
   } catch (error: any) {

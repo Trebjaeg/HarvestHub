@@ -501,16 +501,16 @@ export default function MyOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
+    <div className="w-full max-w-full overflow-hidden">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        <div className="mb-4 sm:mb-6 lg:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2 truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 My Orders
               </h1>
-              <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <p className="text-sm sm:text-base text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Track and manage your orders
               </p>
             </div>
@@ -518,18 +518,18 @@ export default function MyOrdersPage() {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 flex-1">
+        <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 flex-1">
               {/* Search */}
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <div className="relative flex-1 max-w-full sm:max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
                 <input
                   type="text"
-                  placeholder="Search by order number, product, or seller..."
+                  placeholder="Search orders..."
                   value={filters.searchTerm}
                   onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                   style={{ fontFamily: 'Poppins, sans-serif' }}
                 />
               </div>
@@ -537,17 +537,20 @@ export default function MyOrdersPage() {
               {/* Filter Toggle Button */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap touch-manipulation"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
-                <Filter className="w-5 h-5" />
-                Filters
-                <ChevronDown className={`w-4 h-4 transform transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-sm sm:text-base">Filters</span>
+                <ChevronDown className={`w-3 h-3 sm:w-4 sm:h-4 transform transition-transform ${showFilters ? 'rotate-180' : ''}`} />
               </button>
             </div>
 
             {/* Sort Options */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Sort by:
+              </label>
               <select
                 value={`${sortBy}-${sortOrder}`}
                 onChange={(e) => {
@@ -555,7 +558,7 @@ export default function MyOrdersPage() {
                   setSortBy(field);
                   setSortOrder(order);
                 }}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="flex-1 sm:flex-none px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 <option value="orderDate-desc">Newest First</option>
@@ -570,8 +573,8 @@ export default function MyOrdersPage() {
 
           {/* Expanded Filters */}
           {showFilters && (
-            <div className="border-t pt-4 mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="border-t pt-3 sm:pt-4 mt-3 sm:mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {/* Status Filter */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -580,7 +583,7 @@ export default function MyOrdersPage() {
                   <select
                     value={filters.status}
                     onChange={(e) => handleFilterChange('status', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                     style={{ fontFamily: 'Poppins, sans-serif' }}
                   >
                     <option value="all">All Statuses</option>
@@ -600,7 +603,7 @@ export default function MyOrdersPage() {
                   <select
                     value={filters.category}
                     onChange={(e) => handleFilterChange('category', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                     style={{ fontFamily: 'Poppins, sans-serif' }}
                   >
                     <option value="all">All Categories</option>
@@ -621,7 +624,7 @@ export default function MyOrdersPage() {
                   <select
                     value={filters.dateRange}
                     onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                     style={{ fontFamily: 'Poppins, sans-serif' }}
                   >
                     <option value="all">All Time</option>
@@ -636,7 +639,7 @@ export default function MyOrdersPage() {
                 <div className="flex items-end">
                   <button
                     onClick={clearFilters}
-                    className="w-full px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="w-full px-3 sm:px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base touch-manipulation"
                     style={{ fontFamily: 'Poppins, sans-serif' }}
                   >
                     Clear Filters
@@ -646,7 +649,7 @@ export default function MyOrdersPage() {
 
               {/* Custom Date Range */}
               {filters.dateRange === 'custom' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-3 sm:mt-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       Start Date
@@ -655,7 +658,7 @@ export default function MyOrdersPage() {
                       type="date"
                       value={filters.customStartDate}
                       onChange={(e) => handleFilterChange('customStartDate', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                     />
                   </div>
                   <div>
@@ -666,7 +669,7 @@ export default function MyOrdersPage() {
                       type="date"
                       value={filters.customEndDate}
                       onChange={(e) => handleFilterChange('customEndDate', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                     />
                   </div>
                 </div>
@@ -677,8 +680,8 @@ export default function MyOrdersPage() {
 
         {/* Orders Count and Results */}
         {pagination && (
-          <div className="mb-4">
-            <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <div className="mb-3 sm:mb-4">
+            <p className="text-sm sm:text-base text-gray-600 px-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
               Showing {pagination.startIndex} to {pagination.endIndex} of {pagination.totalOrders} orders
               {filters.status !== 'all' || filters.category !== 'all' || filters.dateRange !== 'all' || filters.searchTerm ? ' (filtered)' : ''}
             </p>
@@ -687,12 +690,12 @@ export default function MyOrdersPage() {
 
         {/* Orders Table or Empty State */}
         {orders.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 lg:p-12 text-center">
+            <ShoppingBag className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
               {pagination?.totalOrders === 0 ? "You haven't placed any orders yet" : "No orders found"}
             </h3>
-            <p className="text-gray-600 mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
               {pagination?.totalOrders === 0 
                 ? "Start shopping to see your orders here" 
                 : "Try adjusting your filters to find what you're looking for"
@@ -701,16 +704,16 @@ export default function MyOrdersPage() {
             {pagination?.totalOrders === 0 ? (
               <Link
                 href="/shop"
-                className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors"
+                className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors text-sm sm:text-base touch-manipulation"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
-                <ShoppingBag className="w-5 h-5" />
+                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
                 Start Shopping
               </Link>
             ) : (
               <button
                 onClick={clearFilters}
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors text-sm sm:text-base touch-manipulation"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 Clear Filters
@@ -843,43 +846,46 @@ export default function MyOrdersPage() {
             {/* Mobile Card View */}
             <div className="lg:hidden">
               {orders.map((order) => (
-                <div key={order._id} className="p-6 border-b border-gray-200 last:border-b-0">
-                  <div className="flex justify-between items-start mb-3">
+                <div key={order._id} className="p-4 sm:p-6 border-b border-gray-200 last:border-b-0">
+                  <div className="flex justify-between items-start mb-3 gap-3">
                     <Link
                       href={`/buyer-orders/${order._id}`}
-                      className="text-green-600 hover:text-green-700 font-semibold"
+                      className="text-green-600 hover:text-green-700 font-semibold text-sm sm:text-base truncate touch-manipulation"
                       style={{ fontFamily: 'Poppins, sans-serif' }}
                     >
                       #{order.orderNumber}
                     </Link>
-                    <div className="flex flex-col gap-1 items-end">
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${statusColors[order.status]}`}>
+                    <div className="flex flex-col gap-1 items-end flex-shrink-0">
+                      <span className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${statusColors[order.status]}`}>
                         {getStatusIcon(order.status)}
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                        <span className="hidden sm:inline">{order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span>
+                        <span className="sm:hidden">{order.status.charAt(0).toUpperCase() + order.status.slice(1, 4)}</span>
                       </span>
                       {order.cancellationRequest?.status === 'pending' && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border bg-orange-100 text-orange-800 border-orange-200">
+                        <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs font-medium border bg-orange-100 text-orange-800 border-orange-200">
                           <Clock className="w-3 h-3" />
-                          Cancel Pending
+                          <span className="hidden sm:inline">Cancel Pending</span>
+                          <span className="sm:hidden">Pending</span>
                         </span>
                       )}
                       {order.cancellationRequest?.status === 'rejected' && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border bg-red-100 text-red-800 border-red-200">
+                        <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs font-medium border bg-red-100 text-red-800 border-red-200">
                           <XCircle className="w-3 h-3" />
-                          Cancel Rejected
+                          <span className="hidden sm:inline">Cancel Rejected</span>
+                          <span className="sm:hidden">Rejected</span>
                         </span>
                       )}
                     </div>
                   </div>
                   
                   <div className="space-y-2 mb-4">
-                    <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    <div className="text-xs sm:text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       <span className="font-medium">Date:</span> {formatDate(order.orderDate)}
                     </div>
-                    <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    <div className="text-xs sm:text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       <span className="font-medium">Products:</span> {getProductSummary(order.products)}
                     </div>
-                    <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    <div className="text-xs sm:text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       <span className="font-medium">Total:</span> {formatCurrency(order.finalAmount)}
                     </div>
                   </div>
@@ -887,46 +893,50 @@ export default function MyOrdersPage() {
                   <div className="flex flex-wrap gap-2">
                     <Link
                       href={`/buyer-orders/${order._id}`}
-                      className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                      className="inline-flex items-center gap-1 px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors touch-manipulation"
                       style={{ fontFamily: 'Poppins, sans-serif' }}
                     >
-                      <Eye className="w-4 h-4" />
-                      View Details
+                      <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">View Details</span>
+                      <span className="sm:hidden">View</span>
                     </Link>
                     {order.canTrack && (
                       <Link
                         href={`/buyer-orders/${order._id}?tab=tracking`}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                        className="inline-flex items-center gap-1 px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors touch-manipulation"
                         style={{ fontFamily: 'Poppins, sans-serif' }}
                       >
-                        <Truck className="w-4 h-4" />
-                        Track Order
+                        <Truck className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">Track Order</span>
+                        <span className="sm:hidden">Track</span>
                       </Link>
                     )}
                     {(order.status === 'delivered' || order.status === 'completed') && (
                       <Link
                         href={`/buyer-orders/${order._id}?tab=review`}
-                        className={`inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        className={`inline-flex items-center gap-1 px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors touch-manipulation ${
                           order.hasReview 
                             ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' 
                             : 'text-green-600 bg-green-50 hover:bg-green-100'
                         }`}
                         style={{ fontFamily: 'Poppins, sans-serif' }}
                       >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                         </svg>
-                        {order.hasReview ? 'View/Edit Review' : 'Write Review'}
+                        <span className="hidden sm:inline">{order.hasReview ? 'View/Edit Review' : 'Write Review'}</span>
+                        <span className="sm:hidden">{order.hasReview ? 'Review' : 'Review'}</span>
                       </Link>
                     )}
                     {order.canCancel && (
                       <button
                         onClick={() => handleCancelOrder(order._id)}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                        className="inline-flex items-center gap-1 px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors touch-manipulation"
                         style={{ fontFamily: 'Poppins, sans-serif' }}
                       >
-                        <X className="w-4 h-4" />
-                        Cancel Order
+                        <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">Cancel Order</span>
+                        <span className="sm:hidden">Cancel</span>
                       </button>
                     )}
                   </div>
@@ -936,49 +946,56 @@ export default function MyOrdersPage() {
 
             {/* Pagination */}
             {pagination && pagination.totalPages > 1 && (
-              <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-between">
-                <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  Showing {pagination.startIndex} to {pagination.endIndex} of {pagination.totalOrders} orders
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handlePageChange(pagination.currentPage - 1)}
-                    disabled={!pagination.hasPrevPage}
-                    className="px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ fontFamily: 'Poppins, sans-serif' }}
-                  >
-                    Previous
-                  </button>
-                  
-                  <div className="flex space-x-1">
-                    {Array.from({ length: pagination.totalPages }, (_, i) => {
-                      const page = i + 1;
-                      return (
-                        <button
-                          key={page}
-                          onClick={() => handlePageChange(page)}
-                          className={`px-3 py-2 text-sm font-medium rounded-lg ${
-                            pagination.currentPage === page
-                              ? 'bg-green-600 text-white'
-                              : 'text-gray-600 bg-white border border-gray-300 hover:bg-gray-50'
-                          }`}
-                          style={{ fontFamily: 'Poppins, sans-serif' }}
-                        >
-                          {page}
-                        </button>
-                      );
-                    })}
+              <div className="px-3 sm:px-4 lg:px-6 py-4 bg-gray-50 border-t">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+                  <div className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    Showing {pagination.startIndex} to {pagination.endIndex} of {pagination.totalOrders} orders
                   </div>
                   
-                  <button
-                    onClick={() => handlePageChange(pagination.currentPage + 1)}
-                    disabled={!pagination.hasNextPage}
-                    className="px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ fontFamily: 'Poppins, sans-serif' }}
-                  >
-                    Next
-                  </button>
+                  <div className="flex items-center space-x-1 sm:space-x-2 order-1 sm:order-2">
+                    <button
+                      onClick={() => handlePageChange(pagination.currentPage - 1)}
+                      disabled={!pagination.hasPrevPage}
+                      className="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                    >
+                      <span className="hidden sm:inline">Previous</span>
+                      <span className="sm:hidden">Prev</span>
+                    </button>
+                    
+                    <div className="flex space-x-1">
+                      {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
+                        const startPage = Math.max(1, pagination.currentPage - 2);
+                        const page = startPage + i;
+                        if (page > pagination.totalPages) return null;
+                        
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            className={`px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium rounded-lg touch-manipulation ${
+                              pagination.currentPage === page
+                                ? 'bg-green-600 text-white'
+                                : 'text-gray-600 bg-white border border-gray-300 hover:bg-gray-50'
+                            }`}
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
+                          >
+                            {page}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    <button
+                      onClick={() => handlePageChange(pagination.currentPage + 1)}
+                      disabled={!pagination.hasNextPage}
+                      className="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                    >
+                      <span className="hidden sm:inline">Next</span>
+                      <span className="sm:hidden">Next</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

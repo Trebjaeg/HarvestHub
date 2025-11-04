@@ -541,18 +541,7 @@ export default function TechnicalSupportHelp() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              <div className="flex items-center space-x-4 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    Live Chat Support
-                  </h4>
-                  <p className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    Get instant technical help
-                  </p>
-                </div>
-              </div>
-
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
               <div className="flex items-center space-x-4 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
                 <div>
                   <h4 className="font-semibold text-gray-800 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>

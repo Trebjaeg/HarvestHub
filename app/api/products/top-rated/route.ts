@@ -5,6 +5,62 @@ import Review from '@/models/Review';
 
 export const dynamic = 'force-dynamic';
 
+interface ReviewStat {
+  _id: string;
+  averageRating: number;
+  totalReviews: number;
+  fiveStarCount: number;
+  fourStarCount: number;
+  qualityScore: number;
+}
+
+interface ProductDocument {
+  _id: string;
+  name: string;
+  description?: string;
+  category: string;
+  price: number;
+  currentPrice?: number;
+  basePrice?: number;
+  originalPrice?: number;
+  unit: string;
+  inventory_available: number;
+  image: string;
+  farmerId: string;
+  farmerName: string;
+  isOrganic?: boolean;
+  featured?: boolean;
+  tags?: string[];
+  activeDealId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface EnrichedProduct {
+  _id: string;
+  name: string;
+  description?: string;
+  category: string;
+  basePrice?: number;
+  currentPrice: number;
+  unit: string;
+  stock: number;
+  imageUrl: string;
+  farmerId: string;
+  farmerName: string;
+  isOrganic?: boolean;
+  isFeatured?: boolean;
+  tags: string[];
+  activeDealId?: string;
+  rating: number;
+  totalReviews: number;
+  fiveStarCount: number;
+  fourStarCount: number;
+  qualityScore: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /**
  * GET /api/products/top-rated
  * Fetches top-rated products based on average ratings and review counts
@@ -88,19 +144,23 @@ export async function GET(request: NextRequest) {
       _id: { $in: productIds },
       isActive: true,
       inventory_available: { $gt: 0 } // Only show products in stock
-    }).lean();
+    }).lean() as unknown as ProductDocument[];
 
     // Merge review stats with product data
-    const enrichedProducts = products.map(product => {
-      const stats = reviewStats.find(stat => stat._id.toString() === product._id.toString());
+    const enrichedProducts: EnrichedProduct[] = products.map((product) => {
+      const stats = reviewStats.find((stat: ReviewStat) => stat._id.toString() === product._id.toString());
+      
+      // Use currentPrice if deal is active, otherwise use regular price
+      const currentPrice = product.currentPrice || product.price;
+      const basePrice = product.basePrice || product.originalPrice || (product.currentPrice && product.currentPrice < product.price ? product.price : undefined);
       
       return {
         _id: product._id,
         name: product.name,
         description: product.description,
         category: product.category,
-        basePrice: product.originalPrice || product.price,
-        currentPrice: product.price,
+        basePrice: basePrice,
+        currentPrice: currentPrice,
         unit: product.unit,
         stock: product.inventory_available,
         imageUrl: product.image,
@@ -109,6 +169,7 @@ export async function GET(request: NextRequest) {
         isOrganic: product.isOrganic,
         isFeatured: product.featured,
         tags: product.tags || [],
+        activeDealId: product.activeDealId,
         // Rating information
         rating: stats?.averageRating || 0,
         totalReviews: stats?.totalReviews || 0,
@@ -121,7 +182,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Sort by the original quality score order
-    const sortedProducts = enrichedProducts.sort((a, b) => {
+    const sortedProducts = enrichedProducts.sort((a: EnrichedProduct, b: EnrichedProduct) => {
       const indexA = productIds.findIndex(id => id.toString() === a._id.toString());
       const indexB = productIds.findIndex(id => id.toString() === b._id.toString());
       return indexA - indexB;

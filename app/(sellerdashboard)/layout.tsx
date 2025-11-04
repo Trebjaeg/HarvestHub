@@ -18,7 +18,7 @@ export default function SellerDashboardLayout({
       <div className="min-h-screen bg-gray-50">
         <div className="flex">
           <Sidebar />
-          <main className="flex-1 p-4 lg:p-6 pt-20 lg:pt-6 min-h-screen">
+          <main className="flex-1 p-3 sm:p-4 lg:p-6 pt-16 sm:pt-20 lg:pt-6 min-h-screen overflow-x-hidden">
             {/* Show suspension banner if user is suspended */}
             {isSuspended && (
               <SuspensionBanner 
@@ -27,7 +27,9 @@ export default function SellerDashboardLayout({
                 suspensionExpiresAt={user.suspensionExpiresAt}
               />
             )}
-            {children}
+            <div className="max-w-full">
+              {children}
+            </div>
           </main>
         </div>
       </div>

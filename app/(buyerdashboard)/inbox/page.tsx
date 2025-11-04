@@ -6,6 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useAuthUserData } from '@/hooks/useAuthUserData';
 import { useChatSocket } from '@/hooks/useChatSocket';
 import { NotificationHandler } from '@/components/NotificationHandler';
+import { Paperclip, X, Download, FileText, Image as ImageIcon } from 'lucide-react';
 
 // Helper function to generate conversation ID
 function generateConversationId(userId1: string, userId2: string): string {
@@ -22,12 +23,25 @@ interface Conversation {
   unreadCount: number;
 }
 
+interface Attachment {
+  id: string;
+  originalName: string;
+  fileName: string;
+  url: string;
+  type: string;
+  size: number;
+  category: 'image' | 'document';
+  uploadedBy: string;
+  uploadedAt: string;
+}
+
 interface Message {
   _id: string;
   senderId: string;
   senderName: string;
   receiverId: string;
   message: string;
+  attachments?: Attachment[];
   createdAt: string;
   isRead: boolean;
 }
@@ -48,6 +62,9 @@ export default function BuyerInboxPage() {
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
   const [badgeShake, setBadgeShake] = useState(false);
   const [loadingUserInfo, setLoadingUserInfo] = useState(false);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const selectedConversationRef = useRef<Conversation | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -251,7 +268,7 @@ export default function BuyerInboxPage() {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!newMessage.trim() || !selectedConversation || sending) return;
+    if ((!newMessage.trim() && attachments.length === 0) || !selectedConversation || sending) return;
 
     const messageText = newMessage.trim();
     const tempId = `temp-${Date.now()}-${Math.random()}`;
@@ -263,6 +280,7 @@ export default function BuyerInboxPage() {
       senderName: (user as any)?.name || user?.email || 'You',
       receiverId: selectedConversation.userId,
       message: messageText,
+      attachments: attachments,
       createdAt: new Date().toISOString(),
       isRead: false
     };
@@ -270,6 +288,7 @@ export default function BuyerInboxPage() {
     // Add message to UI immediately (optimistic update)
     setMessages(prev => [...prev, optimisticMessage]);
     setNewMessage('');
+    setAttachments([]);
     scrollToBottom();
     
     // Start sending indicator
@@ -282,7 +301,8 @@ export default function BuyerInboxPage() {
         credentials: 'include',
         body: JSON.stringify({
           receiverId: selectedConversation.userId,
-          message: messageText
+          message: messageText,
+          attachments: attachments
         })
       });
 
@@ -300,16 +320,86 @@ export default function BuyerInboxPage() {
         // Remove optimistic message on failure
         setMessages(prev => prev.filter(msg => msg._id !== tempId));
         setNewMessage(messageText); // Restore message text
+        setAttachments(attachments); // Restore attachments
         alert('Failed to send message. Please try again.');
       }
     } catch (error) {
       // Remove optimistic message on error
       setMessages(prev => prev.filter(msg => msg._id !== tempId));
       setNewMessage(messageText); // Restore message text
+      setAttachments(attachments); // Restore attachments
       alert('Network error. Please check your connection.');
     } finally {
       setSending(false);
     }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('File size must be less than 10MB');
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf', 'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/plain'
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      alert('Invalid file type. Please upload images (JPEG, PNG, GIF, WebP) or documents (PDF, Word, Excel, Text).');
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/chat/upload', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAttachments(prev => [...prev, data.file]);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to upload file');
+      }
+    } catch (error) {
+      alert('Failed to upload file. Please try again.');
+    } finally {
+      setUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const removeAttachment = (attachmentId: string) => {
+    setAttachments(prev => prev.filter(att => att.id !== attachmentId));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const scrollToBottom = () => {
@@ -665,7 +755,50 @@ export default function BuyerInboxPage() {
                               ? 'bg-gradient-to-r from-[#2d7a54] to-[#1a5f3f] text-white rounded-br-none'
                               : 'bg-white text-gray-900 rounded-bl-none'
                           }`}>
-                            <p className="text-sm break-words leading-relaxed">{msg.message}</p>
+                            {msg.message && (
+                              <p className="text-sm break-words leading-relaxed mb-2">{msg.message}</p>
+                            )}
+                            
+                            {/* Attachments */}
+                            {msg.attachments && msg.attachments.length > 0 && (
+                              <div className="space-y-2 mb-2">
+                                {msg.attachments.map((attachment) => (
+                                  <div key={attachment.id} className={`border rounded-lg p-2 ${isOwn ? 'border-white/20 bg-white/10' : 'border-gray-200 bg-gray-50'}`}>
+                                    {attachment.category === 'image' ? (
+                                      <div className="relative">
+                                        <img 
+                                          src={attachment.url} 
+                                          alt={attachment.originalName}
+                                          className="max-w-full max-h-48 rounded cursor-pointer"
+                                          onClick={() => window.open(attachment.url, '_blank')}
+                                        />
+                                        <button
+                                          onClick={() => window.open(attachment.url, '_blank')}
+                                          className={`absolute top-2 right-2 p-1 rounded-full ${isOwn ? 'bg-black/20 hover:bg-black/30' : 'bg-white/80 hover:bg-white'} transition-colors`}
+                                        >
+                                          <Download className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-2">
+                                        <FileText className="w-4 h-4" />
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs font-medium truncate">{attachment.originalName}</p>
+                                          <p className="text-xs opacity-70">{formatFileSize(attachment.size)}</p>
+                                        </div>
+                                        <button
+                                          onClick={() => window.open(attachment.url, '_blank')}
+                                          className={`p-1 rounded transition-colors ${isOwn ? 'hover:bg-white/20' : 'hover:bg-gray-200'}`}
+                                        >
+                                          <Download className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
                             <div className={`flex items-center justify-between gap-2 mt-1 md:mt-1.5 ${isOwn ? 'text-white/70' : 'text-gray-500'}`}>
                               <p className="text-xs">
                                 {new Date(msg.createdAt).toLocaleTimeString('en-US', {
@@ -720,18 +853,63 @@ export default function BuyerInboxPage() {
             </div>
 
             <div className="bg-white p-3 md:p-4 border-t border-gray-200 shadow-lg">
+              {/* Attachment Preview */}
+              {attachments.length > 0 && (
+                <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Paperclip className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">
+                      {attachments.length} attachment{attachments.length > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {attachments.map((attachment) => (
+                      <div key={attachment.id} className="flex items-center gap-2 p-2 bg-white rounded border">
+                        {attachment.category === 'image' ? (
+                          <ImageIcon className="w-4 h-4 text-blue-600" />
+                        ) : (
+                          <FileText className="w-4 h-4 text-gray-600" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{attachment.originalName}</p>
+                          <p className="text-xs text-gray-500">{formatFileSize(attachment.size)}</p>
+                        </div>
+                        <button
+                          onClick={() => removeAttachment(attachment.id)}
+                          className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               <form onSubmit={handleSendMessage} className="flex items-center space-x-2 md:space-x-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileUpload}
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                  className="hidden"
+                />
                 <button
                   type="button"
-                  className="text-gray-500 hover:text-[#103C2E] transition-colors p-2 hover:bg-gray-100 rounded-lg touch-manipulation"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="text-gray-500 hover:text-[#103C2E] transition-colors p-2 hover:bg-gray-100 rounded-lg touch-manipulation disabled:opacity-50"
+                  title="Attach file"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 md:w-6 md:h-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" />
-                  </svg>
+                  {uploading ? (
+                    <div className="w-5 h-5 border-2 border-[#103C2E] border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Paperclip className="w-5 h-5 md:w-6 md:h-6" />
+                  )}
                 </button>
                 <input
                   type="text"
-                  placeholder="Type a message..."
+                  placeholder={attachments.length > 0 ? "Add a message (optional)" : "Type a message..."}
                   value={newMessage}
                   onChange={handleInputChange}
                   disabled={sending}
@@ -739,7 +917,7 @@ export default function BuyerInboxPage() {
                 />
                 <button
                   type="submit"
-                  disabled={!newMessage.trim() || sending}
+                  disabled={((!newMessage.trim() && attachments.length === 0) || sending)}
                   className="bg-gradient-to-r from-[#103C2E] to-[#1a5f3f] text-white p-2.5 md:p-3.5 rounded-full hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 touch-manipulation"
                 >
                   {sending ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import LoadingDots from '@/components/ui/LoadingDots';
 import { 
   Mail, 
@@ -15,7 +15,12 @@ import {
   ChevronRight,
   RefreshCw,
   Eye,
-  EyeOff
+  EyeOff,
+  Paperclip,
+  X,
+  Download,
+  FileText,
+  Image as ImageIcon
 } from 'lucide-react';
 
 // Custom Filter Icon
@@ -472,17 +477,17 @@ export default function MessagesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Mail className="w-8 h-8 text-blue-600" />
+              <Mail className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   Messages
                 </h1>
-                <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                <p className="text-sm sm:text-base text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   {stats.unreadCount > 0 ? (
                     <span className="text-blue-600 font-medium">
                       {stats.unreadCount} unread message{stats.unreadCount !== 1 ? 's' : ''} • {stats.totalCount} total
@@ -494,24 +499,25 @@ export default function MessagesPage() {
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => setViewMode(viewMode === 'list' ? 'grouped' : 'list')}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 active:bg-gray-200 transition-colors touch-manipulation text-sm sm:text-base"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 <Filter className="w-4 h-4" />
-                {viewMode === 'list' ? 'Group by Date' : 'List View'}
+                <span className="hidden sm:inline">{viewMode === 'list' ? 'Group by Date' : 'List View'}</span>
+                <span className="sm:hidden">{viewMode === 'list' ? 'Group' : 'List'}</span>
               </button>
               
               <button
                 onClick={refreshMessages}
                 disabled={refreshing}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 active:bg-gray-200 transition-colors disabled:opacity-50 touch-manipulation text-sm sm:text-base"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                Refresh
+                <span className="hidden sm:inline">Refresh</span>
               </button>
             </div>
           </div>
@@ -519,10 +525,10 @@ export default function MessagesPage() {
 
         {/* Search and Filter Controls */}
         {!loading && !error && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
               {/* Search */}
-              <div className="lg:col-span-2">
+              <div className="sm:col-span-2 lg:col-span-2">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
@@ -530,7 +536,7 @@ export default function MessagesPage() {
                     placeholder="Search messages..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                   />
                 </div>
               </div>
@@ -540,7 +546,7 @@ export default function MessagesPage() {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 >
                   {categories.map(category => (
                     <option key={category.value} value={category.value}>
@@ -621,12 +627,12 @@ export default function MessagesPage() {
             </div>
           </div>
         ) : messages.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-            <Mail className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 text-center">
+            <Mail className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
               {stats.unreadCount === 0 ? 'You have no new messages' : 'No messages found'}
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-sm sm:text-base text-gray-600 mb-4 max-w-md mx-auto">
               {searchTerm || selectedCategory !== 'all' || readFilter !== 'all' || priorityFilter !== 'all'
                 ? 'Try adjusting your search filters to find more messages.'
                 : 'When you receive messages from the system, sellers, or support, they will appear here.'
@@ -635,7 +641,7 @@ export default function MessagesPage() {
             {(searchTerm || selectedCategory !== 'all' || readFilter !== 'all' || priorityFilter !== 'all') && (
               <button
                 onClick={clearFilters}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-700 transition-colors touch-manipulation text-sm sm:text-base"
               >
                 Clear Filters
               </button>
@@ -644,7 +650,7 @@ export default function MessagesPage() {
         ) : (
           <>
             {/* Messages List */}
-            <div className="space-y-4 mb-8">
+            <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
               {viewMode === 'list' ? (
                 messages.map((message) => (
                   <MessageCard key={message._id} message={message} />

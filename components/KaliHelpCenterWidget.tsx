@@ -342,7 +342,7 @@ export default function KaliHelpCenterWidget() {
     }
   };
 
-  // Draggable handlers
+  // Draggable handlers for both mouse and touch
   const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!buttonRef.current) return;
     
@@ -354,15 +354,30 @@ export default function KaliHelpCenterWidget() {
     setIsDragging(true);
   };
 
+  const handleTouchStart = (e: React.TouchEvent<HTMLButtonElement>) => {
+    if (!buttonRef.current) return;
+    
+    const rect = buttonRef.current.getBoundingClientRect();
+    const touch = e.touches[0];
+    setDragOffset({
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top
+    });
+    setIsDragging(true);
+  };
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
 
-      const newX = e.clientX - dragOffset.x - 24;
-      const newY = e.clientY - dragOffset.y - 24;
+      const newX = e.clientX - dragOffset.x - (window.innerWidth <= 640 ? 16 : 24); // Adjust for mobile margins
+      const newY = e.clientY - dragOffset.y - (window.innerWidth <= 640 ? 16 : 24);
 
-      const maxX = window.innerWidth - 64 - 24;
-      const maxY = window.innerHeight - 64 - 24;
+      const buttonSize = window.innerWidth <= 640 ? 48 : 64; // Mobile: 48px, Desktop: 64px
+      const margin = window.innerWidth <= 640 ? 16 : 24; // Mobile: 16px, Desktop: 24px
+      
+      const maxX = window.innerWidth - buttonSize - margin;
+      const maxY = window.innerHeight - buttonSize - margin;
       
       setPosition({
         x: Math.max(0, Math.min(newX, maxX)),
@@ -370,18 +385,42 @@ export default function KaliHelpCenterWidget() {
       });
     };
 
-    const handleMouseUp = () => {
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging) return;
+      e.preventDefault(); // Prevent scrolling while dragging
+
+      const touch = e.touches[0];
+      const newX = touch.clientX - dragOffset.x - (window.innerWidth <= 640 ? 16 : 24);
+      const newY = touch.clientY - dragOffset.y - (window.innerWidth <= 640 ? 16 : 24);
+
+      const buttonSize = window.innerWidth <= 640 ? 48 : 64;
+      const margin = window.innerWidth <= 640 ? 16 : 24;
+      
+      const maxX = window.innerWidth - buttonSize - margin;
+      const maxY = window.innerHeight - buttonSize - margin;
+      
+      setPosition({
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY))
+      });
+    };
+
+    const handleEnd = () => {
       setIsDragging(false);
     };
 
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('mouseup', handleEnd);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleEnd);
     }
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleEnd);
     };
   }, [isDragging, dragOffset]);
 
@@ -400,7 +439,8 @@ export default function KaliHelpCenterWidget() {
           ref={buttonRef}
           onClick={() => setIsOpen(true)}
           onMouseDown={handleMouseDown}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full shadow-2xl hover:scale-110 transition-all duration-300 flex items-center justify-center z-50 group overflow-hidden"
+          onTouchStart={handleTouchStart}
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 flex items-center justify-center z-50 group overflow-hidden touch-manipulation"
           aria-label="Open Kali Help Chat"
           style={{
             animation: 'float 3s ease-in-out infinite',
@@ -418,7 +458,7 @@ export default function KaliHelpCenterWidget() {
             />
           </div>
           
-          <span className="absolute -top-12 right-0 bg-gray-900 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+          <span className="absolute -top-10 sm:-top-12 right-0 bg-gray-900 text-white px-2 py-1 sm:px-3 sm:py-2 rounded-lg text-xs sm:text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
             Need help? Ask Kali!
           </span>
           
@@ -429,10 +469,10 @@ export default function KaliHelpCenterWidget() {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[600px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 border border-gray-200 overflow-hidden animate-slide-up">
+        <div className="fixed inset-4 sm:bottom-6 sm:right-6 sm:inset-auto sm:w-96 sm:h-[600px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 border border-gray-200 overflow-hidden animate-slide-up">
           {/* Header */}
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 flex items-center justify-between rounded-t-2xl">
-            <div className="flex items-center space-x-3">
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-3 sm:p-4 flex items-center justify-between rounded-t-2xl flex-shrink-0">
+            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
               {viewMode !== 'welcome' && (
                 <button
                   onClick={() => {
@@ -449,14 +489,14 @@ export default function KaliHelpCenterWidget() {
                       setSearchQuery('');
                     }
                   }}
-                  className="hover:bg-white/20 rounded-full p-1 transition-colors"
+                  className="hover:bg-white/20 rounded-full p-1 transition-colors touch-manipulation"
                   aria-label="Go back"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               )}
               {/* Kali Avatar in Header */}
-              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/30 relative">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-white/30 relative flex-shrink-0">
                 <Image
                   src="/images/kalichatbot.jpg"
                   alt="Kali"
@@ -464,9 +504,9 @@ export default function KaliHelpCenterWidget() {
                   className="object-cover"
                 />
               </div>
-              <div>
-                <h3 className="font-bold text-lg">Kali</h3>
-                <p className="text-xs text-white/80">Your HarvestHub Assistant</p>
+              <div className="min-w-0">
+                <h3 className="font-bold text-base sm:text-lg truncate">Kali</h3>
+                <p className="text-xs text-white/80 truncate">Your HarvestHub Assistant</p>
               </div>
             </div>
             <button
@@ -482,10 +522,10 @@ export default function KaliHelpCenterWidget() {
                   setCollectedInfo({ issueType: '', description: '', urgency: '' });
                 }, 300);
               }}
-              className="hover:bg-white/20 rounded-full p-2 transition-colors"
+              className="hover:bg-white/20 rounded-full p-1.5 sm:p-2 transition-colors touch-manipulation flex-shrink-0"
               aria-label="Close chat"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
             </button>
           </div>
 
@@ -493,10 +533,10 @@ export default function KaliHelpCenterWidget() {
           <div className="flex-1 overflow-hidden bg-gradient-to-b from-gray-50 to-white">
             {/* Welcome Screen */}
             {viewMode === 'welcome' && (
-              <div className="p-6 h-full flex flex-col">
-                <div className="text-center mb-6">
+              <div className="p-4 sm:p-6 h-full flex flex-col">
+                <div className="text-center mb-4 sm:mb-6">
                   {/* Kali Avatar in Welcome Screen */}
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full overflow-hidden border-4 border-green-500 shadow-lg relative">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 rounded-full overflow-hidden border-4 border-green-500 shadow-lg relative">
                     <Image
                       src="/images/kalichatbot.jpg"
                       alt="Kali"
@@ -504,7 +544,7 @@ export default function KaliHelpCenterWidget() {
                       className="object-cover"
                     />
                   </div>
-                  <h4 className="text-xl font-bold text-gray-800 mb-2">
+                  <h4 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
                     Hi! I&apos;m Kali
                   </h4>
                   <p className="text-gray-600 text-sm">
@@ -512,43 +552,43 @@ export default function KaliHelpCenterWidget() {
                   </p>
                 </div>
 
-                <div className="space-y-3 mb-6">
+                <div className="space-y-3 mb-4 sm:mb-6">
                   <button
                     onClick={() => setViewMode('faq')}
-                    className="w-full bg-white border-2 border-green-500 text-green-600 py-4 px-6 rounded-xl font-semibold hover:bg-green-50 transition-all shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
+                    className="w-full bg-white border-2 border-green-500 text-green-600 py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-semibold hover:bg-green-50 active:bg-green-100 transition-all shadow-md hover:shadow-lg flex items-center justify-center space-x-2 touch-manipulation"
                   >
-                    <HelpCircle className="w-5 h-5" />
-                    <span>View FAQs</span>
+                    <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="text-sm sm:text-base">View FAQs</span>
                   </button>
                   <button
                     onClick={handleContactSupport}
                     disabled={isLoading}
-                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 active:from-green-700 active:to-emerald-800 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 touch-manipulation"
                   >
                     {isLoading ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Connecting...</span>
+                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                        <span className="text-sm sm:text-base">Connecting...</span>
                       </>
                     ) : (
                       <>
-                        <Mail className="w-5 h-5" />
-                        <span>Contact Support</span>
+                        <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="text-sm sm:text-base">Contact Support</span>
                       </>
                     )}
                   </button>
                 </div>
 
-                <div className="flex-1">
-                  <p className="text-xs text-gray-500 font-semibold mb-3 uppercase tracking-wide">
+                <div className="flex-1 min-h-0">
+                  <p className="text-xs text-gray-500 font-semibold mb-2 sm:mb-3 uppercase tracking-wide">
                     Quick Questions
                   </p>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto">
                     {quickResponses.slice(0, 6).map((quick) => (
                       <button
                         key={quick.id}
                         onClick={() => handleQuickResponse(quick)}
-                        className="text-left bg-white border border-gray-200 p-3 rounded-lg text-xs hover:border-green-500 hover:bg-green-50 transition-all"
+                        className="text-left bg-white border border-gray-200 p-2.5 sm:p-3 rounded-lg text-xs hover:border-green-500 hover:bg-green-50 active:bg-green-100 transition-all touch-manipulation"
                       >
                         {quick.label}
                       </button>
@@ -561,7 +601,7 @@ export default function KaliHelpCenterWidget() {
             {/* FAQ View */}
             {viewMode === 'faq' && (
               <div className="h-full flex flex-col">
-                <div className="p-4 border-b bg-white">
+                <div className="p-3 sm:p-4 border-b bg-white flex-shrink-0">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
@@ -569,35 +609,35 @@ export default function KaliHelpCenterWidget() {
                       placeholder="Search FAQs..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                      className="w-full pl-10 pr-4 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm touch-manipulation"
                     />
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto p-3 sm:p-4">
                   {filteredFAQs.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-2 sm:space-y-3">
                       {filteredFAQs.map((faq) => (
                         <button
                           key={faq.id}
                           onClick={() => handleFAQClick(faq)}
-                          className="w-full text-left bg-white border border-gray-200 p-4 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all group"
+                          className="w-full text-left bg-white border border-gray-200 p-3 sm:p-4 rounded-lg hover:border-green-500 hover:bg-green-50 active:bg-green-100 transition-all group touch-manipulation"
                         >
-                          <p className="font-semibold text-sm text-gray-800 group-hover:text-green-600">
+                          <p className="font-semibold text-sm text-gray-800 group-hover:text-green-600 mb-1">
                             {faq.question}
                           </p>
-                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                          <p className="text-xs text-gray-500 line-clamp-2">
                             {faq.answer}
                           </p>
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12">
-                      <p className="text-gray-500 text-sm">No FAQs found</p>
+                    <div className="text-center py-8 sm:py-12">
+                      <p className="text-gray-500 text-sm mb-3">No FAQs found</p>
                       <button
                         onClick={handleContactSupport}
-                        className="mt-4 text-green-600 text-sm font-semibold hover:underline"
+                        className="text-green-600 text-sm font-semibold hover:underline touch-manipulation"
                       >
                         Contact support instead
                       </button>
@@ -610,7 +650,7 @@ export default function KaliHelpCenterWidget() {
             {/* Chat View */}
             {viewMode === 'chat' && (
               <div className="h-full flex flex-col">
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
                   {messages.map((msg, idx) => {
                     const isCurrentUser = msg.senderId === getCurrentUserId();
                     const isKali = msg.senderRole === 'ai';
@@ -622,7 +662,7 @@ export default function KaliHelpCenterWidget() {
                         className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                          className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-3 py-2 sm:px-4 sm:py-2 ${
                             isCurrentUser
                               ? 'bg-green-500 text-white'
                               : isKali
@@ -658,7 +698,7 @@ export default function KaliHelpCenterWidget() {
                 </div>
 
                 {/* Input field - show for both AI chat mode and connected conversation */}
-                <div className="p-4 border-t bg-white">
+                <div className="p-3 sm:p-4 border-t bg-white flex-shrink-0">
                   <div className="flex items-center space-x-2">
                     <input
                       ref={inputRef}
@@ -668,17 +708,17 @@ export default function KaliHelpCenterWidget() {
                       onKeyPress={handleKeyPress}
                       placeholder={isAIChatMode ? "Type your response..." : "Type your message..."}
                       disabled={isSending}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 px-3 py-2.5 sm:px-4 sm:py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 text-sm disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
                     />
                     <button
                       onClick={handleSendMessage}
                       disabled={!inputMessage.trim() || isSending}
-                      className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-green-500 text-white p-2 sm:p-2.5 rounded-full hover:bg-green-600 active:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation flex-shrink-0"
                     >
                       {isSending ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                       ) : (
-                        <Send className="w-5 h-5" />
+                        <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                       )}
                     </button>
                   </div>

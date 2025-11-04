@@ -6,13 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Plus, Package, Edit, Trash2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Search, Plus, Package, Edit, Trash2, FileText } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import AddEditProductModal from "@/components/ui/AddEditProductModal";
 import SuccessDialog from "@/components/ui/SuccessDialog";
 
-interface Product {
+interface ProductData {
   _id?: string;
   name: string;
   category: string;
@@ -41,27 +41,12 @@ interface Product {
   inventory_on_hand?: number;
 }
 
-interface Appeal {
-  _id: string;
-  user: string;
-  productId?: string;
-  productName?: string;
-  type: 'suspension' | 'deletion' | 'warning' | 'listing_removal';
-  reason: string;
-  status: 'pending' | 'under_review' | 'approved' | 'rejected';
-  decision?: 'approved' | 'rejected' | 'partial';
-  decisionReason?: string;
-  reviewNotes?: string;
-  reviewedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Type alias to avoid empty interface warning
+type Product = ProductData;
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [appeals, setAppeals] = useState<Appeal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [appealsLoading, setAppealsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -86,13 +71,49 @@ export default function Products() {
 
   const statusOptions = ["Available", "Unavailable"];
 
+  const fetchProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
+      const response = await fetch('/api/seller/products', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        cache: 'no-store'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Convert harvestDate from Date to string for the modal
+        const formattedProducts = (data.products || []).map((product: ProductData) => ({
+          ...product,
+          harvestDate: product.harvestDate ? new Date(product.harvestDate).toISOString().split('T')[0] : undefined
+        }));
+        setProducts(formattedProducts);
+        setRetryCount(0); // Reset retry count on success
+      } else if (response.status === 403) {
+        const error = await response.json();
+        if (error.error === 'Insufficient permissions' || error.message?.includes('verification')) {
+          // Don't show anything on page load - user will see error when trying to add/edit
+        }
+      }
+    } catch {
+      // Retry once if first attempt fails
+      if (retryCount < 1) {
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => {
+          fetchProducts();
+        }, 1000);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [retryCount]);
+
   useEffect(() => {
     fetchProducts();
-    fetchAppeals();
-    checkVerificationStatus();
-  }, []);
+    checkVerification();
+  }, [fetchProducts]);
 
-  const checkVerificationStatus = async () => {
+  const checkVerification = async () => {
     try {
       const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
       const response = await fetch('/api/seller/verification/status', {
@@ -106,65 +127,8 @@ export default function Products() {
         const verified = data.sellerStatus === 'verified';
         setIsVerified(verified);
       }
-    } catch (error) {
+    } catch {
       setIsVerified(false);
-    }
-  };
-
-  const fetchAppeals = async () => {
-    try {
-      setAppealsLoading(true);
-      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
-      const response = await fetch('/api/seller/appeals', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        cache: 'no-store'
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAppeals(data);
-      }
-    } catch (error) {
-      setAppeals([]);
-    } finally {
-      setAppealsLoading(false);
-    }
-  };
-
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
-      const response = await fetch('/api/seller/products', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        cache: 'no-store'
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Convert harvestDate from Date to string for the modal
-        const formattedProducts = (data.products || []).map((product: any) => ({
-          ...product,
-          harvestDate: product.harvestDate ? new Date(product.harvestDate).toISOString().split('T')[0] : undefined
-        }));
-        setProducts(formattedProducts);
-        setRetryCount(0); // Reset retry count on success
-      } else if (response.status === 403) {
-        const error = await response.json();
-        if (error.error === 'Insufficient permissions' || error.message?.includes('verification')) {
-          // Don't show anything on page load - user will see error when trying to add/edit
-        }
-      }
-    } catch (error) {
-      // Retry once if first attempt fails
-      if (retryCount < 1) {
-        setRetryCount(prev => prev + 1);
-        setTimeout(() => {
-          fetchProducts();
-        }, 1000);
-      }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -181,7 +145,6 @@ export default function Products() {
       });
       
       if (response.ok) {
-        const data = await response.json();
         // Close modal first
         setShowAddModal(false);
         // Refresh the products list
@@ -193,16 +156,16 @@ export default function Products() {
         });
         setShowSuccessDialog(true);
       } else {
-        const error = await response.json();
+        const errorData = await response.json();
         // Check if it's a verification error
-        if (response.status === 403 && (error.error === 'Insufficient permissions' || error.message?.includes('verification'))) {
+        if (response.status === 403 && (errorData.error === 'Insufficient permissions' || errorData.message?.includes('verification'))) {
           // Keep modal open and show error inline
-          setVerificationMessage(error.message || 'You must be a verified seller to add products');
+          setVerificationMessage(errorData.message || 'You must be a verified seller to add products');
         } else {
-          alert(error.error || error.message || 'Failed to create product');
+          alert(errorData.error || errorData.message || 'Failed to create product');
         }
       }
-    } catch (error) {
+    } catch {
       alert('An error occurred while adding the product. Please try again.');
     }
   };
@@ -221,7 +184,6 @@ export default function Products() {
       });
 
       if (response.ok) {
-        const data = await response.json();
         // Close modal first
         setEditingProduct(null);
         // Refresh the products list
@@ -233,12 +195,11 @@ export default function Products() {
         });
         setShowSuccessDialog(true);
       } else {
-        const error = await response.json();
         // Silently fail and close modal
         setEditingProduct(null);
         fetchProducts();
       }
-    } catch (error) {
+    } catch {
       // Silently fail and close modal
       setEditingProduct(null);
       fetchProducts();
@@ -287,7 +248,7 @@ export default function Products() {
         setProductToDelete(null);
         fetchProducts();
       }
-    } catch (error) {
+    } catch {
       // Close modal and refresh the list
       setShowDeleteModal(false);
       setProductToDelete(null);
@@ -304,9 +265,9 @@ export default function Products() {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  // Separate active and deactivated for rendering
-  const activeProducts = filteredProducts.filter(product => product.isActive !== false);
-  const deactivatedProducts = filteredProducts.filter(product => product.isActive === false);
+  // Separate active and deactivated for rendering (currently not used in UI but kept for future features)
+  // const activeProducts = filteredProducts.filter(product => product.isActive !== false);
+  // const deactivatedProducts = filteredProducts.filter(product => product.isActive === false);
 
   const getStatusColor = (status: string) => {
     return status === 'Available' 
@@ -314,14 +275,15 @@ export default function Products() {
       : 'bg-red-100 text-red-800';
   };
 
-  const getStockStatus = (availableStock: number, lowStockAlert: number) => {
-    if (availableStock === 0) return { label: 'Out of Stock', color: 'bg-red-100 text-red-800' };
-    if (availableStock <= lowStockAlert) return { label: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
-    return { label: 'In Stock', color: 'bg-green-100 text-green-800' };
-  };
+  // Stock status helper (currently not used in UI but kept for future features)
+  // const getStockStatus = (availableStock: number, lowStockAlert: number) => {
+  //   if (availableStock === 0) return { label: 'Out of Stock', color: 'bg-red-100 text-red-800' };
+  //   if (availableStock <= lowStockAlert) return { label: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
+  //   return { label: 'In Stock', color: 'bg-green-100 text-green-800' };
+  // };
 
   return (
-    <div className="bg-gray-50 min-h-screen p-3 sm:p-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
+    <div className="bg-gray-50 min-h-screen p-3 sm:p-4 lg:p-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
       <div className="max-w-7xl mx-auto">
         {/* Blurred Overlay for Unverified Sellers - Both Mobile and Desktop */}
         {!isVerified && (
@@ -374,7 +336,7 @@ export default function Products() {
               }
               setShowAddModal(true);
             }}
-            className="bg-[#103C2E] hover:bg-[#0d2e23] text-white text-sm sm:text-base whitespace-nowrap flex-shrink-0" 
+            className="bg-[#103C2E] hover:bg-[#0d2e23] active:bg-[#0d2e23] text-white text-sm sm:text-base whitespace-nowrap flex-shrink-0 touch-manipulation" 
           >
             <Plus className="w-4 h-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Add Product</span>
@@ -438,19 +400,19 @@ export default function Products() {
             </div>
           </Card>
         ) : filteredProducts.length === 0 ? (
-          <Card className="p-12 text-center bg-white border border-gray-200">
-            <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <Card className="p-6 sm:p-8 lg:p-12 text-center bg-white border border-gray-200">
+            <Package className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
               No products found
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-sm sm:text-base text-gray-600 mb-4">
               {searchTerm || selectedCategory !== "all" || selectedStatus !== "all"
                 ? "Try adjusting your filters"
                 : "Get started by adding your first product"}
             </p>
             <Button 
               onClick={() => setShowAddModal(true)}
-              className="bg-[#103C2E] hover:bg-[#0d2e23] text-white"
+              className="bg-[#103C2E] hover:bg-[#0d2e23] active:bg-[#0d2e23] text-white touch-manipulation"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Product
@@ -474,9 +436,6 @@ export default function Products() {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {filteredProducts.map((product) => {
-                      const productAppeal = appeals.find(
-                        (appeal) => appeal.productId === product._id && appeal.type === 'listing_removal'
-                      );
                       // Show as deactivated only if isActive is false AND status is not Available
                       const isDeactivated = product.isActive === false && product.status !== 'Available';
 
@@ -507,17 +466,14 @@ export default function Products() {
                                 <Badge className="bg-red-100 text-red-800 w-fit">
                                   Deactivated by Admin
                                 </Badge>
-                                {productAppeal && (
-                                  <span className="text-xs" style={{
-                                    color: productAppeal.status === 'pending' ? '#FFA726' :
-                                           productAppeal.status === 'under_review' ? '#42A5F5' :
-                                           productAppeal.status === 'approved' ? '#4A7C59' : '#EF5350'
-                                  }}>
-                                    Appeal: {productAppeal.status === 'pending' ? 'Pending' :
-                                            productAppeal.status === 'under_review' ? 'Under Review' :
-                                            productAppeal.status === 'approved' ? 'Approved' : 'Rejected'}
-                                  </span>
-                                )}
+                                <button
+                                  onClick={() => window.location.href = `/my-appeals?product=${product._id}&name=${encodeURIComponent(product.name)}`}
+                                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors w-fit"
+                                  title="Appeal this deactivation"
+                                >
+                                  <FileText className="w-3 h-3" />
+                                  Appeal Deactivation
+                                </button>
                               </div>
                             )}
                           </div>
@@ -578,9 +534,6 @@ export default function Products() {
             {/* Mobile Card View (hidden on desktop) */}
             <div className="md:hidden space-y-3">
               {filteredProducts.map((product) => {
-                const productAppeal = appeals.find(
-                  (appeal) => appeal.productId === product._id && appeal.type === 'listing_removal'
-                );
                 // Show as deactivated only if isActive is false AND status is not Available
                 const isDeactivated = product.isActive === false && product.status !== 'Available';
 
@@ -615,17 +568,14 @@ export default function Products() {
                               <Badge className="bg-red-100 text-red-800 w-fit text-[10px] sm:text-xs px-1.5 py-0.5">
                                 Deactivated
                               </Badge>
-                              {productAppeal && (
-                                <span className="text-[10px] sm:text-xs font-medium break-words" style={{
-                                  color: productAppeal.status === 'pending' ? '#FFA726' :
-                                         productAppeal.status === 'under_review' ? '#42A5F5' :
-                                         productAppeal.status === 'approved' ? '#4A7C59' : '#EF5350'
-                                }}>
-                                  Appeal: {productAppeal.status === 'pending' ? 'Pending' :
-                                          productAppeal.status === 'under_review' ? 'Review' :
-                                          productAppeal.status === 'approved' ? 'Approved' : 'Rejected'}
-                                </span>
-                              )}
+                              <button
+                                onClick={() => window.location.href = `/my-appeals?product=${product._id}&name=${encodeURIComponent(product.name)}`}
+                                className="flex items-center gap-1 text-[10px] sm:text-xs text-blue-600 hover:text-blue-800 transition-colors w-fit"
+                                title="Appeal this deactivation"
+                              >
+                                <FileText className="w-3 h-3" />
+                                Appeal Deactivation
+                              </button>
                             </div>
                           )}
                           <div className="flex items-center flex-wrap gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
@@ -651,14 +601,14 @@ export default function Products() {
                         <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
                           <button
                             onClick={() => setEditingProduct(product)}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-[#103C2E] bg-green-50 hover:bg-green-100 rounded-lg transition-colors font-medium"
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-[#103C2E] bg-green-50 hover:bg-green-100 active:bg-green-100 rounded-lg transition-colors font-medium touch-manipulation"
                           >
                             <Edit className="w-3.5 h-3.5" />
                             <span>Edit</span>
                           </button>
                           <button
                             onClick={() => handleDeleteProduct(product._id!)}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors font-medium"
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 active:bg-red-100 rounded-lg transition-colors font-medium touch-manipulation"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             <span>Delete</span>

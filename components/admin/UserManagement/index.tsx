@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,15 +13,10 @@ import ConfirmationModal from '@/components/ui/ConfirmationModal';
 
 interface User {
   _id: string;
-  username: string;
   name: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
   role: string;
-  status: 'active' | 'suspended' | 'deleted';
-  isActive: boolean;
-  isVerified: boolean;
+  status: string;
   createdAt: string;
   lastLogin?: string;
   suspendReason?: string;
@@ -71,28 +65,17 @@ const UserManagement: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/admin/users');
-      // const data = await response.json();
-      // setUsers(data.users);
-      
-      // Mock data for now
-      setUsers([
-        {
-          _id: '1',
-          username: 'john_doe',
-          name: 'John Doe',
-          email: 'john@example.com',
-          firstName: 'John',
-          lastName: 'Doe',
-          role: 'buyer',
-          status: 'active',
-          isActive: true,
-          isVerified: true,
-          createdAt: new Date().toISOString(),
-          lastLogin: new Date().toISOString()
-        }
-      ]);
+      const response = await fetch('/api/admin/users', {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+
+      const data = await response.json();
+      setUsers(data.users || []);
+      setFilteredUsers(data.users || []);
     } catch (error) {
       console.error('Error fetching users:', error);
       setError('Failed to load users');
@@ -257,17 +240,27 @@ const UserManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <LoadingDots size="lg" color="#16a34a" />
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <LoadingDots size="lg" color="#16a34a" />
+          </div>
+          <p className="text-gray-600">Loading users</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center text-red-600">{error}</div>
+      <Card className="border-red-200">
+        <CardContent className="pt-6">
+          <div className="text-center text-red-600">
+            <p>{error}</p>
+            <Button onClick={fetchUsers} className="mt-4" variant="outline">
+              Retry
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -295,36 +288,46 @@ const UserManagement: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Users</CardTitle>
+          <CardTitle style={{ fontFamily: 'Poppins, sans-serif' }}>
+            User Management ({filteredUsers.length}
+            {searchTerm && ` of ${users.length}`})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {/* Desktop Table View */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2">User</th>
-                  <th className="text-left p-2">Email</th>
-                  <th className="text-left p-2">Role</th>
-                  <th className="text-left p-2">Status</th>
-                  <th className="text-left p-2">Created</th>
-                  <th className="text-left p-2">Actions</th>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Name</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Email</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Role</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Status</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Joined</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredUsers.map((user) => (
-                  <tr key={user._id} className="border-b">
-                    <td className="p-2">
-                      <div>
-                        <div className="font-medium">{user.firstName} {user.lastName}</div>
-                        <div className="text-sm text-gray-500">@{user.username}</div>
+                  <tr key={user._id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-4">
+                      <div className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {user.name}
                       </div>
                     </td>
-                    <td className="p-2">{user.email}</td>
-                    <td className="p-2">
-                      <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'}>
+                    <td className="py-3 px-4 text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      {user.email}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        user.role === 'superadmin' 
+                          ? 'bg-purple-100 text-purple-800' 
+                          : user.role === 'admin'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
                         {user.role}
-                      </Badge>
+                      </span>
                     </td>
                     <td className="py-3 px-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

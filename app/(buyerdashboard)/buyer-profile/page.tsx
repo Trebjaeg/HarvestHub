@@ -298,10 +298,10 @@ function BuyerProfile() {
     } catch (error) {
       console.error('🚪 [BUYER] Logout error:', error);
     } finally {
-      console.log('🚪 [BUYER] Redirecting to auth page...');
+      console.log('🚪 [BUYER] Redirecting to landing page...');
       
       // Force a complete page reload to clear any cached state
-      window.location.href = '/auth';
+      window.location.href = '/';
     }
   };
 
@@ -327,42 +327,46 @@ function BuyerProfile() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto" style={{ fontFamily: 'Poppins, sans-serif' }}>
+    <div className="w-full max-w-7xl mx-auto overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-        <div className="flex items-center gap-3">
-          <User className="w-6 h-6 sm:w-8 sm:h-8 text-[#103C2E]" />
-          <h1 className="text-xl sm:text-2xl font-bold text-[#103C2E]">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <User className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 text-[#103C2E] flex-shrink-0" />
+          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#103C2E] truncate">
             Buyer Profile
           </h1>
         </div>
         <Button 
-          className="bg-[#103C2E] hover:bg-[#0d2e23] text-white w-full sm:w-auto" 
+          className="bg-[#103C2E] hover:bg-[#0d2e23] text-white w-full sm:w-auto touch-manipulation" 
           onClick={() => setShowEditModal(true)}
         >
-          <Edit className="w-4 h-4 mr-2" />
-          Edit Profile
+          <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+          <span className="text-sm sm:text-base">Edit Profile</span>
         </Button>
       </div>
 
       {/* Suspension Banner */}
       {profile?.status === 'suspended' && (
-        <SuspensionBanner 
-          reason={profile.suspendReason}
-          suspendedAt={profile.suspendedAt}
-          suspensionExpiresAt={profile.suspensionExpiresAt}
-        />
+        <div className="mb-4 sm:mb-6">
+          <SuspensionBanner 
+            reason={profile.suspendReason}
+            suspendedAt={profile.suspendedAt}
+            suspensionExpiresAt={profile.suspensionExpiresAt}
+          />
+        </div>
       )}
 
       {/* Appeal Status Card */}
-      <AppealStatusCard />
+      <div className="mb-4 sm:mb-6">
+        <AppealStatusCard />
+      </div>
 
       {/* Profile Header with Avatar */}
-      <Card className="p-4 sm:p-6 bg-white border border-gray-200 mb-6">
-          <div className="flex items-center gap-6">
+      <Card className="p-4 sm:p-6 bg-white border border-gray-200 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             {/* Profile Avatar */}
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 flex items-center justify-center">
+            <div className="relative flex-shrink-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 flex items-center justify-center">
                 {loading ? (
                   <div className="w-full h-full bg-gray-200 animate-pulse"></div>
                 ) : profile?.profileImage ? (
@@ -374,7 +378,7 @@ function BuyerProfile() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 w-12 h-12 sm:w-16 sm:h-16">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                     <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
                     <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
@@ -387,10 +391,10 @@ function BuyerProfile() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingImage}
-                className="absolute bottom-0 right-0 w-8 h-8 bg-[#103C2E] hover:bg-[#0d2e23] rounded-full flex items-center justify-center text-white shadow-lg disabled:opacity-50"
+                className="absolute bottom-0 right-0 w-6 h-6 sm:w-8 sm:h-8 bg-[#103C2E] hover:bg-[#0d2e23] rounded-full flex items-center justify-center text-white shadow-lg disabled:opacity-50 touch-manipulation"
               >
                 {uploadingImage ? (
-                  <svg viewBox="0 0 60 15" className="w-6 h-3" xmlns="http://www.w3.org/2000/svg">
+                  <svg viewBox="0 0 60 15" className="w-4 h-2 sm:w-6 sm:h-3" xmlns="http://www.w3.org/2000/svg">
                     <circle cx={7.5} cy={7.5} r={3} fill="white">
                       <animate attributeName="cy" dur="0.8s" begin="0s" repeatCount="indefinite" values="7.5;3.75;7.5" keyTimes="0;0.5;1" />
                       <animate attributeName="opacity" dur="0.8s" begin="0s" repeatCount="indefinite" values="0.4;1;0.4" keyTimes="0;0.5;1" />
@@ -405,7 +409,7 @@ function BuyerProfile() {
                     </circle>
                   </svg>
                 ) : (
-                  <Camera className="w-4 h-4" />
+                  <Camera className="w-3 h-3 sm:w-4 sm:h-4" />
                 )}
               </button>
               
@@ -420,11 +424,11 @@ function BuyerProfile() {
             </div>
             
             {/* Profile Info */}
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-[#103C2E] mb-1">
+            <div className="flex-1 text-center sm:text-left min-w-0">
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#103C2E] mb-1 truncate">
                 {loading ? 'Loading...' : fullName || 'Unknown User'}
               </h2>
-              <p className="text-gray-600">
+              <p className="text-sm sm:text-base text-gray-600 truncate">
                 {loading ? 'Loading...' : profile?.email || 'No email provided'}
               </p>
             </div>
@@ -432,110 +436,101 @@ function BuyerProfile() {
         </Card>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          <Card className="p-6 bg-white border border-gray-200">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
+          <Card className="p-4 sm:p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Spent</p>
-                <p className="text-2xl font-bold text-[#103C2E]">
-                  {loadingStats ? '...' : `₱${stats?.totalSpent?.toLocaleString() || '0'}`}
-                </p>
-              </div>
-              <ShoppingBag className="w-8 h-8 text-[#103C2E]" />
-            </div>
-          </Card>
-          
-          <Card className="p-6 bg-white border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Orders</p>
-                <p className="text-2xl font-bold text-[#103C2E]">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-600">Total Orders</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#103C2E] truncate">
                   {loadingStats ? '...' : (stats?.totalOrders || 0)}
                 </p>
               </div>
-              <ShoppingBag className="w-8 h-8 text-[#103C2E]" />
+              <ShoppingBag className="w-6 h-6 sm:w-8 sm:h-8 text-[#103C2E] flex-shrink-0" />
             </div>
           </Card>
           
-          <Card className="p-6 bg-white border border-gray-200">
+          <Card className="p-4 sm:p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Favorite Products</p>
-                <p className="text-2xl font-bold text-[#103C2E]">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-600">Favorite Products</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#103C2E] truncate">
                   {loadingStats ? '...' : (stats?.favoriteProducts || 0)}
                 </p>
               </div>
-              <Heart className="w-8 h-8 text-[#103C2E]" />
+              <Heart className="w-6 h-6 sm:w-8 sm:h-8 text-[#103C2E] flex-shrink-0" />
             </div>
           </Card>
           
-          <Card className="p-6 bg-white border border-gray-200">
+          <Card className="p-4 sm:p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">My Avg Rating</p>
-                <p className="text-2xl font-bold text-[#103C2E]">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-600">My Avg Rating</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#103C2E] truncate">
                   {loadingStats ? '...' : (stats?.averageRating || 0)}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 mt-1 truncate">
                   {stats?.totalReviews || 0} reviews
                 </p>
               </div>
-              <Star className="w-8 h-8 text-[#103C2E]" />
+              <Star className="w-6 h-6 sm:w-8 sm:h-8 text-[#103C2E] flex-shrink-0" />
             </div>
           </Card>
         </div>
 
         {/* Profile Information */}
-        <Card className="p-6 bg-white border border-gray-200 mb-6">
-          <h2 className="text-lg font-semibold text-[#103C2E] mb-4">
+        <Card className="p-4 sm:p-6 bg-white border border-gray-200 mb-4 sm:mb-6">
+          <h2 className="text-base sm:text-lg font-semibold text-[#103C2E] mb-3 sm:mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
             Profile Information
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
-              <label className="text-sm text-gray-600">First Name</label>
-              <p className="font-medium text-gray-900">
+              <label className="text-xs sm:text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>First Name</label>
+              <p className="font-medium text-gray-900 text-sm sm:text-base truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 {loading ? 'Loading...' : profile?.firstName || 'Not provided'}
               </p>
             </div>
             <div>
-              <label className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Last Name</label>
-              <p className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <label className="text-xs sm:text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Last Name</label>
+              <p className="font-medium text-gray-900 text-sm sm:text-base truncate" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 {loading ? 'Loading...' : profile?.lastName || 'Not provided'}
               </p>
             </div>
-            <div>
-              <label className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Email</label>
-              <div className="flex items-center justify-between">
-                <p className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <div className="sm:col-span-2">
+              <label className="text-xs sm:text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Email</label>
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-medium text-gray-900 text-sm sm:text-base truncate min-w-0 flex-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   {loading ? 'Loading...' : profile?.email || 'Not provided'}
                 </p>
-                <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50">
-                  Edit Email
+                <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50 text-xs sm:text-sm flex-shrink-0 touch-manipulation">
+                  <span className="hidden sm:inline">Edit Email</span>
+                  <span className="sm:hidden">Edit</span>
                 </Button>
               </div>
             </div>
-            <div>
-              <label className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Phone Number</label>
-              <div className="flex items-center justify-between">
-                <p className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <div className="sm:col-span-2">
+              <label className="text-xs sm:text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Phone Number</label>
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-medium text-gray-900 text-sm sm:text-base truncate min-w-0 flex-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   {loading ? 'Loading...' : profile?.phone || 'Not provided'}
                 </p>
-                <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50">
-                  Edit Number
+                <Button variant="outline" size="sm" className="text-blue-600 border-blue-200 hover:bg-blue-50 text-xs sm:text-sm flex-shrink-0 touch-manipulation">
+                  <span className="hidden sm:inline">Edit Number</span>
+                  <span className="sm:hidden">Edit</span>
                 </Button>
               </div>
             </div>
-            <div className="md:col-span-2">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Saved Addresses</label>
+            <div className="sm:col-span-2">
+              <div className="flex items-center justify-between mb-2 gap-2">
+                <label className="text-xs sm:text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>Saved Addresses</label>
                 <Link href="/buyer-addresses">
-                  <Button variant="outline" size="sm" className="text-[#4A7C59] border-[#4A7C59] hover:bg-[#4A7C59]/10">
-                    Manage Addresses
+                  <Button variant="outline" size="sm" className="text-[#4A7C59] border-[#4A7C59] hover:bg-[#4A7C59]/10 text-xs sm:text-sm touch-manipulation">
+                    <span className="hidden sm:inline">Manage Addresses</span>
+                    <span className="sm:hidden">Manage</span>
                   </Button>
                 </Link>
               </div>
               {loading ? (
-                <p className="font-medium text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>Loading...</p>
+                <p className="font-medium text-gray-900 text-sm sm:text-base" style={{ fontFamily: 'Poppins, sans-serif' }}>Loading...</p>
               ) : profile?.addresses && profile.addresses.length > 0 ? (
                 <div className="space-y-2">
                   {profile.addresses.map((addr) => (

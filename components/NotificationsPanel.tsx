@@ -21,7 +21,7 @@ interface NotificationsPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onUnreadCountChange?: (count: number) => void;
-  buttonRef: React.RefObject<HTMLButtonElement>;
+  buttonRef: React.RefObject<HTMLButtonElement | null>;
 }
 
 type NotificationTab = 'all' | 'orders' | 'messages' | 'system';
@@ -259,7 +259,7 @@ export default function NotificationsPanel({ isOpen, onClose, onUnreadCountChang
   const getNotificationLink = (notification: Notification) => {
     // Check if user is a seller - using interface extension like other components
     interface ExtendedUser extends User {
-      sellerStatus?: string;
+      sellerStatus?: "none" | "pending" | "verified" | "rejected";
       sellerApplicationStatus?: string;
     }
     const extendedUser = user as ExtendedUser;
