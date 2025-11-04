@@ -3,9 +3,10 @@ import mongoose from 'mongoose';
 export interface IChatMessage {
   _id?: string;
   conversationId: string; // Unique ID for conversation between two users
+  supportConversationId?: string; // NEW: For support conversations
   senderId: string;
   senderName: string;
-  senderRole: 'buyer' | 'seller' | 'admin';
+  senderRole: 'buyer' | 'seller' | 'admin' | 'ai'; // UPDATED: Added 'ai'
   receiverId: string;
   receiverName: string;
   receiverRole: 'buyer' | 'seller' | 'admin';
@@ -23,6 +24,11 @@ const ChatMessageSchema = new mongoose.Schema<IChatMessage>(
       required: true,
       index: true
     },
+    supportConversationId: {
+      type: String,
+      default: null,
+      index: true
+    },
     senderId: {
       type: String,
       required: true,
@@ -34,7 +40,7 @@ const ChatMessageSchema = new mongoose.Schema<IChatMessage>(
     },
     senderRole: {
       type: String,
-      enum: ['buyer', 'seller', 'admin'],
+      enum: ['buyer', 'seller', 'admin', 'ai'],
       required: true
     },
     receiverId: {

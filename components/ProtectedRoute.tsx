@@ -55,37 +55,27 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   useEffect(() => {
     const checkAccess = async () => {
-      console.log('🛡️ ProtectedRoute: Checking access:', { isLoading, isAuthenticated, user: user?.email, hasInitialized });
-      
-      // ALWAYS wait if loading
       if (isLoading) {
-        console.log('🛡️ ProtectedRoute: Still loading, waiting...');
         return;
       }
 
-      // If we haven't initialized yet, force a check
       if (!hasInitialized) {
-        console.log('🛡️ ProtectedRoute: First time check, calling checkAuth...');
         setHasInitialized(true);
         
         const authResult = await checkAuth();
         
         if (!authResult) {
-          console.log('🛡️ ProtectedRoute: User not authenticated after check, redirecting to auth');
           setRedirecting(true);
           const currentPath = window.location.pathname;
           router.replace(`/auth?returnUrl=${encodeURIComponent(currentPath)}`);
           return;
         }
         
-        console.log('🛡️ ProtectedRoute: User authenticated after check, allowing access');
         setIsChecking(false);
         return;
       }
 
-      // Only redirect if we're done loading AND definitely not authenticated
       if (!isAuthenticated && hasInitialized) {
-        console.log('🛡️ ProtectedRoute: User not authenticated after initialization, redirecting to auth');
         setRedirecting(true);
         const currentPath = window.location.pathname;
         router.replace(`/auth?returnUrl=${encodeURIComponent(currentPath)}`);
@@ -93,10 +83,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       }
 
       if (isAuthenticated && user) {
-        console.log('🛡️ ProtectedRoute: User authenticated, allowing access');
         setIsChecking(false);
       } else if (!isAuthenticated) {
-        console.log('🛡️ ProtectedRoute: No auth after init - redirecting');
         setRedirecting(true);
         router.replace('/auth');
       }
@@ -105,18 +93,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     checkAccess();
   }, [isAuthenticated, isLoading, router, user, checkAuth, hasInitialized]);
 
-  // Show loading while checking authentication or redirecting
   if (isLoading || isChecking || redirecting) {
     return fallback || <LoadingSpinner />;
   }
 
-  // User is not authenticated - prevent any render
   if (!isAuthenticated || !user) {
-    console.log('🛡️ ProtectedRoute: Blocking render - no auth');
-    return null; // Will redirect in useEffect
+    return null;
   }
 
-  // Check role requirements
   if (requiredRole) {
     const roleHierarchy = { user: 0, admin: 1, superadmin: 2 };
     const userRoleLevel = roleHierarchy[user.role] || 0;
@@ -127,11 +111,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
   }
 
-  // Note: Suspended users CAN access protected routes and login
-  // They will see suspension banner and have restricted actions
-  // Only 'deleted' status users are blocked at the auth level
-
-  // Check if email is verified for certain actions
   if (!user.emailVerified && requiredRole && requiredRole !== 'user') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -151,6 +130,5 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // All checks passed, render children
   return <>{children}</>;
 };

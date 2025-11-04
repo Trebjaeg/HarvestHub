@@ -305,14 +305,14 @@ function applySecurityHeaders(response: NextResponse) {
   response.headers.set('Referrer-Policy', 'origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   
-  // Content Security Policy
+  // Content Security Policy - FIXED: Allow WebSocket connections
   const csp = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: https: blob:",
-    "connect-src 'self' https:",
+    "connect-src 'self' https: ws: wss:",  // Added ws: and wss: for WebSocket
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'"

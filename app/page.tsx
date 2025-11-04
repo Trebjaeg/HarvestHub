@@ -6,8 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 import HomePage from "./home/page";
 
 export default function RootPage() {
+  const { isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
-  const { user, isLoading } = useAuth();
 
   useEffect(() => {
     console.log('🏠 RootPage: Auth state changed', { 
@@ -16,9 +16,13 @@ export default function RootPage() {
       userEmail: user?.email 
     });
     
-    // For authenticated users, no need to redirect - just show home page content
-    // Landing page is now accessible to everyone by default
-  }, [user, isLoading, router]);
+    if (isLoading) return;
+
+    if (isAuthenticated && user) {
+      router.push('/home');
+    }
+    // Landing page is accessible to everyone by default
+  }, [isAuthenticated, isLoading, user, router]);
 
   // Show loading while checking auth status
   if (isLoading) {

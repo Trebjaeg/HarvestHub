@@ -265,7 +265,6 @@ const AuthFormInput: FC = () => {
     }
   };
 
-
   // Unified registration handler
   const handleRegisterUser = async () => {
     // Collect all validation errors in a temporary object
@@ -362,17 +361,13 @@ const AuthFormInput: FC = () => {
         setShowSuccessModal(false);
         
         try {
-          console.log('🔐 Auto-login after registration...');
-          
           // Attempt to log the user in automatically
           const result = await login(registrationEmail, registrationPassword);
           
           if (result.success) {
-            console.log('✅ Auto-login successful! Redirecting to home...');
             // Hard redirect to home page
             window.location.href = '/home';
           } else {
-            console.log('❌ Auto-login failed, showing login form');
             // If auto-login fails, reset to login form with email pre-filled
             setFormState({
               email: registrationEmail,
@@ -395,7 +390,6 @@ const AuthFormInput: FC = () => {
             clearAllFieldErrors();
           }
         } catch (err) {
-          console.error('Auto-login error:', err);
           // On error, reset to login form with email pre-filled
           setFormState({
             email: registrationEmail,
@@ -420,7 +414,6 @@ const AuthFormInput: FC = () => {
       }, 1500);
 
     } catch (err: any) {
-      console.error('[Registration Error]', err);
       const errorMessage = err.message || t('auth.error.generic') || 'Registration failed';
       setFieldError('general', errorMessage);
       setError(errorMessage);
@@ -428,7 +421,6 @@ const AuthFormInput: FC = () => {
       updateFormState('loading', false);
     }
   };
-
 
   // When user accepts terms modal, set state and continue registration
   const handleAcceptTerms = () => {
@@ -1126,31 +1118,21 @@ const AuthFormInput: FC = () => {
       setLoading(true);
       
       try {
-        console.log('🔐 Starting login...');
-        
         const result = await login(formState.email, formState.password);
         
-        console.log('🔐 Login result:', result);
-        
         if (result.success) {
-          console.log('✅ Login successful! Cookie should be set now.');
-          console.log('🔀 Forcing hard redirect to /home');
-          
           // Use window.location.href for HARD redirect - forces full page reload
           // This ensures the cookie is sent with the next request
           window.location.href = '/home';
           
           // Don't set loading to false - page is reloading anyway
         } else {
-          console.log('❌ Login failed:', result.message);
-          
           // Display the error message directly from the API (includes suspended account messages)
           setFieldError('loginPassword', result.message || 'auth.validation.loginFailed');
           setLoading(false);
         }
         
       } catch (err: any) {
-        console.error('❌ Login error:', err);
         setFieldError('loginPassword', 'auth.validation.loginFailed');
         setLoading(false);
       }
@@ -1237,7 +1219,7 @@ const AuthFormInput: FC = () => {
               {showLoginPassword ? (
                 // Visible -> open eye icon
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573-3.007 9.963-7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                 </svg>
               ) : (

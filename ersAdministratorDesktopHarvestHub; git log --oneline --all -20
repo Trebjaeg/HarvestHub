@@ -1,0 +1,20 @@
+[33mfb183c2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mhome-fix[m[33m, [m[1;31morigin/home-fix[m[33m)[m Refactor code structure for improved readability and maintainability
+[33md137a64[m feat: Implement Lalamove API integration with error handling and data normalization
+[33m711b34d[m fix(checkout): add missing div for layout structure in CheckoutPage
+[33m5eb9409[m feat(quotation): add timeout handling for Lalamove API requests and improve error messaging
+[33m92dd4ad[m feat(middleware): skip authentication for webhook endpoints and log access
+[33maf28aa3[m refactor(webhooks): remove Lalamove webhook handler implementation
+[33m4228ee9[m feat(webhooks): implement Lalamove webhook processing and registration script fix(checkout): add error handling and timeouts for seller and quotation fetch fix(auth): enhance rate limiting to prevent account lockout across devices fix(users): reset login attempt tracking on user reactivation
+[33m4d1908c[m test build
+[33m583c6f2[m FIXED
+[33ma388386[m fix upload image and detect user profile
+[33m5a7be98[m[33m ([m[1;31morigin/IOS28[m[33m)[m feat(api): enhance authentication and notification handling in order management endpoints
+[33m19ae2e4[m feat(api): add seller review statistics endpoint
+[33m82c2831[m[33m ([m[1;31morigin/help[m[33m, [m[1;32mhelp[m[33m)[m home fix
+[33mf6b1c75[m newadmin1
+[33ma665bb0[m help center complete
+[33m9e27702[m[33m ([m[1;32mIOS28[m[33m)[m feat: add filter and sorting functionality to FavoritesPage component
+[33m5de0a1d[m refactor the help center buyer, seller not finished
+[33m99b085b[m feat(api): implement report creation, order status update, and address management endpoints
+[33m6d8093d[m updated help center
+[33md8372fe[m feat: improve layout and accessibility in ProductCard and SellerProfile components

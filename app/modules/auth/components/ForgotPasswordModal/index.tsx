@@ -90,7 +90,6 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   };
 
   const handleClose = () => {
-    console.log('handleClose called - resetting all states');
     setEmail('');
     setEmailError('');
     setIsSubmitted(false);
@@ -107,7 +106,6 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   };
 
   const handleSuccessModalContinue = () => {
-    console.log('Success modal continue clicked - transitioning to verification modal');
     setShowSuccessModal(false);
     setShowVerificationModal(true);
   };
@@ -118,7 +116,6 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   };
 
   const handleVerifyCode = async (code: string) => {
-    console.log('Starting verification with code:', code);
     setIsVerifying(true);
     try {
       const res = await fetch('/api/auth/verify-reset-code', {
@@ -129,8 +126,6 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Invalid verification code');
       
-      console.log('Verification successful:', data);
-      
       // Store the JWT token and proceed to password reset
       if (data.resetToken) {
         setResetToken(data.resetToken);
@@ -140,10 +135,8 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         throw new Error('No reset token received');
       }
     } catch (err: any) {
-      console.error('Verification error:', err);
       throw new Error(err.message || 'Verification failed');
     } finally {
-      console.log('Setting isVerifying to false');
       setIsVerifying(false);
     }
   };
@@ -158,7 +151,6 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to resend code');
-      console.log('Code resent successfully');
     } catch (err: any) {
       console.error('Resend failed:', err.message);
     } finally {
@@ -172,7 +164,6 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   };
 
   const handlePasswordResetSuccess = () => {
-    console.log('Password reset successful from modal');
     // Close all modals and reset state
     setShowPasswordResetModal(false);
     setShowVerificationModal(false);
@@ -313,16 +304,6 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       </div>
     </>
   );
-
-  console.log('ForgotPasswordModal render state:', {
-    isOpen,
-    showSuccessModal,
-    showVerificationModal,
-    showPasswordResetModal,
-    isVerifying,
-    isResending,
-    email
-  });
 
   return (
     <>

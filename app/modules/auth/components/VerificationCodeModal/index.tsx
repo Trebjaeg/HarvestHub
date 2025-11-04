@@ -39,9 +39,6 @@ const VerificationCodeModal: React.FC<VerificationCodeModalProps> = ({
     useRef<HTMLInputElement>(null)
   ];
 
-  console.log('VerificationCodeModal render - isOpen:', isOpen);
-  console.log('VerificationCodeModal render - email:', email);
-
   // Focus first input when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -49,7 +46,6 @@ const VerificationCodeModal: React.FC<VerificationCodeModalProps> = ({
       const timer = setTimeout(() => {
         if (inputRefs[0].current) {
           inputRefs[0].current.focus();
-          console.log('Focus set to first input');
         }
       }, 300);
       return () => clearTimeout(timer);
@@ -67,18 +63,14 @@ const VerificationCodeModal: React.FC<VerificationCodeModalProps> = ({
   }, [successMessage]);
 
   const handleInputChange = (index: number, value: string) => {
-    console.log('Input change:', { index, value, currentCode: code });
-    
     // Only allow numbers
     if (value && !/^\d$/.test(value)) {
-      console.log('Invalid character rejected:', value);
       return;
     }
 
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
-    console.log('New code array:', newCode);
 
     // Clear both error and success messages when user starts typing
     if (getFieldError('verification')) {
@@ -135,7 +127,6 @@ const VerificationCodeModal: React.FC<VerificationCodeModalProps> = ({
       // Don't show success modal here - let parent component handle flow
     } catch (error) {
       // Handle verification error
-      console.error('Verification failed:', error);
       setSuccessMessage(''); // Clear success message when showing error
       setFieldError('verification', 'auth.validation.verificationCodeInvalid');
     }
@@ -152,18 +143,6 @@ const VerificationCodeModal: React.FC<VerificationCodeModalProps> = ({
     setSuccessMessage('Verification code sent! Check your email.');
     onResend();
   };
-
-  if (!isOpen) return null;
-
-  // Debug logging
-  console.log('VerificationCodeModal render:', { 
-    isOpen, 
-    email,
-    code: code.join(''),
-    showSuccessModal,
-    isVerifying: isVerifying,
-    isResending: isResending
-  });
 
   if (!isOpen) return null;
 

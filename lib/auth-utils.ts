@@ -119,7 +119,7 @@ export function isProtectedPath(pathname: string): boolean {
  * @returns boolean indicating if the path is admin-only
  */
 export function isAdminPath(pathname: string): boolean {
-  const adminRoutes = ['/admin'];
+  const adminRoutes = ['/admin', '/api/admin'];
   return adminRoutes.some(route => pathname.startsWith(route));
 }
 

@@ -1,14 +1,20 @@
 import crypto from 'crypto';
-import { v4 as uuidv4 } from 'uuid';
+import { LalamoveConfig } from '@/config/lalamove';
+import { buildQuotationPayload, buildOrderPayload } from './lalamove-payload-builder';
+import { extractUserMessage, isRetryableError } from './lalamove-error-mapper';
 
-const LALAMOVE_API_URL = process.env.LALAMOVE_API_URL || 'https://rest.sandbox.lalamove.com';
-const LALAMOVE_API_KEY = process.env.LALAMOVE_API_KEY || '';
-const LALAMOVE_API_SECRET = process.env.LALAMOVE_API_SECRET || '';
-const LALAMOVE_MARKET = 'PH';
+const LALAMOVE_API_URL = LalamoveConfig.baseUrl;
+const LALAMOVE_API_KEY = LalamoveConfig.apiKey;
+const LALAMOVE_API_SECRET = LalamoveConfig.secretKey;
+const LALAMOVE_MARKET = LalamoveConfig.market;
+
+interface LalamoveCoordinates {
+  lat: number;
+  lng: number;
+}
 
 interface LalamoveLocation {
-  lat: string;
-  lng: string;
+  coordinates: LalamoveCoordinates;
   address: string;
 }
 
@@ -18,16 +24,18 @@ interface LalamoveContact {
 }
 
 interface LalamoveStop {
-  stopId: string;
-  location: LalamoveLocation;
-  contact: LalamoveContact;
-  remarks?: string;
+  location: {
+    lat: string;
+    lng: string;
+  };
+  addresses: {
+    en_PH: string;
+  };
 }
 
 interface QuotationRequest {
   serviceType: string;
   stops: LalamoveStop[];
-  scheduleAt?: string;
 }
 
 interface QuotationResponse {
@@ -76,37 +84,54 @@ interface OrderResponse {
   };
 }
 
-/**
- * Generate HMAC-SHA256 signature for Lalamove API
- */
 function generateSignature(timestamp: string, method: string, path: string, body?: unknown): string {
-  const rawSignature = `${timestamp}\r\n${method}\r\n${path}\r\n\r\n`;
-  const bodyString = body ? JSON.stringify(body) : '';
-  const message = rawSignature + bodyString;
+  let bodyString = '';
+  if (body) {
+    const sortedBody = sortObject(body);
+    bodyString = JSON.stringify(sortedBody);
+  }
+  
+  const rawSignature = `${timestamp}\r\n${method}\r\n${path}\r\n\r\n${bodyString}`;
   
   return crypto
     .createHmac('sha256', LALAMOVE_API_SECRET)
-    .update(message)
+    .update(rawSignature)
     .digest('hex');
 }
 
-/**
- * Make authenticated request to Lalamove API
- */
+function sortObject(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(item => sortObject(item));
+  } else if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj)
+      .sort()
+      .reduce((result: any, key) => {
+        result[key] = sortObject(obj[key]);
+        return result;
+      }, {});
+  }
+  return obj;
+}
+
 async function lalamoveRequest<T>(
   method: string,
   path: string,
-  body?: unknown
+  body?: unknown,
+  timeout: number = 5000,
+  retryCount: number = 0
 ): Promise<T> {
+  if (!LALAMOVE_API_KEY || !LALAMOVE_API_SECRET) {
+    throw new Error('Lalamove API credentials not configured');
+  }
+
   const timestamp = Date.now().toString();
   const signature = generateSignature(timestamp, method, path, body);
-  const requestId = uuidv4();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
     'Authorization': `hmac ${LALAMOVE_API_KEY}:${timestamp}:${signature}`,
     'Market': LALAMOVE_MARKET,
-    'Request-ID': requestId,
   };
 
   const url = `${LALAMOVE_API_URL}${path}`;
@@ -116,58 +141,71 @@ async function lalamoveRequest<T>(
   };
 
   if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-    options.body = JSON.stringify(body);
+    const sortedBody = sortObject(body);
+    options.body = JSON.stringify(sortedBody);
   }
 
-  const response = await fetch(url, options);
-  const data = await response.json();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-  if (!response.ok) {
-    throw new Error(
-      `Lalamove API error: ${response.status} - ${JSON.stringify(data)}`
-    );
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const userMessage = extractUserMessage(data, response.status);
+      
+      if (isRetryableError(response.status) && retryCount < LalamoveConfig.retry.maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, LalamoveConfig.retry.backoffMs));
+        return lalamoveRequest<T>(method, path, body, timeout, retryCount + 1);
+      }
+      
+      const error: any = new Error(userMessage);
+      error.statusCode = response.status;
+      error.lalamoveError = data;
+      throw error;
+    }
+
+    return data as T;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+
+    if (error.name === 'AbortError' && retryCount < LalamoveConfig.retry.maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, LalamoveConfig.retry.backoffMs));
+      return lalamoveRequest<T>(method, path, body, timeout, retryCount + 1);
+    }
+
+    if (error.statusCode) {
+      throw error;
+    }
+
+    throw new Error('Network error connecting to delivery service. Please try again.');
   }
-
-  return data as T;
 }
 
-/**
- * Create a delivery quotation
- */
 export async function createQuotation(
-  pickupLocation: LalamoveLocation,
-  pickupContact: LalamoveContact,
-  dropoffLocation: LalamoveLocation,
-  dropoffContact: LalamoveContact,
+  pickupLocation: { lat: string; lng: string; address: string },
+  pickupContact: { name: string; phone: string },
+  dropoffLocation: { lat: string; lng: string; address: string },
+  dropoffContact: { name: string; phone: string },
   serviceType: string = 'MOTORCYCLE',
   scheduleAt?: Date
 ): Promise<QuotationResponse> {
-  const request: QuotationRequest = {
+  
+  const payload = buildQuotationPayload({
+    pickupLocation,
+    pickupContact,
+    dropoffLocation,
+    dropoffContact,
     serviceType,
-    stops: [
-      {
-        stopId: '1',
-        location: pickupLocation,
-        contact: pickupContact,
-      },
-      {
-        stopId: '2',
-        location: dropoffLocation,
-        contact: dropoffContact,
-      },
-    ],
-  };
+    scheduleAt
+  });
 
-  if (scheduleAt) {
-    request.scheduleAt = scheduleAt.toISOString();
-  }
-
-  return lalamoveRequest<QuotationResponse>('POST', '/v3/quotations', request as unknown);
+  return lalamoveRequest<QuotationResponse>('POST', '/v3/quotations', payload, LalamoveConfig.timeouts.quotation);
 }
 
-/**
- * Create a delivery order
- */
 export async function createOrder(
   quotationId: string,
   pickupContact: LalamoveContact,
@@ -176,46 +214,27 @@ export async function createOrder(
   dropoffRemarks?: string,
   orderRef?: string
 ): Promise<OrderResponse> {
-  const request: CreateOrderRequest = {
+  
+  const payload = buildOrderPayload({
     quotationId,
-    sender: {
-      stopId: '1',
-      contact: pickupContact,
-      remarks: pickupRemarks,
-    },
-    recipients: [
-      {
-        stopId: '2',
-        contact: dropoffContact,
-        remarks: dropoffRemarks,
-      },
-    ],
-  };
+    pickupContact,
+    dropoffContact,
+    pickupRemarks,
+    dropoffRemarks,
+    orderRef
+  });
 
-  if (orderRef) {
-    request.metadata = { orderRef };
-  }
-
-  return lalamoveRequest<OrderResponse>('POST', '/v3/orders', request as unknown);
+  return lalamoveRequest<OrderResponse>('POST', '/v3/orders', payload, LalamoveConfig.timeouts.order);
 }
 
-/**
- * Get order details
- */
 export async function getOrderDetails(orderId: string): Promise<OrderResponse> {
-  return lalamoveRequest<OrderResponse>('GET', `/v3/orders/${orderId}`);
+  return lalamoveRequest<OrderResponse>('GET', `/v3/orders/${orderId}`, undefined, 5000);
 }
 
-/**
- * Cancel an order
- */
 export async function cancelOrder(orderId: string): Promise<void> {
-  await lalamoveRequest<void>('DELETE', `/v3/orders/${orderId}`);
+  await lalamoveRequest<void>('DELETE', `/v3/orders/${orderId}`, undefined, 5000);
 }
 
-/**
- * Verify webhook signature
- */
 export function verifyWebhookSignature(
   payload: string,
   receivedSignature: string,

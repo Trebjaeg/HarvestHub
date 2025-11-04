@@ -1,478 +1,432 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { 
-  Search, 
-  MessageSquare, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  User, 
-  Mail,
-  Phone,
-  AlertTriangle,
-  Eye,
-  Filter,
-  ExternalLink
-} from 'lucide-react';
-import Link from 'next/link';
+import React, { useState, useEffect, useRef } from 'react';
+import { MessageCircle, Search, Loader2 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
-interface SupportTicket {
+interface SupportConversation {
   _id: string;
-  ticketId: string;
-  subject: string;
-  message: string;
+  userId: string;
+  userName: string;
+  userEmail?: string;
+  userRole: 'buyer' | 'seller';
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  category: 'account' | 'technical' | 'billing' | 'order' | 'general';
-  user: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  assignedTo?: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
+  lastMessageAt?: Date;
+  lastMessagePreview?: string;
+  createdAt: Date;
+}
+
+interface Message {
+  _id?: string;
+  senderId: string;
+  senderName: string;
+  senderRole: 'buyer' | 'seller' | 'admin' | 'ai';
+  message: string;
   createdAt: string;
-  updatedAt: string;
-  responses?: Array<{
-    message: string;
-    respondedBy: {
-      firstName: string;
-      lastName: string;
-      email: string;
-    };
-    respondedAt: string;
-  }>;
+  isRead: boolean;
 }
 
 const SupportManagement: React.FC = () => {
-  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [conversations, setConversations] = useState<SupportConversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<SupportConversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
-  const [showTicketDetails, setShowTicketDetails] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const selectedConversationRef = useRef<SupportConversation | null>(null);
 
-  // Mock data for demonstration
+  // Keep ref in sync with state
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const mockTickets: SupportTicket[] = [
-        {
-          _id: '1',
-          ticketId: 'HH-2025-001',
-          subject: 'Unable to upload product images',
-          message: 'I am trying to upload images for my vegetables but the upload keeps failing. I have tried multiple times but it shows an error message.',
-          status: 'open',
-          priority: 'high',
-          category: 'technical',
-          user: {
-            _id: 'user1',
-            firstName: 'Maria',
-            lastName: 'Santos',
-            email: 'maria.santos@email.com'
-          },
-          createdAt: '2025-01-15T10:30:00Z',
-          updatedAt: '2025-01-15T10:30:00Z'
-        },
-        {
-          _id: '2',
-          ticketId: 'HH-2025-002',
-          subject: 'Payment not reflected in account',
-          message: 'I made a payment 3 days ago but it is still not showing in my seller account. The transaction ID is TXN123456789.',
-          status: 'in_progress',
-          priority: 'urgent',
-          category: 'billing',
-          user: {
-            _id: 'user2',
-            firstName: 'Juan',
-            lastName: 'Dela Cruz',
-            email: 'juan.delacruz@email.com'
-          },
-          assignedTo: {
-            _id: 'admin1',
-            firstName: 'Admin',
-            lastName: 'Support',
-            email: 'support@harvesthub.ph'
-          },
-          createdAt: '2025-01-14T14:20:00Z',
-          updatedAt: '2025-01-15T09:15:00Z',
-          responses: [
-            {
-              message: 'Thank you for contacting us. We are investigating this payment issue and will get back to you within 24 hours.',
-              respondedBy: {
-                firstName: 'Admin',
-                lastName: 'Support',
-                email: 'support@harvesthub.ph'
-              },
-              respondedAt: '2025-01-14T15:30:00Z'
-            }
-          ]
-        },
-        {
-          _id: '3',
-          ticketId: 'HH-2025-003',
-          subject: 'How to change delivery address',
-          message: 'I need to update my delivery address for future orders. Where can I find this option in my account?',
-          status: 'resolved',
-          priority: 'low',
-          category: 'account',
-          user: {
-            _id: 'user3',
-            firstName: 'Ana',
-            lastName: 'Reyes',
-            email: 'ana.reyes@email.com'
-          },
-          assignedTo: {
-            _id: 'admin1',
-            firstName: 'Admin',
-            lastName: 'Support',
-            email: 'support@harvesthub.ph'
-          },
-          createdAt: '2025-01-13T11:45:00Z',
-          updatedAt: '2025-01-13T16:20:00Z'
-        }
-      ];
-      setTickets(mockTickets);
+    selectedConversationRef.current = selectedConversation;
+  }, [selectedConversation]);
+
+  const getCurrentAdminId = () => {
+    const token = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith('auth-token='))
+      ?.split('=')[1];
+
+    if (!token) return null;
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.userId || payload.id;
+    } catch {
+      return null;
+    }
+  };
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Auto-refresh conversations every 5 seconds
+  useEffect(() => {
+    fetchConversations();
+    
+    const intervalId = setInterval(() => {
+      fetchConversations();
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [searchQuery]);
+
+  // Auto-refresh messages every 3 seconds when conversation is selected
+  useEffect(() => {
+    if (!selectedConversation) return;
+
+    loadMessages(selectedConversation._id);
+
+    const intervalId = setInterval(() => {
+      loadMessages(selectedConversation._id);
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [selectedConversation]);
+
+  const fetchConversations = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+
+      const response = await fetch(`/api/admin/support/conversations?${params}`, {
+        credentials: 'include'
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setConversations(data.conversations || []);
+      } else {
+        // Log the error to see what's happening
+        console.error('❌ Admin API Error:', {
+          status: response.status,
+          message: data.message,
+          url: response.url
+        });
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch conversations:', error);
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open': return 'bg-blue-100 text-blue-800';
-      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
-      case 'closed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'low': return 'bg-gray-100 text-gray-800';
-      case 'medium': return 'bg-blue-100 text-blue-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'urgent': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const loadMessages = async (conversationId: string) => {
+    try {
+      const response = await fetch(`/api/support/${conversationId}/messages`, {
+        credentials: 'include'
+      });
+      const data = await response.json();
+
+      if (data.success && data.messages) {
+        setMessages(data.messages);
+        scrollToBottom();
+      }
+    } catch (error) {
+      console.error('Failed to load messages');
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'open': return <Clock className="w-4 h-4" />;
-      case 'in_progress': return <MessageSquare className="w-4 h-4" />;
-      case 'resolved': return <CheckCircle className="w-4 h-4" />;
-      case 'closed': return <XCircle className="w-4 h-4" />;
-      default: return <Clock className="w-4 h-4" />;
-    }
-  };
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const filteredTickets = tickets.filter(ticket => {
-    const matchesSearch = ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ticket.ticketId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         `${ticket.user.firstName} ${ticket.user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
+    if (!inputMessage.trim() || !selectedConversation || sending) return;
+
+    const messageText = inputMessage.trim();
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
     
-    return matchesSearch && matchesStatus && matchesPriority;
-  });
+    const optimisticMessage: Message = {
+      _id: tempId,
+      senderId: getCurrentAdminId() || 'admin',
+      senderName: 'Admin Support',
+      senderRole: 'admin',
+      message: messageText,
+      createdAt: new Date().toISOString(),
+      isRead: false
+    };
 
-  const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMilliseconds = now.getTime() - date.getTime();
-    const diffInMinutes = Math.floor(diffInMilliseconds / (1000 * 60));
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    const diffInDays = Math.floor(diffInHours / 24);
+    setMessages(prev => [...prev, optimisticMessage]);
+    setInputMessage('');
+    scrollToBottom();
+    setSending(true);
 
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInDays < 7) return `${diffInDays}d ago`;
-    
-    return date.toLocaleDateString();
+    try {
+      const response = await fetch(`/api/support/${selectedConversation._id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ message: messageText }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.message) {
+        setMessages(prev => prev.map(msg => 
+          msg._id === tempId ? data.message : msg
+        ));
+
+        // Refresh messages and conversations
+        setTimeout(() => {
+          loadMessages(selectedConversation._id);
+          fetchConversations();
+        }, 500);
+      } else {
+        setMessages(prev => prev.filter(msg => msg._id !== tempId));
+        setInputMessage(messageText);
+      }
+    } catch (error) {
+      setMessages(prev => prev.filter(msg => msg._id !== tempId));
+      setInputMessage(messageText);
+    } finally {
+      setSending(false);
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            Help Center Management
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
-  const stats = {
-    totalTickets: tickets.length,
-    openTickets: tickets.filter(t => t.status === 'open').length,
-    inProgressTickets: tickets.filter(t => t.status === 'in_progress').length,
-    resolvedTickets: tickets.filter(t => t.status === 'resolved').length,
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchConversations();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const handleConversationClick = (conv: SupportConversation) => {
+    setSelectedConversation(conv);
+    setShowSidebar(false);
+    loadMessages(conv._id);
+  };
+
+  const handleBackToList = () => {
+    setSelectedConversation(null);
+    setShowSidebar(true);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            Help Center Management
-          </h2>
-          <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-            Manage customer support tickets and help center content
-          </p>
-        </div>
-        <div className="flex space-x-3">
-          <Link href="/help" target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" className="flex items-center space-x-2">
-              <ExternalLink className="w-4 h-4" />
-              <span>View Help Center</span>
-            </Button>
-          </Link>
-          <Button className="bg-green-600 hover:bg-green-700">
-            <MessageSquare className="w-4 h-4 mr-2" />
-            New Ticket
-          </Button>
-        </div>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Tickets</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalTickets}</p>
-              </div>
-              <MessageSquare className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Open</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.openTickets}</p>
-              </div>
-              <Clock className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">In Progress</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.inProgressTickets}</p>
-              </div>
-              <AlertTriangle className="w-8 h-8 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Resolved</p>
-                <p className="text-2xl font-bold text-green-600">{stats.resolvedTickets}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters and Search */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:space-x-4 space-y-4 lg:space-y-0">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Search tickets by ID, subject, or customer name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <div className="flex space-x-3">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                <option value="all">All Status</option>
-                <option value="open">Open</option>
-                <option value="in_progress">In Progress</option>
-                <option value="resolved">Resolved</option>
-                <option value="closed">Closed</option>
-              </select>
-              
-              <select
-                value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                <option value="all">All Priority</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-            </div>
+    <div className="h-[calc(100vh-12rem)] flex bg-white rounded-lg shadow-lg overflow-hidden" style={{ fontFamily: 'Poppins, sans-serif' }}>
+      {/* Left Sidebar - Conversations List */}
+      <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex w-full md:w-96 bg-white border-r border-gray-200 flex-col`}>
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#103C2E] to-[#1a5f3f] p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-white font-semibold text-lg">Support Messages</h1>
           </div>
-        </CardContent>
-      </Card>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search conversations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"
+            />
+          </div>
+        </div>
 
-      {/* Tickets List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Filter className="w-5 h-5" />
-            <span>Support Tickets ({filteredTickets.length})</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filteredTickets.length === 0 ? (
-            <div className="text-center py-8">
-              <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                No support tickets found
-              </p>
+        {/* Conversations */}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex justify-center items-center h-32">
+              <div className="flex space-x-2">
+                <div className="w-2 h-2 bg-[#103C2E] rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-[#103C2E] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 bg-[#103C2E] rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+              </div>
+            </div>
+          ) : conversations.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              <MessageCircle className="w-16 h-16 mx-auto text-gray-300 mb-3" />
+              <p className="text-sm font-medium">No support conversations yet</p>
+              <p className="text-xs mt-1">Support requests from Kali will appear here</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {filteredTickets.map((ticket) => (
-                <div key={ticket._id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <span className="font-semibold text-gray-900">{ticket.ticketId}</span>
-                        <Badge className={`${getStatusColor(ticket.status)} text-xs`}>
-                          {getStatusIcon(ticket.status)}
-                          <span className="ml-1 capitalize">{ticket.status.replace('_', ' ')}</span>
-                        </Badge>
-                        <Badge className={`${getPriorityColor(ticket.priority)} text-xs`}>
-                          {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
-                        </Badge>
-                      </div>
-                      <h3 className="font-medium text-gray-900 mb-2">{ticket.subject}</h3>
-                      <p className="text-gray-600 text-sm line-clamp-2 mb-3">{ticket.message}</p>
-                      
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <div className="flex items-center space-x-1">
-                          <User className="w-4 h-4" />
-                          <span>{ticket.user.firstName} {ticket.user.lastName}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Mail className="w-4 h-4" />
-                          <span>{ticket.user.email}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Clock className="w-4 h-4" />
-                          <span>{formatTimeAgo(ticket.createdAt)}</span>
-                        </div>
-                      </div>
-                      
-                      {ticket.assignedTo && (
-                        <div className="mt-2 text-sm text-gray-500">
-                          <span>Assigned to: </span>
-                          <span className="font-medium">{ticket.assignedTo.firstName} {ticket.assignedTo.lastName}</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex space-x-2 ml-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedTicket(ticket);
-                          setShowTicketDetails(true);
-                        }}
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
-                      </Button>
-                    </div>
+            conversations.map((conv) => (
+              <button
+                key={conv._id}
+                onClick={() => handleConversationClick(conv)}
+                className={`w-full p-4 flex items-center space-x-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                  selectedConversation?._id === conv._id ? 'bg-green-50 border-l-4 border-l-[#103C2E]' : ''
+                }`}
+              >
+                <div className="relative flex-shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#103C2E] to-[#1a5f3f] flex items-center justify-center overflow-hidden">
+                    <span className="text-white font-semibold text-sm">{getInitials(conv.userName)}</span>
                   </div>
-                  
-                  {ticket.responses && ticket.responses.length > 0 && (
-                    <div className="border-t border-gray-100 pt-3 mt-3">
-                      <p className="text-sm text-gray-500 mb-1">
-                        Latest response by {ticket.responses[ticket.responses.length - 1].respondedBy.firstName} {ticket.responses[ticket.responses.length - 1].respondedBy.lastName}
-                      </p>
-                      <p className="text-sm text-gray-700 italic">
-                        "{ticket.responses[ticket.responses.length - 1].message.substring(0, 100)}..."
-                      </p>
-                    </div>
-                  )}
                 </div>
-              ))}
-            </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-sm text-gray-900 truncate">{conv.userName}</h3>
+                    <span className="text-xs text-gray-500 ml-2">
+                      {formatDistanceToNow(new Date(conv.lastMessageAt || conv.createdAt), { addSuffix: false }).replace('about ', '')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-gray-600 truncate flex-1">{conv.lastMessagePreview || 'No messages yet'}</p>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      conv.status === 'open' ? 'bg-yellow-100 text-yellow-800' :
+                      conv.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                      conv.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {conv.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ))
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Quick Actions for Help Center Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Help Center Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link href="/help/buyer" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" className="w-full justify-start">
-                <User className="w-4 h-4 mr-2" />
-                Buyer Help Pages
-              </Button>
-            </Link>
-            <Link href="/help/seller" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" className="w-full justify-start">
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Seller Help Pages
-              </Button>
-            </Link>
-            <Link href="/help/admin" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" className="w-full justify-start">
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                Admin Help Pages
-              </Button>
-            </Link>
+      {/* Chat Area */}
+      <div className={`${!showSidebar ? 'flex' : 'hidden'} md:flex flex-1 flex-col`}>
+        {selectedConversation ? (
+          <>
+            {/* Chat Header */}
+            <div className="bg-gradient-to-r from-[#103C2E] to-[#1a5f3f] p-4 flex items-center justify-between shadow-md">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={handleBackToList}
+                  className="md:hidden text-white hover:bg-white/10 p-2 rounded-lg transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                  </svg>
+                </button>
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
+                  <span className="text-white font-semibold text-sm">{getInitials(selectedConversation.userName)}</span>
+                </div>
+                <div>
+                  <h2 className="text-white font-semibold">{selectedConversation.userName}</h2>
+                  <p className="text-white/70 text-xs capitalize">{selectedConversation.userRole}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-6 bg-[#e8f5e9]">
+              {messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <div className="text-center">
+                    <MessageCircle className="w-16 h-16 mx-auto text-gray-300 mb-3" />
+                    <p className="text-sm font-medium">No messages yet</p>
+                    <p className="text-xs mt-1">Start the conversation!</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((msg, idx) => {
+                    // Check if message is from admin - check both role and if sender is current admin
+                    const currentAdminId = getCurrentAdminId();
+                    const isCurrentAdmin = msg.senderId === currentAdminId;
+                    const isAdminRole = msg.senderRole === 'admin';
+                    const isAdmin = isAdminRole || isCurrentAdmin;
+                    const isAI = msg.senderRole === 'ai';
+                    const isPending = msg._id?.startsWith('temp-');
+
+                    return (
+                      <div 
+                        key={msg._id || idx} 
+                        className={`flex ${isAdmin ? 'justify-end' : 'justify-start'} ${isPending ? 'opacity-70' : 'opacity-100'} transition-opacity`}
+                      >
+                        <div className={`max-w-[70%] rounded-2xl px-4 py-3 shadow-sm ${
+                          isAdmin
+                            ? 'bg-gradient-to-r from-[#2d7a54] to-[#1a5f3f] text-white rounded-br-none'
+                            : isAI
+                            ? 'bg-gradient-to-r from-purple-100 to-blue-100 text-gray-800 border border-purple-200 rounded-bl-none'
+                            : 'bg-white text-gray-900 rounded-bl-none'
+                        }`}>
+                          {!isAdmin && (
+                            <p className={`text-xs font-semibold mb-1 ${isAI ? 'text-purple-600' : 'text-gray-600'}`}>
+                              {msg.senderName}
+                            </p>
+                          )}
+                          <p className="text-sm break-words leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                          <div className={`flex items-center justify-between gap-2 mt-1.5 ${isAdmin ? 'text-white/70' : 'text-gray-500'}`}>
+                            <p className="text-xs">
+                              {new Date(msg.createdAt).toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                              })}
+                            </p>
+                            {isAdmin && (
+                              <div className="flex items-center gap-1 text-xs">
+                                {isPending ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M0 11l2-2 5 5L18 3l2 2L7 18z"/>
+                                  </svg>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div className="bg-white p-4 border-t border-gray-200 shadow-lg">
+              <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
+                <input
+                  type="text"
+                  placeholder="Type your message..."
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  disabled={sending}
+                  className="flex-1 px-5 py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#103C2E] focus:border-transparent text-sm disabled:opacity-50 bg-gray-50"
+                />
+                <button
+                  type="submit"
+                  disabled={!inputMessage.trim() || sending}
+                  className="bg-gradient-to-r from-[#103C2E] to-[#1a5f3f] text-white p-3.5 rounded-full hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+                >
+                  {sending ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                      <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                    </svg>
+                  )}
+                </button>
+              </form>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center bg-[#e8f5e9]">
+            <div className="text-center">
+              <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#103C2E] to-[#1a5f3f] flex items-center justify-center shadow-2xl">
+                <MessageCircle className="w-16 h-16 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Support Messages</h3>
+              <p className="text-gray-600 text-sm">Select a conversation from Kali support requests</p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </div>
   );
 };
