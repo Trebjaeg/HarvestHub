@@ -5,6 +5,7 @@ import User from '@/models/User';
 import { verifyToken } from '@/lib/auth-middleware';
 import { createNotification } from '@/lib/notification-utils';
 import { updateSellerResponseMetrics, incrementSellerMessagesReceived } from '@/lib/seller-metrics';
+import mongoose from 'mongoose';
 
 // GET - Fetch all conversations for a user
 export async function GET(request: NextRequest) {
@@ -67,8 +68,11 @@ export async function GET(request: NextRequest) {
         const otherUserId = conv.senderId === userId ? conv.receiverId : conv.senderId;
         const otherUserName = conv.senderId === userId ? conv.receiverName : conv.senderName;
         
-        // Try to get user profile picture
-        const userProfile = await User.findById(otherUserId).select('profileImage').lean();
+        // Try to get user profile picture - but only if otherUserId is a valid ObjectId
+        let userProfile = null;
+        if (mongoose.Types.ObjectId.isValid(otherUserId)) {
+          userProfile = await User.findById(otherUserId).select('profileImage').lean();
+        }
         
         return {
           conversationId: conv._id,
@@ -96,6 +100,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
+    console.error('❌ Chat conversations API error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch conversations' },
       { status: 500 }

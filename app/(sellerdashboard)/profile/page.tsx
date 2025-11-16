@@ -294,7 +294,7 @@ export default function Profile() {
           <Card className="p-4 sm:p-6 bg-white border border-gray-200">
             <div className="flex items-center justify-between">
               <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-gray-600">Total Revenue</p>
+                <p className="text-xs sm:text-sm text-gray-600">Total Sales</p>
                 <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#103C2E] break-words">
                   {loadingStats ? '...' : `₱${stats?.totalRevenue?.toLocaleString() || '0'}`}
                 </p>
