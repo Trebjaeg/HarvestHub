@@ -91,8 +91,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return false;
       }
     } catch (error) {
-      console.error('🔐 AuthContext: Auth check failed:', error);
-      setUser(null);
+      // IMPORTANT: Don't logout on network errors!
+      // Keep user logged in if there's a network issue (network change, offline, etc.)
+      // Only logout if it's an actual auth failure (401/403)
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        // Network error - try to restore user from sessionStorage
+        if (typeof window !== 'undefined') {
+          const cachedUser = sessionStorage.getItem('auth_user');
+          if (cachedUser) {
+            setUser(JSON.parse(cachedUser));
+            return true;
+          }
+        }
+      } else {
+        // Real auth error, logout
+        setUser(null);
+      }
       return false;
     }
   }, []);
@@ -223,6 +237,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [router]);
+
+  // Handle network reconnection - re-check auth without logging out
+  useEffect(() => {
+    const handleOnline = () => {
+      // Silently check auth when network reconnects, but don't logout on failure
+      checkAuth().catch(() => {
+        // Keep user logged in even if auth check fails
+      });
+    };
+
+    window.addEventListener('online', handleOnline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [checkAuth]);
 
   const value: AuthContextType = {
     user,

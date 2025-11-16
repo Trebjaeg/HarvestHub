@@ -30,7 +30,7 @@ interface Attachment {
   url: string;
   type: string;
   size: number;
-  category: 'image' | 'document';
+  category: 'image' | 'video' | 'document';
   uploadedBy: string;
   uploadedAt: string;
 }
@@ -349,6 +349,7 @@ export default function SellerChatPage() {
     // Validate file type
     const allowedTypes = [
       'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska',
       'application/pdf', 'application/msword', 
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/vnd.ms-excel',
@@ -357,7 +358,7 @@ export default function SellerChatPage() {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      alert('Invalid file type. Please upload images (JPEG, PNG, GIF, WebP) or documents (PDF, Word, Excel, Text).');
+      alert('Invalid file type. Please upload images (JPEG, PNG, GIF, WebP), videos (MP4, WebM, MOV), or documents (PDF, Word, Excel, Text).');
       return;
     }
 
@@ -778,6 +779,21 @@ export default function SellerChatPage() {
                                           <Download className="w-3 h-3" />
                                         </button>
                                       </div>
+                                    ) : attachment.category === 'video' ? (
+                                      <div className="relative">
+                                        <video 
+                                          src={attachment.url}
+                                          controls
+                                          className="max-w-full max-h-64 rounded"
+                                          style={{ maxWidth: '100%' }}
+                                        >
+                                          Your browser does not support video playback.
+                                        </video>
+                                        <div className="mt-1">
+                                          <p className="text-xs font-medium truncate">{attachment.originalName}</p>
+                                          <p className="text-xs opacity-70">{formatFileSize(attachment.size)}</p>
+                                        </div>
+                                      </div>
                                     ) : (
                                       <div className="flex items-center gap-2">
                                         <FileText className="w-4 h-4" />
@@ -866,6 +882,11 @@ export default function SellerChatPage() {
                       <div key={attachment.id} className="flex items-center gap-2 p-2 bg-white rounded border">
                         {attachment.category === 'image' ? (
                           <ImageIcon className="w-4 h-4 text-blue-600" />
+                        ) : attachment.category === 'video' ? (
+                          <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
                         ) : (
                           <FileText className="w-4 h-4 text-gray-600" />
                         )}
@@ -890,7 +911,7 @@ export default function SellerChatPage() {
                   ref={fileInputRef}
                   type="file"
                   onChange={handleFileUpload}
-                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                  accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                   className="hidden"
                 />
                 <button

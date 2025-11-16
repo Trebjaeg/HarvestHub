@@ -7,7 +7,7 @@ export interface IAttachment {
   url: string;
   type: string;
   size: number;
-  category: 'image' | 'document';
+  category: 'image' | 'video' | 'document';
   uploadedBy: string;
   uploadedAt: Date;
 }

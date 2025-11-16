@@ -89,7 +89,14 @@ const AdminDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchStats();
+    fetchStats(); // Initial load
+    
+    // Auto-refresh stats every 30 seconds (background refresh)
+    const intervalId = setInterval(() => {
+      fetchStats(true); // isRefresh = true (silent background refresh)
+    }, 30000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   // Process activity data for chart

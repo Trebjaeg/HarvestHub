@@ -32,11 +32,13 @@ export default function AdminSupportChatsPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false, only show loading on first fetch
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const selectedConversationRef = useRef<SupportConversation | null>(null);
+  const isFirstLoad = useRef(true);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -64,32 +66,45 @@ export default function AdminSupportChatsPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Auto-refresh conversations every 5 seconds
+  // Initial load + auto-refresh combined
   useEffect(() => {
-    fetchConversations();
-    
+    // First load with loading indicator
+    fetchConversations(isFirstLoad.current);
+    isFirstLoad.current = false;
+
+    // Auto-refresh conversations every 5 seconds (silent, no loading indicator)
     const intervalId = setInterval(() => {
-      fetchConversations();
+      fetchConversations(false); // Background refresh without loading indicator
     }, 5000);
 
     return () => clearInterval(intervalId);
+  }, []);
+
+  // Refresh conversations when search changes (without loading indicator)
+  useEffect(() => {
+    if (searchQuery !== '') {
+      fetchConversations(false);
+    }
   }, [searchQuery]);
 
   // Auto-refresh messages every 3 seconds when conversation is selected
+  // NOTE: Initial message loading is handled in handleConversationClick
   useEffect(() => {
     if (!selectedConversation) return;
 
-    loadMessages(selectedConversation._id);
-
+    // Only set up auto-refresh interval (no initial load here to avoid double loading)
     const intervalId = setInterval(() => {
-      loadMessages(selectedConversation._id);
+      loadMessages(selectedConversation._id, false); // Background refresh (silent)
     }, 3000);
 
     return () => clearInterval(intervalId);
   }, [selectedConversation]);
 
-  const fetchConversations = async () => {
-    setLoading(true);
+  const fetchConversations = async (showLoadingIndicator: boolean = true) => {
+    if (showLoadingIndicator) {
+      setLoading(true);
+    }
+    
     try {
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
@@ -105,11 +120,17 @@ export default function AdminSupportChatsPage() {
     } catch (error) {
       console.error('Failed to fetch conversations');
     } finally {
-      setLoading(false);
+      if (showLoadingIndicator) {
+        setLoading(false);
+      }
     }
   };
 
-  const loadMessages = async (conversationId: string) => {
+  const loadMessages = async (conversationId: string, showLoadingIndicator: boolean = true) => {
+    if (showLoadingIndicator) {
+      setMessagesLoading(true);
+    }
+    
     try {
       const response = await fetch(`/api/support/${conversationId}/messages`, {
         credentials: 'include'
@@ -117,11 +138,23 @@ export default function AdminSupportChatsPage() {
       const data = await response.json();
 
       if (data.success && data.messages) {
-        setMessages(data.messages);
-        scrollToBottom();
+        // Only update if messages actually changed (prevents unnecessary re-renders)
+        const messagesChanged = JSON.stringify(data.messages) !== JSON.stringify(messages);
+        if (messagesChanged) {
+          setMessages(data.messages);
+          
+          // Only auto-scroll on initial load or when at bottom
+          if (showLoadingIndicator) {
+            scrollToBottom();
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to load messages');
+    } finally {
+      if (showLoadingIndicator) {
+        setMessagesLoading(false);
+      }
     }
   };
 
@@ -165,8 +198,8 @@ export default function AdminSupportChatsPage() {
 
         // Refresh messages and conversations
         setTimeout(() => {
-          loadMessages(selectedConversation._id);
-          fetchConversations();
+          loadMessages(selectedConversation._id, false); // Background refresh, no loading indicator
+          fetchConversations(false); // Background refresh, no loading indicator
         }, 500);
       } else {
         setMessages(prev => prev.filter(msg => msg._id !== tempId));
@@ -198,7 +231,8 @@ export default function AdminSupportChatsPage() {
   const handleConversationClick = (conv: SupportConversation) => {
     setSelectedConversation(conv);
     setShowSidebar(false);
-    loadMessages(conv._id);
+    // Show loading indicator when user manually selects a conversation
+    loadMessages(conv._id, true);
   };
 
   const handleBackToList = () => {

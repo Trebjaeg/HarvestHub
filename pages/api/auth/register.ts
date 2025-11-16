@@ -19,16 +19,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  const clientIP = getClientIP(req);
-  
-  // Rate limiting
-  if (!rateLimiter.check(`register:${clientIP}`, RATE_LIMITS.register)) {
-    return res.status(429).json({ 
-      message: 'Too many registration attempts. Please try again later.',
-      retryAfter: Math.ceil(RATE_LIMITS.register.windowMs / 1000)
-    });
-  }
-
   let { name, email, password, emailVerified, role } = req.body;
   
   // Input validation and sanitization

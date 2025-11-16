@@ -45,7 +45,14 @@ const UserManagement: React.FC = () => {
   const [userToReactivate, setUserToReactivate] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsers(true); // Initial load with loading indicator
+    
+    // Auto-refresh users every 30 seconds (silent background refresh)
+    const intervalId = setInterval(() => {
+      fetchUsers(false); // No loading indicator for auto-refresh
+    }, 30000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -62,10 +69,14 @@ const UserManagement: React.FC = () => {
     }
   }, [users, searchTerm]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (showLoadingIndicator: boolean = true) => {
     try {
-      setLoading(true);
-      const response = await fetch('/api/admin/users', {
+      if (showLoadingIndicator) {
+        setLoading(true);
+      }
+      
+      // Fetch ALL users (no pagination limit) - includes both buyers and sellers/farmers
+      const response = await fetch('/api/admin/users?limit=1000', {
         credentials: 'include'
       });
 
@@ -80,7 +91,9 @@ const UserManagement: React.FC = () => {
       console.error('Error fetching users:', error);
       setError('Failed to load users');
     } finally {
-      setLoading(false);
+      if (showLoadingIndicator) {
+        setLoading(false);
+      }
     }
   };
 
@@ -257,7 +270,7 @@ const UserManagement: React.FC = () => {
         <CardContent className="pt-6">
           <div className="text-center text-red-600">
             <p>{error}</p>
-            <Button onClick={fetchUsers} className="mt-4" variant="outline">
+            <Button onClick={() => fetchUsers(true)} className="mt-4" variant="outline">
               Retry
             </Button>
           </div>
