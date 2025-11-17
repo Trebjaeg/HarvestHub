@@ -501,21 +501,20 @@ const ManageOrders = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-3 sm:p-4 lg:p-6">
+      <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
-        <div className="mb-6 sm:mb-8">
+        <div className="mb-8">
           <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#103C2E] mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <h1 className="text-3xl font-bold text-[#103C2E] mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
               Manage Orders
             </h1>
-            <p className="text-sm sm:text-base text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
               View and update your customer orders
             </p>
           </div>
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 flex-1">
@@ -535,11 +534,11 @@ const ManageOrders = () => {
               {/* Filter Toggle */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 <Filter className="w-5 h-5" />
-                <span className="hidden sm:inline">Filters</span>
+                Filters
                 <ChevronDown className={`w-4 h-4 transform transition-transform ${showFilters ? 'rotate-180' : ''}`} />
               </button>
             </div>
@@ -676,12 +675,12 @@ const ManageOrders = () => {
 
         {/* Orders List */}
         {orders.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 lg:p-12 text-center">
-            <Package className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-800 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
               {pagination?.totalOrders === 0 ? "No orders yet" : "No orders found"}
             </h3>
-            <p className="text-sm sm:text-base text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
               {pagination?.totalOrders === 0 
                 ? "Orders from customers will appear here" 
                 : "Try adjusting your filters"
@@ -689,20 +688,6 @@ const ManageOrders = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-3 sm:space-y-4">
-            {orders.map((order) => (
-              <div key={order._id} className="bg-white rounded-lg shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow">
-                {/* Order Header */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 mb-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
-                      <h3 className="text-base sm:text-lg font-semibold text-[#103C2E] break-all" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        #{order.orderNumber}
-                      </h3>
-                      <span className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${statusColors[order.status]}`}>
-                        {getStatusIcon(order.status)}
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </span>
           <div className="space-y-4">
             {orders.map((order) => (
               <div key={order._id} className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
@@ -718,7 +703,7 @@ const ManageOrders = () => {
                         {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                       </span>
                       <Link
-                        href={`/orders/${order._id}`}
+                        href={`/manage-orders/${order._id}?tab=tracking`}
                         className="inline-flex items-center gap-1 px-3 py-1 bg-[#103C2E] hover:bg-[#0d2e23] text-white rounded-lg text-xs font-medium transition-colors"
                         style={{ fontFamily: 'Poppins, sans-serif' }}
                       >
@@ -732,19 +717,6 @@ const ManageOrders = () => {
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
-                      <span className="flex items-center gap-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        <Clock className="w-4 h-4 flex-shrink-0" />
-                        <span className="break-all">{formatDate(order.orderDate)}</span>
-                      </span>
-                      <span className="flex items-center gap-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        <Mail className="w-4 h-4 flex-shrink-0" />
-                        <span className="break-all">{order.buyerName}</span>
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-left sm:text-right flex-shrink-0">
-                    <div className="text-xl sm:text-2xl font-bold text-[#103C2E]" style={{ fontFamily: 'Poppins, sans-serif' }}>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600">
                       <span className="flex items-center gap-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         <Clock className="w-4 h-4" />
@@ -793,7 +765,7 @@ const ManageOrders = () => {
                       <div className="text-sm text-gray-600 space-y-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         <p>{order.buyerName}</p>
                         <p>{order.deliveryAddress.street}</p>
-                        <p>{order.deliveryAddress.city}, {order.deliveryAddress.province}</p>
+                        <p>{order.deliveryAddress.barangay && `${order.deliveryAddress.barangay}, `}{order.deliveryAddress.city}, {order.deliveryAddress.province}</p>
                         <p>{order.deliveryAddress.zipCode}</p>
                         <p className="flex items-center gap-1 text-gray-500 mt-2">
                           <Mail className="w-3 h-3" />
@@ -886,7 +858,6 @@ const ManageOrders = () => {
                 {/* Action Buttons */}
                 {statusActions[order.status] && statusActions[order.status].length > 0 && (
                   <div className={`${order.status === 'shipped' ? '' : 'border-t'} pt-4`}>
-                    <div className="flex flex-col sm:flex-row flex-wrap gap-2">
                     <div className="flex flex-wrap gap-2">
                       {statusActions[order.status].map((action) => {
                         const Icon = action.icon;
@@ -895,7 +866,6 @@ const ManageOrders = () => {
                             key={action.nextStatus}
                             onClick={() => handleUpdateStatus(order._id, action.nextStatus)}
                             disabled={updatingOrderId === order._id}
-                            className={`flex items-center justify-center gap-2 px-4 py-2 ${action.color} text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-sm sm:text-base`}
                             className={`flex items-center gap-2 px-4 py-2 ${action.color} text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
                             style={{ fontFamily: 'Poppins, sans-serif' }}
                           >
@@ -907,7 +877,6 @@ const ManageOrders = () => {
                             ) : (
                               <>
                                 <Icon className="w-4 h-4" />
-                                <span>{action.label}</span>
                                 {action.label}
                               </>
                             )}
@@ -924,16 +893,6 @@ const ManageOrders = () => {
 
         {/* Pagination */}
         {pagination && pagination.totalPages > 1 && (
-          <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-between bg-white rounded-lg shadow-sm px-4 sm:px-6 py-4 gap-3">
-            <div className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Page {pagination.currentPage} of {pagination.totalPages}
-            </div>
-            
-            <div className="flex items-center space-x-2 order-1 sm:order-2">
-              <button
-                onClick={() => setCurrentPage(pagination.currentPage - 1)}
-                disabled={!pagination.hasPrevPage}
-                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
           <div className="mt-6 flex items-center justify-between bg-white rounded-lg shadow-sm px-6 py-4">
             <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
               Page {pagination.currentPage} of {pagination.totalPages}
@@ -972,7 +931,6 @@ const ManageOrders = () => {
               <button
                 onClick={() => setCurrentPage(pagination.currentPage + 1)}
                 disabled={!pagination.hasNextPage}
-                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
                 className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
@@ -1084,4 +1042,3 @@ const ManageOrders = () => {
 };
 
 export default ManageOrders;
-

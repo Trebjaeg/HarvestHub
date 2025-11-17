@@ -16,17 +16,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader('Expires', '0');
 
   try {
-    // Get user from auth token
-    const token = req.cookies['auth-token'];
+    // Extract and verify JWT token
+    const token = req.cookies.token || 
+                 req.cookies['auth-token'] || 
+                 req.cookies['hh_token'] ||
+                 req.headers.authorization?.replace('Bearer ', '');
+    
     if (!token) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return res.status(401).json({ message: 'Authentication required' });
     }
 
-    let userId: string;
+    let sellerId: string;
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-      userId = decoded.userId;
-    } catch (error) {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; id?: string };
+      sellerId = decoded.userId || decoded.id;
+    } catch {
       return res.status(401).json({ message: 'Invalid token' });
     }
 
@@ -38,15 +42,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: 'Order ID is required' });
     }
 
-    // Find order and verify it belongs to the user
-    const order = await Order.findById(orderId);
+    // Find order and verify it belongs to the seller
+    const order = await Order.findById(orderId).lean();
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Check if user is buyer or seller
-    if (order.buyerId !== userId && order.sellerId !== userId) {
+    // Check if user is the seller of this order
+    if (order.sellerId !== sellerId) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -71,13 +75,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         estimatedDelivery: order.estimatedDelivery,
         actualDelivery: order.actualDelivery,
         notes: order.notes,
-        // Include Lalamove tracking data for both buyer and seller
+        // Include Lalamove tracking data
         lalamove_order_id: order.lalamove_order_id,
         lalamove_quotation_id: order.lalamove_quotation_id,
-        lalamove_share_link: order.lalamove_share_link
+        lalamove_share_link: order.lalamove_share_link,
+        // Include cancellation request data
+        cancellationRequest: order.cancellationRequest ? {
+          requestedBy: order.cancellationRequest.requestedBy,
+          reason: order.cancellationRequest.reason,
+          requestedAt: order.cancellationRequest.requestedAt,
+          status: order.cancellationRequest.status
+        } : undefined
       }
     });
   } catch (error) {
+    console.error('Error fetching seller order details:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }

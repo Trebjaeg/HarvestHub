@@ -11,9 +11,51 @@ import { useAuth } from '@/contexts/AuthContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import FavoriteButton from '@/components/FavoriteButton';
 import ReviewItem from '@/components/ReviewItem';
-import AuthModal from '@/components/AuthModal';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+// Utility function to extract unit from product name with asterisk annotation
+const extractUnitFromName = (productName: string, fallbackUnit?: string) => {
+  // Look for pattern: "ProductName *unit" (e.g., "Tomatoes *kg", "Cabbage *sack")
+  // Also handle variations like "Tomatoes*kg" or "Tomatoes * kg"
+  const unitMatch = productName.match(/\s*\*\s*([a-zA-Z]+)\s*$/);
+  
+  if (unitMatch) {
+    const extractedUnit = unitMatch[1];
+    const cleanedName = productName.replace(/\s*\*\s*[a-zA-Z]+\s*$/, '').trim();
+    
+    // Map common unit variations to standard units
+    const unitMapping: { [key: string]: string } = {
+      'kg': 'kg',
+      'kilogram': 'kg',
+      'kilograms': 'kg',
+      'gram': 'gram',
+      'grams': 'gram',
+      'g': 'gram',
+      'piece': 'piece',
+      'pieces': 'piece',
+      'pc': 'piece',
+      'pcs': 'piece',
+      'bunch': 'bunch',
+      'bunches': 'bunch',
+      'bundle': 'bundle',
+      'bundles': 'bundle',
+      'sack': 'sack',
+      'sacks': 'sack',
+      'bag': 'bag',
+      'bags': 'bag'
+    };
+    
+    const standardUnit = unitMapping[extractedUnit.toLowerCase()] || extractedUnit;
+    return { cleanName: cleanedName, unit: standardUnit };
+  }
+  
+  // If no asterisk annotation found, use the original name and fallback unit
+  return { cleanName: productName, unit: fallbackUnit || '' };
+};
 
 interface ProductDetailsProps {
   productId: string;
@@ -721,6 +763,14 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
           <span className="text-sm font-medium">Back</span>
+        {/* Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-[#103C2E] hover:text-[#0d2e23] mb-4 transition-colors font-medium"
+          style={{ fontFamily: 'Poppins, sans-serif' }}
+        >
+          <ChevronLeft className="w-5 h-5" />
+          <span>Back</span>
         </button>
 
         {/* Breadcrumb - Desktop */}
@@ -730,6 +780,7 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
           <Link href="/shop" className="text-gray-500 hover:text-gray-700">Shop</Link>
           <span className="mx-2 text-gray-400">/</span>
           <span className="text-gray-900">{product.name}</span>
+          <span className="text-gray-900">{extractUnitFromName(product.name).cleanName}</span>
         </nav>
 
         {/* Admin Report Banner */}
@@ -843,6 +894,7 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
               <Image
                 src={images[selectedImage]}
                 alt={product.name}
+                alt={extractUnitFromName(product.name).cleanName}
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className="object-cover"
@@ -876,6 +928,7 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
                     <Image
                       src={img}
                       alt={`${product.name} ${idx + 1}`}
+                      alt={`${extractUnitFromName(product.name).cleanName} ${idx + 1}`}
                       fill
                       className="object-cover"
                     />
@@ -890,6 +943,7 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 {product.name}
+                {extractUnitFromName(product.name).cleanName}
               </h1>
               
               {/* Rating */}
@@ -932,6 +986,27 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
                       </span>
                     )}
                   </>
+                  (() => {
+                    const { unit: extractedUnit } = extractUnitFromName(product.name, product.unit);
+                    const displayUnit = extractedUnit || product.unit;
+                    return (
+                      <>
+                        <span className="text-4xl font-bold text-[#40613D]" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          ₱{product.price.toFixed(2)}
+                        </span>
+                        {product.originalPrice && (
+                          <span className="text-xl text-gray-400 line-through" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                            ₱{product.originalPrice.toFixed(2)}
+                          </span>
+                        )}
+                        {displayUnit && (
+                          <span className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                            / {displayUnit}
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()
                 )}
                 {product.price == null && (
                   <span className="text-2xl text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>

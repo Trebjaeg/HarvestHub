@@ -12,6 +12,8 @@ import { sendOrderModificationEmail } from '../../../../../lib/email-service-sen
 import { notifyOrderStatusUpdate } from '../../../../../lib/notification-utils';
 import { emitNewMessage } from '../../../../../lib/socket-client';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'PATCH') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -24,21 +26,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                  req.cookies['hh_token'] ||
                  req.headers.authorization?.replace('Bearer ', '');
     
-    if (!token) {
-      return res.status(401).json({ success: false, message: 'Authentication required' });
-    }
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Authentication required' });
+  }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const sellerId = decoded.userId || decoded.id;
-
+  let sellerId: string;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; id?: string };
+    sellerId = decoded.userId || decoded.id || '';
     if (!sellerId) {
-      return res.status(401).json({ success: false, message: 'Invalid token' });
+      return res.status(401).json({ success: false, message: 'Invalid token structure' });
     }
+  } catch {
+    return res.status(401).json({ success: false, message: 'Invalid token' });
+  }
 
-    // Connect to database
-    await dbConnect();
-
-    const { orderId } = req.query;
+  // Connect to database
+  await dbConnect();    const { orderId } = req.query;
     const { status, notes } = req.body;
 
     if (!orderId) {

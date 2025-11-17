@@ -194,10 +194,10 @@ export default function OrderConfirmationPage() {
         </div>
 
         {/* Delivery Address */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Delivery Address</h2>
-          <p className="text-gray-700">{order.deliveryAddress.street}</p>
-          <p className="text-gray-700">{order.deliveryAddress.city}, {order.deliveryAddress.province} {order.deliveryAddress.zipCode}</p>
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Delivery Address</h2>
+            <p className="text-gray-700">{order.deliveryAddress.street}</p>
+            <p className="text-gray-700">{order.deliveryAddress.barangay && `${order.deliveryAddress.barangay}, `}{order.deliveryAddress.city}, {order.deliveryAddress.province} {order.deliveryAddress.zipCode}</p>
         </div>
 
         {/* Items */}

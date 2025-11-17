@@ -9,6 +9,7 @@ interface Address {
   fullName: string;
   phone: string;
   street: string;
+  barangay: string;
   city: string;
   province: string;
   zipCode?: string;
@@ -47,6 +48,219 @@ const PROVINCE_CITIES: Record<string, string[]> = {
   ]
 };
 
+// Barangays data for major cities
+const CITY_BARANGAYS: Record<string, string[]> = {
+  'Quezon City': [
+    'Bagong Pag-asa', 'Bahay Toro', 'Balingasa', 'Bungad', 'Damar', 'Del Monte', 
+    'Diliman', 'Don Manuel', 'Duyan-Duyan', 'E. Rodriguez', 'Escuela', 'Fairview', 
+    'Greater Lagro', 'Gulod', 'Holy Spirit', 'Kaligayahan', 'Kamuning', 'Katipunan', 
+    'Kaunlaran', 'La Loma', 'Libis', 'Lourdes', 'Loyola Heights', 'Maharlika', 
+    'Malaya', 'Marilag', 'Masambong', 'Matandang Balara', 'Milagrosa', 'N.S. Amoranto', 
+    'Nagkaisang Nayon', 'Nayong Kanluran', 'New Era', 'North Fairview', 'Novaliches Proper', 
+    'Obrero', 'Old Balara', 'Paang Bundok', 'Pag-ibig sa Nayon', 'Pagkakaisa', 
+    'Paligsahan', 'Paltok', 'Paraiso', 'Phil-Am', 'Pinagkaisahan', 'Poblacion', 
+    'Project 6', 'Project 7', 'Project 8', 'Roxas', 'Sacred Heart', 'San Agustin', 
+    'San Antonio', 'San Bartolome', 'San Isidro Labrador', 'San Jose', 'San Martin de Porres', 
+    'San Roque', 'Santa Cruz', 'Santa Lucia', 'Santa Monica', 'Santa Teresita', 
+    'Santo Cristo', 'Santo Domingo', 'Santo Niño', 'Siena', 'Silangan', 'Socorro', 
+    'Tagumpay', 'Talayan', 'Tandang Sora', 'Teacher\'s Village East', 'Teacher\'s Village West', 
+    'Tigbe', 'Ugong Norte', 'Unang Sigaw', 'UP Campus', 'Valencia', 'Vasra', 
+    'Veterans Village', 'Villa Maria Clara', 'Violago Homes', 'West Triangle'
+  ],
+  'Manila': [
+    'Binondo', 'Ermita', 'Intramuros', 'Malate', 'Paco', 'Pandacan', 'Port Area', 
+    'Quiapo', 'Sampaloc', 'San Andres', 'San Miguel', 'San Nicolas', 'Santa Ana', 
+    'Santa Cruz', 'Santa Mesa', 'Tondo'
+  ],
+  'Makati': [
+    'Bangkal', 'Bel-Air', 'Carmona', 'Cembo', 'Comembo', 'Dasmariñas', 'East Rembo', 
+    'Forbes Park', 'Guadalupe Nuevo', 'Guadalupe Viejo', 'Kasilawan', 'La Paz', 
+    'Magallanes', 'Olympia', 'Palanan', 'Pembo', 'Pinagkaisahan', 'Pio del Pilar', 
+    'Poblacion', 'Post Proper Northside', 'Post Proper Southside', 'Rizal', 
+    'San Antonio', 'San Isidro', 'San Lorenzo', 'Santa Cruz', 'Singkamas', 
+    'South Cembo', 'Tejeros', 'Urdaneta', 'Valenzuela', 'West Rembo'
+  ],
+  'Pasig': [
+    'Bagong Ilog', 'Bagong Katipunan', 'Bambang', 'Buting', 'Caniogan', 'Dela Paz', 
+    'Kalawaan', 'Kapasigan', 'Kapitolyo', 'Malinao', 'Manggahan', 'Maybunga', 
+    'Oranbo', 'Palatiw', 'Pinagbuhatan', 'Pineda', 'Rosario', 'Sagad', 'San Antonio', 
+    'San Joaquin', 'San Jose', 'San Miguel', 'San Nicolas', 'Santa Cruz', 'Santa Lucia', 
+    'Santa Rosa', 'Santo Tomas', 'Santolan', 'Sumilang', 'Ugong'
+  ],
+  // Bulacan Cities
+  'Malolos': [
+    'Anilao', 'Atlag', 'Babatnin', 'Bagna', 'Bagong Bayan', 'Balayong', 'Balite', 
+    'Bangkal', 'Barihan', 'Bulihan', 'Bungahan', 'Caingin', 'Calero', 'Canalate', 
+    'Cansanay', 'Guinhawa', 'Liang', 'Ligas', 'Longos', 'Look 1st', 'Look 2nd', 
+    'Lugam', 'Mabolo', 'Masile', 'Matimbo', 'Mojon', 'Namayan', 'Niugan', 'Pamarawan', 
+    'Panasahan', 'Pinagbakahan', 'San Agustin', 'San Gabriel', 'San Juan', 'San Pablo', 
+    'San Vicente', 'Santiago', 'Santisima Trinidad', 'Santo Cristo', 'Santo Niño', 
+    'Sumapang Bata', 'Sumapang Matanda', 'Taal', 'Tikay'
+  ],
+  'Santa Maria': [
+    'Bagbaguin', 'Balasing', 'Buenavista', 'Camangyanan', 'Catmon', 'Cay Pombo', 
+    'Caysio', 'Guyong', 'Lalakhan', 'Mag-asawang Sapa', 'Mahabang Parang', 'Parada', 
+    'Poblacion', 'Pulong Buhangin', 'San Gabriel', 'San Jose Patag', 'Santa Clara', 
+    'Santa Cruz', 'Santo Tomas', 'Silangan', 'Tabing Bakod', 'Tumana'
+  ],
+  'San Jose del Monte': [
+    'Assumption', 'Bagong Buhay I', 'Bagong Buhay II', 'Bagong Buhay III', 'Citrus', 
+    'Cruz na Daan', 'Dulong Bayan', 'Fatima I', 'Fatima II', 'Fatima III', 'Fatima IV', 
+    'Fatima V', 'Francisco Homes-Guijo', 'Francisco Homes-Mulawin', 'Francisco Homes-Narra', 
+    'Francisco Homes-Yakal', 'Gaya-gaya', 'Graceville', 'Gumaoc Central', 'Gumaoc East', 
+    'Gumaoc West', 'Habay', 'Kaypian', 'Lawang Pari', 'Maharlika', 'Minuyan I', 
+    'Minuyan II', 'Minuyan III', 'Minuyan IV', 'Minuyan V', 'Muzon', 'Paradise III', 
+    'Poblacion', 'Sacred Heart Village', 'San Isidro', 'San Manuel', 'San Martin I', 
+    'San Martin II', 'San Pedro', 'San Rafael I', 'San Rafael II', 'San Rafael III', 
+    'San Rafael IV', 'San Rafael V', 'San Roque', 'Santa Cruz', 'Santo Cristo', 'Santo Niño I', 
+    'Santo Niño II', 'Sapang Palay', 'Tungkong Mangga'
+  ],
+  'Meycauayan': [
+    'Bagbaguin', 'Bahay Pare', 'Bancal', 'Banga', 'Bayugo', 'Camalig', 'Calvario', 
+    'Hatol', 'Iba', 'Langka', 'Lawa', 'Libtong', 'Liputan', 'Longos', 'Malhacan', 
+    'Pandayan', 'Pantoc', 'Perez', 'Poblacion', 'Saint Francis', 'Saluysoy', 'Tugatog', 
+    'Ubihan', 'Zamora'
+  ],
+  'Marilao': [
+    'Abangan Norte', 'Abangan Sur', 'Bancal', 'Ibayo', 'Lambakin', 'Lias', 'Loma de Gato', 
+    'Patubig', 'Poblacion', 'Prenza I', 'Prenza II', 'Saog', 'Santa Rosa I', 'Santa Rosa II', 
+    'Tabing Ilog'
+  ]
+};
+
+// City zip codes mapping (4-digit Philippine zip codes)
+const CITY_ZIP_CODES: Record<string, string> = {
+  // Metro Manila
+  'Manila': '1000',
+  'Quezon City': '1100',
+  'Makati': '1200',
+  'Pasig': '1600',
+  'Taguig': '1630',
+  'Mandaluyong': '1550',
+  'Pasay': '1300',
+  'Caloocan': '1400',
+  'Marikina': '1800',
+  'San Juan': '1500',
+  'Muntinlupa': '1770',
+  'Parañaque': '1700',
+  'Las Piñas': '1740',
+  'Valenzuela': '1440',
+  'Malabon': '1470',
+  'Navotas': '1485',
+  'Pateros': '1620',
+  
+  // Rizal
+  'Antipolo': '1870',
+  'Cainta': '1900',
+  'Taytay': '1920',
+  'Angono': '1930',
+  'Binangonan': '1940',
+  'Rodriguez': '1860',
+  'San Mateo': '1850',
+  'Tanay': '1980',
+  'Teresa': '1880',
+  'Morong': '1960',
+  'Baras': '1970',
+  'Cardona': '1950',
+  'Jalajala': '1990',
+  'Pililla': '1910',
+  
+  // Cavite
+  'Bacoor': '4102',
+  'Imus': '4103',
+  'Dasmariñas': '4114',
+  'Cavite City': '4100',
+  'General Trias': '4107',
+  'Rosario': '4106',
+  'Silang': '4118',
+  'Carmona': '4116',
+  'General Mariano Alvarez': '4117',
+  'Trece Martires': '4109',
+  
+  // Laguna
+  'Calamba': '4027',
+  'Santa Rosa': '4026',
+  'Biñan': '4024',
+  'San Pedro': '4023',
+  'Los Baños': '4030',
+  'Cabuyao': '4025',
+  'San Pablo': '4000',
+  'Sta. Cruz': '4009',
+  'Pagsanjan': '4004',
+  'Liliw': '4004',
+  
+  // Bulacan
+  'Malolos': '3000',
+  'Meycauayan': '3020',
+  'San Jose del Monte': '3023',
+  'Marilao': '3019',
+  'Bocaue': '3018',
+  'Balagtas': '3016',
+  'Guiguinto': '3015',
+  'Pandi': '3014',
+  'Santa Maria': '3022',
+  'Obando': '3021',
+  
+  // Pampanga
+  'San Fernando': '2000',
+  'Angeles': '2009',
+  'Mabalacat': '2010',
+  'Apalit': '2016',
+  'Macabebe': '2018',
+  'Masantol': '2017',
+  'Mexico': '2021',
+  'Santa Rita': '2001',
+  'Guagua': '2003',
+  'Lubao': '2005'
+};
+
+// Phone number validation
+const validatePhoneNumber = (phone: string): { isValid: boolean; message: string } => {
+  // Remove all non-digit characters
+  const cleanPhone = phone.replace(/\D/g, '');
+  
+  // Check if it's empty
+  if (!cleanPhone) {
+    return { isValid: false, message: 'Phone number is required' };
+  }
+  
+  // Must be exactly 11 digits and start with '09'
+  if (cleanPhone.length !== 11) {
+    return { isValid: false, message: 'Phone number must be exactly 11 digits' };
+  }
+  
+  if (!cleanPhone.startsWith('09')) {
+    return { isValid: false, message: 'Phone number must start with 09' };
+  }
+  
+  return { isValid: true, message: '' };
+};
+
+// Format phone number for display with real-time formatting
+const formatPhoneNumber = (phone: string): string => {
+  // Remove all non-digit characters
+  let cleanPhone = phone.replace(/\D/g, '');
+  
+  // Only auto-add "09" if user starts with digits other than 0
+  if (cleanPhone.length > 0 && !cleanPhone.startsWith('0')) {
+    cleanPhone = '09' + cleanPhone;
+  }
+  
+  // Limit to exactly 11 digits
+  cleanPhone = cleanPhone.slice(0, 11);
+  
+  // Format as 09XX XXX XXXX
+  if (cleanPhone.length >= 4) {
+    if (cleanPhone.length <= 7) {
+      return cleanPhone.replace(/(\d{4})(\d{0,3})/, '$1 $2');
+    } else {
+      return cleanPhone.replace(/(\d{4})(\d{3})(\d{0,4})/, '$1 $2 $3');
+    }
+  }
+  
+  return cleanPhone;
+};
+
 export default function AddressManager({ userRole }: { userRole: 'buyer' | 'seller' | 'farmer' }) {
   const { user } = useAuthUserData();
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -58,6 +272,7 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
     fullName: '',
     phone: '',
     street: '',
+    barangay: '',
     city: '',
     province: '',
     zipCode: '',
@@ -66,6 +281,19 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
     isDefault: false,
     type: userRole === 'buyer' ? 'delivery' : 'pickup'
   });
+
+  const [validationErrors, setValidationErrors] = useState<{
+    fullName?: string;
+    phone?: string;
+    street?: string;
+    barangay?: string;
+    city?: string;
+    province?: string;
+    zipCode?: string;
+    label?: string;
+  }>({});
+
+
 
   useEffect(() => {
     fetchAddresses();
@@ -102,6 +330,58 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Reset validation errors
+    setValidationErrors({});
+    const errors: { [key: string]: string } = {};
+
+    // Validate required fields
+    if (!formData.fullName.trim()) {
+      errors.fullName = 'Full name is required';
+    }
+
+    if (!formData.phone.trim()) {
+      errors.phone = 'Phone number is required';
+    } else {
+      const validation = validatePhoneNumber(formData.phone);
+      if (!validation.isValid) {
+        errors.phone = validation.message;
+      }
+    }
+
+    if (!formData.street.trim()) {
+      errors.street = 'Street address is required';
+    }
+
+    if (!formData.barangay) {
+      errors.barangay = 'Barangay is required';
+    }
+
+    if (!formData.city) {
+      errors.city = 'City is required';
+    }
+
+    if (!formData.province) {
+      errors.province = 'Province is required';
+    }
+
+    if (!formData.zipCode.trim()) {
+      errors.zipCode = 'Zip code is required';
+    } else if (!/^\d{4}$/.test(formData.zipCode)) {
+      errors.zipCode = 'Zip code must be exactly 4 digits';
+    } else if (formData.city && CITY_ZIP_CODES[formData.city] && CITY_ZIP_CODES[formData.city] !== formData.zipCode) {
+      errors.zipCode = `Zip code for ${formData.city} should be ${CITY_ZIP_CODES[formData.city]}`;
+    }
+
+    if (!formData.label.trim()) {
+      errors.label = 'Address label is required';
+    }
+
+    // If there are validation errors, display them and return
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
     if (addresses.length >= 3 && !editingId) {
       alert('You can only have up to 3 addresses. Please delete one to add a new address.');
       return;
@@ -134,6 +414,11 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
       } else {
         const error = await response.json();
         alert(error.message || 'Failed to save address');
+        const error = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('Address update error:', error);
+        console.log('Response status:', response.status);
+        console.log('Form data being sent:', formData);
+        alert(`Failed to save address: ${error.message} (Status: ${response.status})`);
       }
     } catch (error: any) {
       clearTimeout(timeoutId);
@@ -152,6 +437,7 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
       fullName: address.fullName,
       phone: address.phone,
       street: address.street,
+      barangay: address.barangay || '',
       city: address.city,
       province: address.province,
       zipCode: address.zipCode || '',
@@ -170,6 +456,7 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
       fullName: '',
       phone: '',
       street: '',
+      barangay: '',
       city: '',
       province: '',
       zipCode: '',
@@ -179,6 +466,21 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
       type: userRole === 'buyer' ? 'delivery' : 'pickup'
     });
     setEditingId(null);
+  };
+
+
+
+  const handleCityChange = (selectedCity: string) => {
+    const zipCode = CITY_ZIP_CODES[selectedCity] || '';
+    setFormData({ 
+      ...formData, 
+      city: selectedCity,
+      barangay: '', // Reset barangay when city changes
+      zipCode // Auto-generate zip code based on city
+    });
+    
+    // Clear zip code validation error when city changes
+    setValidationErrors(prev => ({ ...prev, zipCode: undefined }));
   };
 
   const handleSetDefault = async (id: string) => {
@@ -264,6 +566,13 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
           <button
             onClick={() => setShowForm(true)}
             className="w-full sm:w-auto bg-[#4A7C59] hover:bg-[#3d6549] active:bg-[#3d6549] text-white py-2 px-4 rounded-lg font-medium transition-colors touch-manipulation"
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold text-gray-900">Manage Addresses</h2>
+        {!showForm && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-[#4A7C59] hover:bg-[#3d6549] text-white py-2 px-4 rounded-lg font-medium transition-colors"
           >
             Add Address
           </button>
@@ -278,6 +587,12 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white border-2 border-[#4A7C59] rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            {editingId ? 'Edit Address' : 'Add New Address'}
+          </h3>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Address Label *
@@ -291,6 +606,15 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                   required
                   maxLength={100}
                 />
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent ${
+                    validationErrors.label ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  required
+                  maxLength={100}
+                />
+                {validationErrors.label && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.label}</p>
+                )}
               </div>
 
               {userRole !== 'buyer' && (
@@ -324,6 +648,15 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                   required
                   maxLength={100}
                 />
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent ${
+                    validationErrors.fullName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  required
+                  maxLength={100}
+                />
+                {validationErrors.fullName && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.fullName}</p>
+                )}
               </div>
 
               <div>
@@ -339,6 +672,21 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                   required
                   maxLength={20}
                 />
+                  onChange={(e) => {
+                    const rawValue = e.target.value;
+                    const formatted = formatPhoneNumber(rawValue);
+                    setFormData({ ...formData, phone: formatted });
+                  }}
+                  placeholder="09XX XXX XXXX (11 digits required)"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent ${
+                    validationErrors.phone ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  required
+                  maxLength={13}
+                />
+                {validationErrors.phone && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.phone}</p>
+                )}
               </div>
 
               <div>
@@ -355,6 +703,13 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                     });
                   }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent"
+                      city: '', // Reset city when province changes
+                      barangay: '' // Reset barangay when province changes
+                    });
+                  }}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent ${
+                    validationErrors.province ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   required
                 >
                   <option value="">Select Province</option>
@@ -362,6 +717,9 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                     <option key={province} value={province}>{province}</option>
                   ))}
                 </select>
+                {validationErrors.province && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.province}</p>
+                )}
               </div>
 
               <div>
@@ -373,6 +731,11 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                   disabled={!formData.province}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent disabled:bg-gray-100"
+                  onChange={(e) => handleCityChange(e.target.value)}
+                  disabled={!formData.province}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent disabled:bg-gray-100 ${
+                    validationErrors.city ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   required
                 >
                   <option value="">Select City</option>
@@ -380,6 +743,32 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                     <option key={city} value={city}>{city}</option>
                   ))}
                 </select>
+                {validationErrors.city && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.city}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Barangay *
+                </label>
+                <select
+                  value={formData.barangay}
+                  onChange={(e) => setFormData({ ...formData, barangay: e.target.value })}
+                  disabled={!formData.city}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent disabled:bg-gray-100 ${
+                    validationErrors.barangay ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  required
+                >
+                  <option value="">Select Barangay</option>
+                  {formData.city && CITY_BARANGAYS[formData.city]?.map((barangay) => (
+                    <option key={barangay} value={barangay}>{barangay}</option>
+                  ))}
+                </select>
+                {validationErrors.barangay && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.barangay}</p>
+                )}
               </div>
 
               <div className="md:col-span-2">
@@ -395,11 +784,22 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                   required
                   maxLength={500}
                 />
+                  placeholder="House No., Street Name"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent ${
+                    validationErrors.street ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  required
+                  maxLength={500}
+                />
+                {validationErrors.street && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.street}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Zip Code
+                  Zip Code *
                 </label>
                 <input
                   type="text"
@@ -409,6 +809,46 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent"
                   maxLength={10}
                 />
+                  onChange={(e) => {
+                    // Only allow digits and limit to 4 characters
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    setFormData({ ...formData, zipCode: value });
+                  }}
+                  onKeyDown={(e) => {
+                    // Allow backspace, delete, tab, escape, enter
+                    if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
+                        // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                        (e.keyCode === 65 && e.ctrlKey === true) ||
+                        (e.keyCode === 67 && e.ctrlKey === true) ||
+                        (e.keyCode === 86 && e.ctrlKey === true) ||
+                        (e.keyCode === 88 && e.ctrlKey === true)) {
+                      return;
+                    }
+                    // Ensure that it is a number and stop the keypress
+                    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                      e.preventDefault();
+                    }
+                    // Prevent input if already at 4 digits
+                    if (e.currentTarget.value.length >= 4 && ![8, 46].includes(e.keyCode)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  placeholder={formData.city && CITY_ZIP_CODES[formData.city] ? 
+                    `Auto: ${CITY_ZIP_CODES[formData.city]}` : "4-digit ZIP Code"}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent ${
+                    validationErrors.zipCode ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  maxLength={4}
+                  required
+                />
+                {validationErrors.zipCode && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.zipCode}</p>
+                )}
+                {formData.city && CITY_ZIP_CODES[formData.city] && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Expected ZIP code for {formData.city}: {CITY_ZIP_CODES[formData.city]}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -431,6 +871,10 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
               <button
                 type="submit"
                 className="w-full bg-[#4A7C59] hover:bg-[#3d6549] active:bg-[#3d6549] text-white py-2.5 sm:py-2 rounded-lg font-medium transition-colors touch-manipulation"
+            <div className="flex gap-3 pt-2">
+              <button
+                type="submit"
+                className="flex-1 bg-[#4A7C59] hover:bg-[#3d6549] text-white py-2 rounded-lg font-medium transition-colors"
               >
                 {editingId ? 'Update Address' : 'Save Address'}
               </button>
@@ -441,6 +885,7 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                   resetForm();
                 }}
                 className="w-full bg-gray-200 hover:bg-gray-300 active:bg-gray-300 text-gray-700 py-2.5 sm:py-2 rounded-lg font-medium transition-colors touch-manipulation"
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium transition-colors"
               >
                 Cancel
               </button>
@@ -453,11 +898,14 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
       {addresses.length === 0 ? (
         <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg">
           <svg className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
           <h3 className="mt-2 text-sm font-medium text-gray-900">No addresses</h3>
           <p className="mt-1 text-sm text-gray-500 px-4 sm:px-0">
+          <p className="mt-1 text-sm text-gray-500">
             {userRole === 'buyer' 
               ? 'Get started by adding a delivery address' 
               : 'Get started by adding a pickup location'}
@@ -465,6 +913,7 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{" "}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {addresses.map((address) => (
             <div
               key={address._id}
@@ -500,6 +949,13 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                 <button
                   onClick={() => handleEdit(address)}
                   className="flex-1 text-sm text-[#4A7C59] hover:bg-[#4A7C59] hover:text-white active:bg-[#4A7C59] active:text-white border border-[#4A7C59] py-1.5 rounded transition-colors touch-manipulation"
+                <p>{address.barangay && `${address.barangay}, `}{address.city}, {address.province} {address.zipCode}</p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEdit(address)}
+                  className="flex-1 text-sm text-[#4A7C59] hover:bg-[#4A7C59] hover:text-white border border-[#4A7C59] py-1.5 rounded transition-colors"
                 >
                   Edit
                 </button>
@@ -507,6 +963,7 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                   <button
                     onClick={() => handleSetDefault(address._id!)}
                     className="flex-1 text-sm text-gray-600 hover:bg-gray-100 active:bg-gray-100 border border-gray-300 py-1.5 rounded transition-colors touch-manipulation"
+                    className="flex-1 text-sm text-gray-600 hover:bg-gray-100 border border-gray-300 py-1.5 rounded transition-colors"
                   >
                     Set Default
                   </button>
@@ -514,6 +971,7 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                 <button
                   onClick={() => handleDelete(address._id!)}
                   className="text-sm text-red-600 hover:bg-red-50 active:bg-red-50 border border-red-300 px-3 py-1.5 rounded transition-colors touch-manipulation"
+                  className="text-sm text-red-600 hover:bg-red-50 border border-red-300 px-3 py-1.5 rounded transition-colors"
                 >
                   Delete
                 </button>

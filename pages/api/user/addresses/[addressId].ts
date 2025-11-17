@@ -53,7 +53,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (req.method === 'PUT') {
       // Update address
-      const { label, fullName, phone, street, city, province, zipCode, isDefault, type } = req.body;
+      const { label, fullName, phone, street, barangay, city, province, zipCode, isDefault, type } = req.body;
+      const { label, fullName, phone, street, barangay, city, province, zipCode, isDefault, type } = req.body;
 
       if (!user.addresses) {
         clearTimeout(timeoutId);
@@ -81,6 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         fullName,
         phone,
         street,
+        barangay: barangay || '',
         city,
         province,
         zipCode: zipCode || '',
@@ -129,8 +131,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } catch (error) {
     clearTimeout(timeoutId);
     console.error('Error in address API:', error);
+    console.error('Request body:', req.body);
+    console.error('Address ID:', req.query.addressId);
     if (!res.headersSent) {
-      return res.status(500).json({ message: 'Internal server error' });
+      return res.status(500).json({ 
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   }
 }

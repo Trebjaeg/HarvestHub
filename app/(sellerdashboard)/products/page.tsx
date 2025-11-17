@@ -7,12 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Search, Plus, Package, Edit, Trash2, FileText } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import AddEditProductModal from "@/components/ui/AddEditProductModal";
 import SuccessDialog from "@/components/ui/SuccessDialog";
 
-interface ProductData {
+interface Product {
   _id?: string;
   name: string;
   category: string;
@@ -41,11 +42,26 @@ interface ProductData {
   inventory_on_hand?: number;
 }
 
-// Type alias to avoid empty interface warning
-type Product = ProductData;
+interface Appeal {
+  _id: string;
+  user: string;
+  productId?: string;
+  productName?: string;
+  type: 'suspension' | 'deletion' | 'warning' | 'listing_removal';
+  reason: string;
+  status: 'pending' | 'under_review' | 'approved' | 'rejected';
+  decision?: 'approved' | 'rejected' | 'partial';
+  decisionReason?: string;
+  reviewNotes?: string;
+  reviewedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export default function Products() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
+  const [appeals, setAppeals] = useState<Appeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -71,49 +87,13 @@ export default function Products() {
 
   const statusOptions = ["Available", "Unavailable"];
 
-  const fetchProducts = useCallback(async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
-      const response = await fetch('/api/seller/products', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        cache: 'no-store'
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Convert harvestDate from Date to string for the modal
-        const formattedProducts = (data.products || []).map((product: ProductData) => ({
-          ...product,
-          harvestDate: product.harvestDate ? new Date(product.harvestDate).toISOString().split('T')[0] : undefined
-        }));
-        setProducts(formattedProducts);
-        setRetryCount(0); // Reset retry count on success
-      } else if (response.status === 403) {
-        const error = await response.json();
-        if (error.error === 'Insufficient permissions' || error.message?.includes('verification')) {
-          // Don't show anything on page load - user will see error when trying to add/edit
-        }
-      }
-    } catch {
-      // Retry once if first attempt fails
-      if (retryCount < 1) {
-        setRetryCount(prev => prev + 1);
-        setTimeout(() => {
-          fetchProducts();
-        }, 1000);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [retryCount]);
-
   useEffect(() => {
     fetchProducts();
-    checkVerification();
-  }, [fetchProducts]);
+    fetchAppeals();
+    checkVerificationStatus();
+  }, []);
 
-  const checkVerification = async () => {
+  const checkVerificationStatus = async () => {
     try {
       const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
       const response = await fetch('/api/seller/verification/status', {
@@ -127,8 +107,62 @@ export default function Products() {
         const verified = data.sellerStatus === 'verified';
         setIsVerified(verified);
       }
-    } catch {
+    } catch (error) {
       setIsVerified(false);
+    }
+  };
+
+  const fetchAppeals = async () => {
+    try {
+      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
+      const response = await fetch('/api/seller/appeals', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        cache: 'no-store'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAppeals(data);
+      }
+    } catch (error) {
+      setAppeals([]);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
+      const response = await fetch('/api/seller/products', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        cache: 'no-store'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Convert harvestDate from Date to string for the modal
+        const formattedProducts = (data.products || []).map((product: any) => ({
+          ...product,
+          harvestDate: product.harvestDate ? new Date(product.harvestDate).toISOString().split('T')[0] : undefined
+        }));
+        setProducts(formattedProducts);
+        setRetryCount(0); // Reset retry count on success
+      } else if (response.status === 403) {
+        const error = await response.json();
+        if (error.error === 'Insufficient permissions' || error.message?.includes('verification')) {
+          // Don't show anything on page load - user will see error when trying to add/edit
+        }
+      }
+    } catch (error) {
+      // Retry once if first attempt fails
+      if (retryCount < 1) {
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => {
+          fetchProducts();
+        }, 1000);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -145,6 +179,7 @@ export default function Products() {
       });
       
       if (response.ok) {
+        const data = await response.json();
         // Close modal first
         setShowAddModal(false);
         // Refresh the products list
@@ -156,16 +191,16 @@ export default function Products() {
         });
         setShowSuccessDialog(true);
       } else {
-        const errorData = await response.json();
+        const error = await response.json();
         // Check if it's a verification error
-        if (response.status === 403 && (errorData.error === 'Insufficient permissions' || errorData.message?.includes('verification'))) {
+        if (response.status === 403 && (error.error === 'Insufficient permissions' || error.message?.includes('verification'))) {
           // Keep modal open and show error inline
-          setVerificationMessage(errorData.message || 'You must be a verified seller to add products');
+          setVerificationMessage(error.message || 'You must be a verified seller to add products');
         } else {
-          alert(errorData.error || errorData.message || 'Failed to create product');
+          alert(error.error || error.message || 'Failed to create product');
         }
       }
-    } catch {
+    } catch (error) {
       alert('An error occurred while adding the product. Please try again.');
     }
   };
@@ -184,6 +219,7 @@ export default function Products() {
       });
 
       if (response.ok) {
+        const data = await response.json();
         // Close modal first
         setEditingProduct(null);
         // Refresh the products list
@@ -195,11 +231,12 @@ export default function Products() {
         });
         setShowSuccessDialog(true);
       } else {
+        const error = await response.json();
         // Silently fail and close modal
         setEditingProduct(null);
         fetchProducts();
       }
-    } catch {
+    } catch (error) {
       // Silently fail and close modal
       setEditingProduct(null);
       fetchProducts();
@@ -248,7 +285,7 @@ export default function Products() {
         setProductToDelete(null);
         fetchProducts();
       }
-    } catch {
+    } catch (error) {
       // Close modal and refresh the list
       setShowDeleteModal(false);
       setProductToDelete(null);
@@ -265,9 +302,9 @@ export default function Products() {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  // Separate active and deactivated for rendering (currently not used in UI but kept for future features)
-  // const activeProducts = filteredProducts.filter(product => product.isActive !== false);
-  // const deactivatedProducts = filteredProducts.filter(product => product.isActive === false);
+  // Separate active and deactivated for rendering
+  const activeProducts = filteredProducts.filter(product => product.isActive !== false);
+  const deactivatedProducts = filteredProducts.filter(product => product.isActive === false);
 
   const getStatusColor = (status: string) => {
     return status === 'Available' 
@@ -275,12 +312,11 @@ export default function Products() {
       : 'bg-red-100 text-red-800';
   };
 
-  // Stock status helper (currently not used in UI but kept for future features)
-  // const getStockStatus = (availableStock: number, lowStockAlert: number) => {
-  //   if (availableStock === 0) return { label: 'Out of Stock', color: 'bg-red-100 text-red-800' };
-  //   if (availableStock <= lowStockAlert) return { label: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
-  //   return { label: 'In Stock', color: 'bg-green-100 text-green-800' };
-  // };
+  const getStockStatus = (availableStock: number, lowStockAlert: number) => {
+    if (availableStock === 0) return { label: 'Out of Stock', color: 'bg-red-100 text-red-800' };
+    if (availableStock <= lowStockAlert) return { label: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
+    return { label: 'In Stock', color: 'bg-green-100 text-green-800' };
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen p-3 sm:p-4 lg:p-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -420,200 +456,265 @@ export default function Products() {
           </Card>
         ) : (
           <>
-            {/* Desktop Table View (hidden on mobile) */}
-            <Card className="hidden md:block bg-white border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Image</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Name</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Price</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Stock</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
-                      <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {filteredProducts.map((product) => {
-                      // Show as deactivated only if isActive is false AND status is not Available
-                      const isDeactivated = product.isActive === false && product.status !== 'Available';
+            {/* Desktop Card Grid View - ProductCard Style */}
+            <div className="hidden md:block">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 lg:gap-10 justify-items-center">
+                {filteredProducts.map((product) => {
+                  const productAppeal = appeals.find(
+                    (appeal) => appeal.productId === product._id && appeal.type === 'listing_removal'
+                  );
+                  const isDeactivated = product.isActive === false && product.status !== 'Available';
 
-                      return (
-                        <tr key={product._id} className={`hover:bg-gray-50 transition-colors ${isDeactivated ? 'bg-red-50' : ''}`}>
-                        <td className="px-6 py-4">
-                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
-                            {product.images && product.images.length > 0 ? (
-                              <Image
-                                src={product.images[0]}
-                                alt={product.name}
-                                width={48}
-                                height={48}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Package className="w-6 h-6 text-gray-400" />
-                              </div>
-                            )}
+                  return (
+                    <div 
+                      key={product._id}
+                      onClick={() => router.push(`/product/${product._id}`)}
+                      className={`relative w-full max-w-[280px] rounded-3xl border-2 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] cursor-pointer ${
+                        isDeactivated ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'
+                      }`}
+                      style={{ height: '310px' }}
+                    >
+                      {/* Product Image */}
+                      <div className="relative" style={{ height: '210px' }}>
+                        {product.images && product.images.length > 0 ? (
+                          <Image
+                            src={product.images[0]}
+                            alt={product.name}
+                            fill
+                            className="object-cover"
+                            unoptimized={product.images[0].includes('digitaloceanspaces.com')}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                            <Package className="w-12 h-12 text-gray-400" />
                           </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="space-y-1">
-                            <p className="font-medium text-gray-900">{product.name}</p>
-                            {isDeactivated && (
-                              <div className="flex flex-col gap-1">
-                                <Badge className="bg-red-100 text-red-800 w-fit">
-                                  Deactivated by Admin
-                                </Badge>
-                                <button
-                                  onClick={() => window.location.href = `/my-appeals?product=${product._id}&name=${encodeURIComponent(product.name)}`}
-                                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors w-fit"
-                                  title="Appeal this deactivation"
-                                >
-                                  <FileText className="w-3 h-3" />
-                                  Appeal Deactivation
-                                </button>
-                              </div>
-                            )}
+                        )}
+                        
+                        {/* Deactivation Badge */}
+                        {isDeactivated && (
+                          <div className="absolute top-2 right-2">
+                            <Badge className="bg-red-100 text-red-800 text-xs">
+                              Deactivated
+                            </Badge>
                           </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-gray-900">₱{product.price}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-gray-900">
-                            <p className="font-medium">{product.inventory_available ?? product.stock}</p>
+                        )}
+
+                        {/* Action Buttons */}
+                        {!isDeactivated && (
+                          <div className="absolute top-2 right-2 flex gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingProduct(product);
+                              }}
+                              className="p-1.5 bg-white/90 hover:bg-white rounded-full shadow-md transition-all"
+                              title="Edit Product"
+                            >
+                              <Edit className="w-3.5 h-3.5 text-[#103C2E]" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteProduct(product._id!);
+                              }}
+                              className="p-1.5 bg-white/90 hover:bg-white rounded-full shadow-md transition-all"
+                              title="Delete Product"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Appeal Button for Deactivated Products */}
+                        {isDeactivated && (
+                          <div className="absolute bottom-2 left-2 right-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/my-appeals?product=${product._id}&name=${encodeURIComponent(product.name)}`);
+                              }}
+                              className="w-full flex items-center justify-center gap-1 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 transition-colors"
+                              title="Appeal this deactivation"
+                            >
+                              <FileText className="w-3 h-3" />
+                              Appeal Deactivation
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Product Details */}
+                      <div className="p-4" style={{ height: '100px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        <div>
+                          <h3 className={`font-semibold text-sm line-clamp-2 mb-1 ${
+                            isDeactivated ? 'text-red-800' : 'text-gray-900'
+                          }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
+                            {product.name}
+                          </h3>
+                          <p className={`text-lg font-bold ${
+                            isDeactivated ? 'text-red-700' : 'text-[#103C2E]'
+                          }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
+                            ₱{product.price.toFixed(2)}/{product.unit}
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-between text-xs" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          <div className="flex items-center gap-y-0 w-full mr-4">
+                            <div className="flex items-center gap-1">
+                              <span className="text-gray-600">Stock:</span>
+                              <span className={`font-medium ${
+                                isDeactivated ? 'text-red-600' : 'text-green-600'
+                              }`}>
+                                {product.inventory_available ?? product.stock}
+                              </span>
+                              {(product.inventory_reserved || 0) > 0 && (
+                                <span className="text-gray-400 mx-2">•</span>
+                              )}
+                            </div>
                             {(product.inventory_reserved || 0) > 0 && (
-                              <p className="text-xs text-yellow-600">
-                                {product.inventory_reserved} reserved
-                              </p>
-                            )}
-                            {(product.inventory_committed || 0) > 0 && (
-                              <p className="text-xs text-blue-600">
-                                {product.inventory_committed} committed
-                              </p>
+                              <div className="flex items-center gap-1">
+                                <span className="text-yellow-600 font-medium">
+                                  {product.inventory_reserved}
+                                </span>
+                                <span className="text-gray-600">reserved</span>
+                              </div>
                             )}
                           </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Badge className={getStatusColor(product.status || 'Available')}>
+                          <Badge className={`${getStatusColor(product.status || 'Available')} text-xs whitespace-nowrap flex-shrink-0`}>
                             {product.status || 'Available'}
                           </Badge>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-end gap-2">
-                            {!isDeactivated && (
-                              <>
-                                <button
-                                  onClick={() => setEditingProduct(product)}
-                                  className="p-2 text-[#103C2E] hover:bg-green-50 rounded-lg transition-colors"
-                                  title="Edit"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteProduct(product._id!)}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                  title="Delete"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </Card>
+            </div>
 
-            {/* Mobile Card View (hidden on desktop) */}
-            <div className="md:hidden space-y-3">
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
               {filteredProducts.map((product) => {
-                // Show as deactivated only if isActive is false AND status is not Available
+                const productAppeal = appeals.find(
+                  (appeal) => appeal.productId === product._id && appeal.type === 'listing_removal'
+                );
                 const isDeactivated = product.isActive === false && product.status !== 'Available';
 
                 return (
-                  <Card key={product._id} className={`border border-gray-200 overflow-hidden ${isDeactivated ? 'bg-red-50 border-red-300' : 'bg-white'}`}>
-                    <div className="p-3">
-                      <div className="flex gap-3">
-                        {/* Product Image */}
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                          {product.images && product.images.length > 0 ? (
-                            <Image
-                              src={product.images[0]}
-                              alt={product.name}
-                              width={80}
-                              height={80}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Package className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Product Info */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm sm:text-base text-gray-900 mb-1 line-clamp-2 break-words">
-                            {product.name}
-                          </h3>
-                          {isDeactivated && (
-                            <div className="flex flex-col gap-1 mb-1.5">
-                              <Badge className="bg-red-100 text-red-800 w-fit text-[10px] sm:text-xs px-1.5 py-0.5">
-                                Deactivated
-                              </Badge>
-                              <button
-                                onClick={() => window.location.href = `/my-appeals?product=${product._id}&name=${encodeURIComponent(product.name)}`}
-                                className="flex items-center gap-1 text-[10px] sm:text-xs text-blue-600 hover:text-blue-800 transition-colors w-fit"
-                                title="Appeal this deactivation"
-                              >
-                                <FileText className="w-3 h-3" />
-                                Appeal Deactivation
-                              </button>
-                            </div>
-                          )}
-                          <div className="flex items-center flex-wrap gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                            <span className="text-base sm:text-lg font-bold text-[#103C2E]">₱{product.price}</span>
-                            <Badge className={`${getStatusColor(product.status || 'Available')} text-[10px] sm:text-xs px-1.5 py-0.5`}>
-                              {product.status || 'Available'}
-                            </Badge>
+                  <Card 
+                    key={product._id} 
+                    className={`p-4 ${
+                      isDeactivated ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'
+                    }`}
+                  >
+                    <div className="flex gap-3">
+                      {/* Product Image */}
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                        {product.images && product.images.length > 0 ? (
+                          <Image
+                            src={product.images[0]}
+                            alt={product.name}
+                            width={64}
+                            height={64}
+                            className="w-full h-full object-cover"
+                            unoptimized={product.images[0].includes('digitaloceanspaces.com')}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-6 h-6 text-gray-400" />
                           </div>
-                          <div className="text-xs sm:text-sm text-gray-600 space-y-0.5">
-                            <p className="break-words">Available: <span className="font-medium text-green-600">{product.inventory_available ?? product.stock}</span></p>
-                            {(product.inventory_reserved || 0) > 0 && (
-                              <p className="text-[10px] sm:text-xs text-yellow-600">Reserved: {product.inventory_reserved}</p>
-                            )}
-                            {(product.inventory_committed || 0) > 0 && (
-                              <p className="text-[10px] sm:text-xs text-blue-600">Committed: {product.inventory_committed}</p>
-                            )}
-                          </div>
-                        </div>
+                        )}
                       </div>
 
-                      {/* Actions - Only show for active products */}
-                      {!isDeactivated && (
-                        <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+                      {/* Product Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`font-semibold text-base mb-1 line-clamp-1 ${
+                          isDeactivated ? 'text-red-800' : 'text-gray-900'
+                        }`}>
+                          {product.name}
+                        </h3>
+                        
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`text-lg font-bold ${
+                            isDeactivated ? 'text-red-700' : 'text-[#103C2E]'
+                          }`}>
+                            ₱{product.price.toFixed(2)}/{product.unit}
+                          </span>
+                          <Badge className={`${getStatusColor(product.status || 'Available')} text-xs`}>
+                            {product.status || 'Available'}
+                          </Badge>
+                        </div>
+
+                        <div className="text-sm text-gray-600">
+                          <span>Stock: </span>
+                          <span className={`font-medium ${
+                            isDeactivated ? 'text-red-600' : 'text-green-600'
+                          }`}>
+                            {product.inventory_available ?? product.stock}
+                          </span>
+                          {(product.inventory_reserved || 0) > 0 && (
+                            <span className="text-yellow-600 ml-2">
+                              • {product.inventory_reserved} reserved
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Deactivation Status */}
+                        {isDeactivated && (
+                          <div className="mt-2">
+                            <Badge className="bg-red-100 text-red-800 text-xs">
+                              Deactivated by Admin
+                            </Badge>
+                            {productAppeal && (
+                              <p className="text-xs mt-1 font-medium" style={{
+                                color: productAppeal.status === 'pending' ? '#FFA726' :
+                                       productAppeal.status === 'under_review' ? '#42A5F5' :
+                                       productAppeal.status === 'approved' ? '#4A7C59' : '#EF5350'
+                              }}>
+                                Appeal: {productAppeal.status === 'pending' ? 'Pending' :
+                                        productAppeal.status === 'under_review' ? 'Under Review' :
+                                        productAppeal.status === 'approved' ? 'Approved' : 'Rejected'}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
+                      {!isDeactivated ? (
+                        <>
                           <button
-                            onClick={() => setEditingProduct(product)}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-[#103C2E] bg-green-50 hover:bg-green-100 active:bg-green-100 rounded-lg transition-colors font-medium touch-manipulation"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingProduct(product);
+                            }}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-[#103C2E] bg-green-50 hover:bg-green-100 active:bg-green-100 rounded-lg transition-colors border border-green-200 touch-manipulation"
                           >
-                            <Edit className="w-3.5 h-3.5" />
+                            <Edit className="w-4 h-4" />
                             <span>Edit</span>
                           </button>
                           <button
-                            onClick={() => handleDeleteProduct(product._id!)}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 active:bg-red-100 rounded-lg transition-colors font-medium touch-manipulation"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteProduct(product._id!);
+                            }}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 active:bg-red-100 rounded-lg transition-colors border border-red-200 touch-manipulation"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                             <span>Delete</span>
                           </button>
-                        </div>
+                        </>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/my-appeals?product=${product._id}&name=${encodeURIComponent(product.name)}`);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-700 rounded-lg transition-colors touch-manipulation"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>Appeal Deactivation</span>
+                        </button>
                       )}
                     </div>
                   </Card>
@@ -689,3 +790,4 @@ export default function Products() {
     </div>
   );
 }
+

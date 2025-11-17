@@ -1,9 +1,49 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { IProduct } from '../types/product';
+
+// Utility function to extract unit from product name with asterisk annotation
+const extractUnitFromName = (productName: string, fallbackUnit?: string) => {
+  // Look for pattern: "ProductName *unit" (e.g., "Tomatoes *kg", "Cabbage *sack")
+  const unitMatch = productName.match(/\s*\*\s*([a-zA-Z]+)\s*$/);
+  
+  if (unitMatch) {
+    const extractedUnit = unitMatch[1];
+    const cleanedName = productName.replace(/\s*\*\s*[a-zA-Z]+\s*$/, '').trim();
+    
+    // Map common unit variations to standard units
+    const unitMapping: { [key: string]: string } = {
+      'kg': 'kg',
+      'kilogram': 'kg',
+      'kilograms': 'kg',
+      'gram': 'gram',
+      'grams': 'gram',
+      'g': 'gram',
+      'piece': 'piece',
+      'pieces': 'piece',
+      'pc': 'piece',
+      'pcs': 'piece',
+      'bunch': 'bunch',
+      'bunches': 'bunch',
+      'bundle': 'bundle',
+      'bundles': 'bundle',
+      'sack': 'sack',
+      'sacks': 'sack',
+      'bag': 'bag',
+      'bags': 'bag'
+    };
+    
+    const standardUnit = unitMapping[extractedUnit.toLowerCase()] || extractedUnit;
+    return { cleanName: cleanedName, unit: standardUnit };
+  }
+  
+  // If no asterisk annotation found, use the original name and fallback unit
+  return { cleanName: productName, unit: fallbackUnit || '' };
+};
 
 interface TopProductsProps {
   title?: string;
@@ -26,6 +66,20 @@ const TopProducts: React.FC<TopProductsProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const fetchTopProducts = useCallback(async (silent = false) => {
+  useEffect(() => {
+    fetchTopProducts();
+    
+    // Set up auto-refresh if interval is provided
+    if (refreshInterval > 0) {
+      const intervalId = setInterval(() => {
+        fetchTopProducts(true); // Silent refresh
+      }, refreshInterval);
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [refreshInterval, minRating, minReviews]);
+
+  const fetchTopProducts = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
       setError(null);
@@ -68,6 +122,7 @@ const TopProducts: React.FC<TopProductsProps> = ({
       return () => clearInterval(intervalId);
     }
   }, [refreshInterval, fetchTopProducts]);
+  };
 
   const handleNext = () => {
     if (currentIndex + maxItems < products.length) {
@@ -284,6 +339,7 @@ const TopProducts: React.FC<TopProductsProps> = ({
                     <Image
                       src={product.imageUrl}
                       alt={product.name}
+                      alt={extractUnitFromName(product.name).cleanName}
                       fill
                       className="object-contain p-2"
                       sizes="115px"
@@ -315,6 +371,7 @@ const TopProducts: React.FC<TopProductsProps> = ({
                       }}
                     >
                       {product.name}
+                      {extractUnitFromName(product.name).cleanName}
                     </h4>
 
                     {/* Rating Display */}

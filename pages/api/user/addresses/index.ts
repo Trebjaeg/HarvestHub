@@ -62,10 +62,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     else if (req.method === 'POST') {
       // Add new address
-      const { label, fullName, phone, street, city, province, zipCode, isDefault, type } = req.body;
+      const { label, fullName, phone, street, barangay, city, province, zipCode, isDefault, type } = req.body;
 
       // Validate required fields
-      if (!label || !fullName || !phone || !street || !city || !province) {
+      if (!label || !fullName || !phone || !street || !barangay || !city || !province) {
+      const { label, fullName, phone, street, barangay, city, province, zipCode, isDefault, type } = req.body;
+
+      // Validate required fields
+      if (!label || !fullName || !phone || !street || !barangay || !city || !province) {
         clearTimeout(timeoutId);
         return res.status(400).json({ message: 'All required fields must be filled' });
       }
@@ -95,6 +99,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         fullName,
         phone,
         street,
+        barangay: barangay || '',
         city,
         province,
         zipCode: zipCode || '',
@@ -125,8 +130,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } catch (error) {
     clearTimeout(timeoutId);
     console.error('Error in addresses API:', error);
+    console.error('Request body:', req.body);
     if (!res.headersSent) {
-      return res.status(500).json({ message: 'Internal server error' });
+      return res.status(500).json({ 
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   }
 }

@@ -106,6 +106,7 @@ const UserSchema = new Schema({
     fullName: { type: String, required: true, maxlength: 100 },
     phone: { type: String, required: true, maxlength: 20 },
     street: { type: String, required: true, maxlength: 500 },
+    barangay: { type: String, maxlength: 100 },
     city: { type: String, required: true, maxlength: 100 },
     province: { type: String, required: true, maxlength: 100 },
     zipCode: { type: String, maxlength: 10 },

@@ -425,9 +425,9 @@ export default function CheckoutPage() {
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-medium">{address.fullName}</p>
-                            <p className="text-sm text-gray-600">{address.phone}</p>
-                            <p className="text-sm text-gray-600">
-                              {address.street}, {address.city}, {address.province}
+                              <p className="text-sm text-gray-600">{address.phone}</p>
+                              <p className="text-sm text-gray-600">
+                                {address.street}, {address.barangay && `${address.barangay}, `}{address.city}, {address.province}
                               {address.zipCode && ` ${address.zipCode}`}
                             </p>
                           </div>
@@ -673,3 +673,4 @@ export default function CheckoutPage() {
     </div>
   );
 }
+

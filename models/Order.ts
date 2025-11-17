@@ -47,6 +47,7 @@ export interface IOrder {
   delivery_provider?: 'lalamove' | 'manual';
   lalamove_order_id?: string;
   lalamove_quotation_id?: string;
+  lalamove_share_link?: string;
   delivery_status?: string;
   delivery_eta?: Date;
   createdAt: Date;
@@ -219,6 +220,9 @@ const OrderSchema = new mongoose.Schema<IOrder>({
     type: String
   },
   lalamove_quotation_id: {
+    type: String
+  },
+  lalamove_share_link: {
     type: String
   },
   delivery_status: {

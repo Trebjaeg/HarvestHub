@@ -4,6 +4,44 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
+// Utility function to extract unit from product name with asterisk annotation
+const extractUnitFromName = (productName: string, fallbackUnit?: string) => {
+  // Look for pattern: "ProductName *unit" (e.g., "Tomatoes *kg", "Cabbage *sack")
+  const unitMatch = productName.match(/\s*\*\s*([a-zA-Z]+)\s*$/);
+  
+  if (unitMatch) {
+    const extractedUnit = unitMatch[1];
+    const cleanedName = productName.replace(/\s*\*\s*[a-zA-Z]+\s*$/, '').trim();
+    
+    // Map common unit variations to standard units
+    const unitMapping: { [key: string]: string } = {
+      'kg': 'kg',
+      'kilogram': 'kg',
+      'kilograms': 'kg',
+      'gram': 'gram',
+      'grams': 'gram',
+      'g': 'gram',
+      'piece': 'piece',
+      'pieces': 'piece',
+      'pc': 'piece',
+      'pcs': 'piece',
+      'bunch': 'bunch',
+      'bunches': 'bunch',
+      'bundle': 'bundle',
+      'bundles': 'bundle',
+      'sack': 'sack',
+      'sacks': 'sack',
+      'bag': 'bag',
+      'bags': 'bag'
+    };
+    
+    const standardUnit = unitMapping[extractedUnit.toLowerCase()] || extractedUnit;
+    return { cleanName: cleanedName, unit: standardUnit };
+  }
+  
+  // If no asterisk annotation found, use the original name and fallback unit
+  return { cleanName: productName, unit: fallbackUnit || '' };
+};
 interface Report {
   _id: string;
   productId: string;
@@ -250,17 +288,22 @@ export default function AdminReportsPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           {report.productImage && (
-                            <div className="flex-shrink-0 h-10 w-10 relative">
-                              <Image
-                                src={report.productImage}
-                                alt={report.productName}
+                              <div className="flex-shrink-0 h-10 w-10 relative">
+                                <Image
+                                  src={report.productImage}
+                                  alt={extractUnitFromName(report.productName).cleanName}
                                 fill
                                 className="rounded object-cover"
                               />
                             </div>
                           )}
-                          <div className="ml-3">
-                            <div className="text-sm font-medium text-gray-900 font-poppins">{report.productName}</div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-gray-900 font-poppins">
+                                {(() => {
+                                  const { cleanName, unit } = extractUnitFromName(report.productName);
+                                  return unit ? `${cleanName} (${unit})` : cleanName;
+                                })()}
+                              </div>
                           </div>
                         </div>
                       </td>
@@ -335,8 +378,13 @@ export default function AdminReportsPage() {
               {/* Product Info */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3 font-poppins">Product Information</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm font-poppins"><strong>Product:</strong> {selectedReport.productName}</p>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm font-poppins"><strong>Product:</strong> 
+                      {(() => {
+                        const { cleanName, unit } = extractUnitFromName(selectedReport.productName);
+                        return unit ? `${cleanName} (${unit})` : cleanName;
+                      })()}
+                    </p>
                   <p className="text-sm font-poppins mt-2"><strong>Seller:</strong> {selectedReport.sellerName}</p>
                 </div>
               </div>
@@ -414,3 +462,4 @@ export default function AdminReportsPage() {
     </div>
   );
 }
+

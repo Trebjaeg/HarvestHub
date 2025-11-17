@@ -13,6 +13,7 @@ import {
   HelpCircle,
   User,
   Home,
+  ArrowLeft,
   Menu,
   X,
   MapPin,
@@ -53,7 +54,7 @@ const menuItems = [
   {
     icon: ShoppingCart,
     label: "Manage Orders",
-    href: "/orders",
+    href: "/manage-orders",
   },
   {
     icon: MapPin,
@@ -110,7 +111,7 @@ export default function Sidebar() {
         const data = await response.json();
         setProfile(data.seller);
       }
-    } catch {
+    } catch (error) {
       // Silent error handling
     } finally {
       setLoading(false);
@@ -125,7 +126,7 @@ export default function Sidebar() {
     setShowLogoutModal(false);
     try {
       // Call logout API to clear server-side session
-      await fetch('/api/auth/logout', {
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -150,11 +151,11 @@ export default function Sidebar() {
         localStorage.removeItem('logout-event');
       }
       
-    } catch {
+    } catch (error) {
       // Silent error handling
     } finally {
       // Force a complete page reload to clear any cached state
-      window.location.href = '/';
+      window.location.href = '/auth';
     }
   };
 
@@ -339,3 +340,4 @@ export default function Sidebar() {
     </>
   );
 }
+

@@ -13,6 +13,8 @@ interface FarmerStats {
   reviewCount: number;
   categories: string[];
   score: number;
+  firstName: string;
+  createdAt: Date;
 }
 
 interface FilterCriteria {
@@ -114,21 +116,38 @@ export async function GET(request: NextRequest) {
     // Get or compute top farmer rankings with real-time data
     const rankings = await getTopFarmerRankingsRealTime(config);
 
-    // Sort farmers by their computed sales (real-time from products)
-    const farmerIds = Object.entries(rankings)
-      .sort(([, a], [, b]) => {
-        // Sort by totalSales primarily
-        const salesDiff = (b as any).totalSales - (a as any).totalSales;
-        if (salesDiff !== 0) return salesDiff;
-        
-        // Then by rating if sales are equal
-        const ratingDiff = (b as any).averageRating - (a as any).averageRating;
-        if (ratingDiff !== 0) return ratingDiff;
-        
-        // Finally by product count
-        return (b as any).productCount - (a as any).productCount;
-      })
-      .map(([id]) => id);
+    // Apply sorting based on user selection
+    const sortOption = config.sorting.options.find((opt: SortOption) => opt.id === effectiveSort);
+    let farmerIds: string[];
+    
+    if (sortOption) {
+      farmerIds = Object.entries(rankings)
+        .sort(([, a], [, b]) => {
+          const aValue = (a as any)[sortOption.field];
+          const bValue = (b as any)[sortOption.field];
+          
+          // Handle different field types
+          if (sortOption.field === 'firstName' || sortOption.field === 'name') {
+            // String comparison for name sorting
+            const aStr = String(aValue || '').toLowerCase();
+            const bStr = String(bValue || '').toLowerCase();
+            const result = aStr.localeCompare(bStr);
+            return sortOption.direction === 'asc' ? result : -result;
+          } else {
+            // Numeric comparison for other fields
+            const aNum = Number(aValue) || 0;
+            const bNum = Number(bValue) || 0;
+            const result = aNum - bNum;
+            return sortOption.direction === 'asc' ? result : -result;
+          }
+        })
+        .map(([id]) => id);
+    } else {
+      // Fallback to default sorting if option not found
+      farmerIds = Object.entries(rankings)
+        .sort(([, a], [, b]) => (b as any).totalSales - (a as any).totalSales)
+        .map(([id]) => id);
+    }
 
     // Apply additional filters but maintain ranking order
     const filteredQuery = { ...query, _id: { $in: farmerIds } };
@@ -428,7 +447,7 @@ async function getTopFarmerRankingsRealTime(config: ITopFarmersConfig): Promise<
     role: { $in: ['farmer', 'seller'] },  // ✅ Include both farmers AND sellers
     status: 'active',
     isVerified: true
-  }).select('_id updatedAt').lean();
+  }).select('_id firstName updatedAt createdAt').lean();
 
   const rankings: Record<string, FarmerStats> = {};
   
@@ -453,7 +472,9 @@ async function getTopFarmerRankingsRealTime(config: ITopFarmersConfig): Promise<
           productCount: 0,
           reviewCount: 0,
           categories: [],
-          score: 0
+          score: 0,
+          firstName: (farmer as any).firstName || '',
+          createdAt: (farmer as any).createdAt || farmer.updatedAt
         };
         return;
       }
@@ -512,7 +533,9 @@ async function getTopFarmerRankingsRealTime(config: ITopFarmersConfig): Promise<
         productCount: farmerProducts.length,
         reviewCount,
         categories,
-        score
+        score,
+        firstName: (farmer as any).firstName || '',
+        createdAt: (farmer as any).createdAt || farmer.updatedAt
       };
     })
   );
@@ -602,3 +625,4 @@ async function getDynamicCategoryFilters(config: ITopFarmersConfig, baseQuery: R
 
   return filtersWithCounts.filter((category: CategoryWithCount) => category.count > 0 || category.id === 'all');
 }
+
