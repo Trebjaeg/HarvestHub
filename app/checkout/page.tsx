@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useAuthUserData } from '@/hooks/useAuthUserData';
 import LoadingDots from '@/components/ui/LoadingDots';
-import { calculateDeliveryFees, getDeliveryFee, isDeliveryAvailable, VEHICLE_OPTIONS } from '@/lib/delivery-calculator';
+import { calculateDeliveryFees, getDeliveryFee, isDeliveryAvailable, VEHICLE_OPTIONS, getVehicleConfig } from '@/lib/delivery-calculator';
 
 interface CheckoutItem {
   _id: string;
@@ -34,6 +34,7 @@ interface SavedAddress {
   fullName: string;
   phone: string;
   street: string;
+  barangay?: string;
   city: string;
   province: string;
   zipCode?: string;
@@ -48,7 +49,17 @@ interface DeliveryOption {
   icon: string;
   estimatedTime: string;
   fee: number;
+  overweight?: boolean;
 }
+
+// Vehicle configuration for weight limits
+const VEHICLE_CONFIG: { [key: string]: { max: number } } = {
+  MOTORCYCLE: { max: 20 },
+  SEDAN: { max: 50 },
+  MPV: { max: 100 },
+  VAN: { max: 200 },
+  TRUCK: { max: 500 }
+};
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -72,6 +83,23 @@ export default function CheckoutPage() {
     zipCode: ''
   });
   const [paymentMethod, setPaymentMethod] = useState('cod');
+  
+  // Voucher states
+  const [voucherCode, setVoucherCode] = useState('');
+  const [appliedVoucher, setAppliedVoucher] = useState<{
+    code: string;
+    description: string;
+    type: string;
+    discount: number;
+    freeDelivery: boolean;
+  } | null>(null);
+  const [voucherLoading, setVoucherLoading] = useState(false);
+  const [voucherError, setVoucherError] = useState('');
+  const [availableVouchers, setAvailableVouchers] = useState<Array<{
+    code: string;
+    description: string;
+    type: string;
+  }>>([]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -95,7 +123,23 @@ export default function CheckoutPage() {
     }
 
     fetchSavedAddresses();
+    fetchAvailableVouchers();
   }, [isAuthenticated, router]);
+
+  const fetchAvailableVouchers = async () => {
+    try {
+      const response = await fetch('/api/vouchers/available', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableVouchers(data.vouchers || []);
+      }
+    } catch (error) {
+      console.error('Error fetching vouchers:', error);
+    }
+  };
 
   // Calculate delivery options when address province changes
   useEffect(() => {
@@ -168,16 +212,10 @@ export default function CheckoutPage() {
   }, [shippingAddress.province, shippingAddress.city, checkoutData?.subtotal]);
 
   const fetchSavedAddresses = async () => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
     try {
       const response = await fetch('/api/user/addresses', {
-        credentials: 'include',
-        signal: controller.signal
+        credentials: 'include'
       });
-
-      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
@@ -201,7 +239,10 @@ export default function CheckoutPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching addresses:', error);
+      // Only log if it's not an abort error
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error('Error fetching addresses:', error);
+      }
     }
   };
 
@@ -266,6 +307,75 @@ export default function CheckoutPage() {
     }
 
     return true;
+  };
+
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim()) {
+      setVoucherError('Please enter a voucher code');
+      return;
+    }
+
+    if (!checkoutData) {
+      setVoucherError('Checkout data not loaded');
+      return;
+    }
+
+    setVoucherLoading(true);
+    setVoucherError('');
+
+    try {
+      console.log('Applying voucher:', voucherCode, 'Subtotal:', checkoutData.subtotal);
+      
+      const response = await fetch('/api/vouchers/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          code: voucherCode.toUpperCase().trim(),
+          subtotal: checkoutData.subtotal
+        })
+      });
+
+      const data = await response.json();
+      console.log('Voucher validation response:', data);
+
+      if (!response.ok) {
+        console.error('Voucher validation failed:', data);
+        setVoucherError(data.error || 'Invalid voucher code');
+        setAppliedVoucher(null);
+        return;
+      }
+
+      console.log('Voucher applied successfully:', data.voucher);
+      setAppliedVoucher(data.voucher);
+      setVoucherError('');
+      
+      // If it's a free delivery voucher, set delivery fee to 0
+      if (data.voucher.freeDelivery) {
+        console.log('Setting delivery fee to 0 for free delivery voucher');
+        setCurrentDeliveryFee(0);
+      }
+    } catch (error) {
+      console.error('Error applying voucher:', error);
+      setVoucherError('Failed to apply voucher. Please try again.');
+      setAppliedVoucher(null);
+    } finally {
+      setVoucherLoading(false);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherCode('');
+    setVoucherError('');
+    
+    // Recalculate delivery fee from selected vehicle
+    if (shippingAddress.province) {
+      const fee = getDeliveryFee(shippingAddress.province, selectedVehicle);
+      setCurrentDeliveryFee(fee);
+    }
   };
 
   const handlePlaceOrder = async () => {
@@ -629,19 +739,111 @@ export default function CheckoutPage() {
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
               <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
               
+              {/* Voucher Input */}
+              <div className="mb-4 pb-4 border-b">
+                <label className="block text-sm font-medium mb-2">Voucher Code</label>
+                {!appliedVoucher ? (
+                  <>
+                    {/* Available Vouchers Dropdown */}
+                    {availableVouchers.length > 0 && (
+                      <div className="mb-2">
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              setVoucherCode(e.target.value);
+                            }
+                          }}
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                          disabled={voucherLoading}
+                        >
+                          <option value="">Select a voucher</option>
+                          {availableVouchers.map((voucher) => (
+                            <option key={voucher.code} value={voucher.code}>
+                              {voucher.code} - {voucher.description}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    
+                    {/* Manual Input */}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                        placeholder="Or enter voucher code"
+                        className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        disabled={voucherLoading}
+                      />
+                      <button
+                        onClick={handleApplyVoucher}
+                        disabled={voucherLoading || !voucherCode.trim()}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+                      >
+                        {voucherLoading ? 'Applying...' : 'Apply'}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex-1">
+                      <div className="font-semibold text-green-700">{appliedVoucher.code}</div>
+                      <div className="text-xs text-green-600">{appliedVoucher.description}</div>
+                    </div>
+                    <button
+                      onClick={handleRemoveVoucher}
+                      className="text-red-600 hover:text-red-700 text-sm font-medium ml-2"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+                {voucherError && (
+                  <p className="text-sm text-red-600 mt-1">{voucherError}</p>
+                )}
+              </div>
+              
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
                   <span>₱{checkoutData.subtotal.toFixed(2)}</span>
                 </div>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span className="ml-4">VATable Amount</span>
+                  <span>₱{(checkoutData.subtotal / 1.12).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span className="ml-4">VAT (12%)</span>
+                  <span>₱{(checkoutData.subtotal - (checkoutData.subtotal / 1.12)).toFixed(2)}</span>
+                </div>
+                {appliedVoucher && appliedVoucher.type !== 'free_delivery' && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Voucher Discount</span>
+                    <span>-₱{appliedVoucher.discount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span>Delivery Fee</span>
-                  <span>₱{currentDeliveryFee.toFixed(2)}</span>
+                  <span className={appliedVoucher?.freeDelivery ? 'line-through text-gray-400' : ''}>
+                    ₱{currentDeliveryFee.toFixed(2)}
+                  </span>
                 </div>
+                {appliedVoucher?.freeDelivery && (
+                  <div className="flex justify-between text-green-600 text-sm">
+                    <span>Free Delivery Applied!</span>
+                    <span>-₱{currentDeliveryFee.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="border-t pt-3">
                   <div className="flex justify-between font-semibold text-lg">
                     <span>Total</span>
-                    <span>₱{(checkoutData.subtotal + currentDeliveryFee).toFixed(2)}</span>
+                    <span>₱{(
+                      checkoutData.subtotal 
+                      - (appliedVoucher && appliedVoucher.type !== 'free_delivery' ? appliedVoucher.discount : 0)
+                      + (appliedVoucher?.freeDelivery ? 0 : currentDeliveryFee)
+                    ).toFixed(2)}</span>
                   </div>
                 </div>
               </div>

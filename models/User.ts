@@ -153,6 +153,9 @@ UserSchema.index({ accountLocked: 1, lockUntil: 1 });
 UserSchema.index({ suspendedBy: 1 });
 UserSchema.index({ tokenVersion: 1 });
 
+// Compound index for top farmers query (role + status + isVerified)
+UserSchema.index({ role: 1, status: 1, isVerified: 1 });
+
 // Update the updatedAt field on save
 UserSchema.pre('save', function(next) {
   this.updatedAt = new Date();

@@ -61,6 +61,7 @@ interface Order {
     city: string;
     province: string;
     zipCode: string;
+    barangay?: string;
   };
   cancellationRequest?: {
     requestedBy: 'buyer';
@@ -442,7 +443,9 @@ const ManageOrders = () => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
-      currency: 'PHP'
+      currency: 'PHP',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(amount);
   };
 

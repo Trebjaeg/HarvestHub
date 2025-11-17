@@ -15,6 +15,7 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  AlertTriangle,
   PackageCheck,
   FileText,
   Mail,
@@ -68,6 +69,20 @@ interface Order {
     requestedAt: string;
     status: 'pending' | 'approved' | 'rejected';
   };
+  refusalReason?: string;
+  refusalDate?: string;
+  refusalProof?: {
+    fileUrl: string;
+    fileName: string;
+    uploadedAt: string;
+  }[];
+  deliveryAttempts?: Array<{
+    attemptNumber: number;
+    attemptDate: string;
+    status: 'failed' | 'successful';
+    notes?: string;
+    markedBy: string;
+  }>;
   estimatedDelivery?: string;
   actualDelivery?: string;
   totalItems: number;
@@ -155,6 +170,15 @@ const ManageOrders = () => {
     success: boolean;
     message: string;
   }>({ open: false, success: false, message: '' });
+  
+  // Delivery attempt dialog state
+  const [showDeliveryAttemptDialog, setShowDeliveryAttemptDialog] = useState(false);
+  const [deliveryAttemptData, setDeliveryAttemptData] = useState<{
+    orderId: string;
+    attemptNumber: 1 | 2;
+    status: 'failed' | 'successful';
+    notes: string;
+  } | null>(null);
   
   // Filters
   const [filters, setFilters] = useState({
@@ -429,6 +453,68 @@ const ManageOrders = () => {
     }
   };
 
+  const handleDeliveryAttempt = (orderId: string, attemptNumber: 1 | 2) => {
+    setDeliveryAttemptData({
+      orderId,
+      attemptNumber,
+      status: 'failed',
+      notes: ''
+    });
+    setShowDeliveryAttemptDialog(true);
+  };
+
+  const confirmDeliveryAttempt = async () => {
+    if (!deliveryAttemptData) return;
+
+    try {
+      setUpdatingOrderId(deliveryAttemptData.orderId);
+      setShowDeliveryAttemptDialog(false);
+
+      const response = await fetch(`/api/seller/orders/${deliveryAttemptData.orderId}/delivery-attempt`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          attemptNumber: deliveryAttemptData.attemptNumber,
+          status: deliveryAttemptData.status,
+          notes: deliveryAttemptData.notes
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        await fetchOrders(false);
+        
+        setResultDialog({
+          open: true,
+          success: true,
+          message: `Delivery attempt ${deliveryAttemptData.attemptNumber} marked as ${deliveryAttemptData.status}`
+        });
+      } else {
+        await fetchOrders(false);
+        
+        setResultDialog({
+          open: true,
+          success: false,
+          message: data.message || 'Failed to mark delivery attempt'
+        });
+      }
+    } catch (error) {
+      await fetchOrders(false);
+      setResultDialog({
+        open: true,
+        success: false,
+        message: 'Error marking delivery attempt. Please try again.'
+      });
+    } finally {
+      setUpdatingOrderId(null);
+      setDeliveryAttemptData(null);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -442,7 +528,9 @@ const ManageOrders = () => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
-      currency: 'PHP'
+      currency: 'PHP',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(amount);
   };
 
@@ -516,7 +604,6 @@ const ManageOrders = () => {
 
         {/* Filters and Search */}
         <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 flex-1">
               {/* Search */}
@@ -689,20 +776,6 @@ const ManageOrders = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-3 sm:space-y-4">
-            {orders.map((order) => (
-              <div key={order._id} className="bg-white rounded-lg shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow">
-                {/* Order Header */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 mb-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
-                      <h3 className="text-base sm:text-lg font-semibold text-[#103C2E] break-all" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        #{order.orderNumber}
-                      </h3>
-                      <span className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${statusColors[order.status]}`}>
-                        {getStatusIcon(order.status)}
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </span>
           <div className="space-y-4">
             {orders.map((order) => (
               <div key={order._id} className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
@@ -740,19 +813,6 @@ const ManageOrders = () => {
                       <span className="flex items-center gap-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         <Mail className="w-4 h-4 flex-shrink-0" />
                         <span className="break-all">{order.buyerName}</span>
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-left sm:text-right flex-shrink-0">
-                    <div className="text-xl sm:text-2xl font-bold text-[#103C2E]" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        <Clock className="w-4 h-4" />
-                        {formatDate(order.orderDate)}
-                      </span>
-                      <span className="flex items-center gap-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        <Mail className="w-4 h-4" />
-                        {order.buyerName}
                       </span>
                     </div>
                   </div>
@@ -866,12 +926,72 @@ const ManageOrders = () => {
                   </div>
                 )}
 
+                {/* Refusal Information (when buyer refused delivery) */}
+                {order.status === 'cancelled' && order.refusalReason && (
+                  <div className="border-t pt-4">
+                    <div className="flex items-start gap-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                      <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-orange-900 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          Delivery Refused by Buyer
+                        </p>
+                        <p className="text-xs text-orange-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          The buyer refused to accept this delivery on {order.refusalDate && new Date(order.refusalDate).toLocaleDateString()}
+                        </p>
+                        {order.refusalReason && (
+                          <div className="bg-white border border-orange-200 rounded p-3 my-2">
+                            <p className="text-xs font-medium text-gray-700 mb-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                              Refusal Reason:
+                            </p>
+                            <p className="text-sm text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                              {order.refusalReason}
+                            </p>
+                          </div>
+                        )}
+                        {order.refusalProof && order.refusalProof.length > 0 && (
+                          <div className="bg-white border border-orange-200 rounded p-3 mt-2">
+                            <p className="text-xs font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                              Proof of Refusal ({order.refusalProof.length} {order.refusalProof.length === 1 ? 'file' : 'files'}):
+                            </p>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {order.refusalProof.map((proof: any, index: number) => (
+                                <a
+                                  key={index}
+                                  href={proof.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex flex-col items-center p-2 border border-gray-200 rounded hover:border-orange-300 hover:bg-orange-50 transition-colors"
+                                >
+                                  {proof.fileName.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                    <img 
+                                      src={proof.fileUrl} 
+                                      alt={proof.fileName}
+                                      className="w-full h-16 object-cover rounded mb-1"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-16 flex items-center justify-center bg-gray-100 rounded mb-1">
+                                      <Package className="w-6 h-6 text-gray-400" />
+                                    </div>
+                                  )}
+                                  <p className="text-xs text-gray-600 text-center truncate w-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                    {proof.fileName}
+                                  </p>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Shipped Order Notice */}
                 {order.status === 'shipped' && (
-                  <div className={`${order.cancellationRequest?.status === 'pending' ? '' : 'border-t'} pt-4`}>
+                  <div className={`${order.cancellationRequest?.status === 'pending' ? '' : 'border-t'} pt-4 space-y-3`}>
                     <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <Clock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                      <div>
+                      <div className="flex-1">
                         <p className="text-sm font-medium text-blue-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
                           Waiting for buyer confirmation
                         </p>
@@ -880,13 +1000,54 @@ const ManageOrders = () => {
                         </p>
                       </div>
                     </div>
+
+                    {/* Delivery Attempts Tracking */}
+                    <div className="flex items-start gap-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                      <Truck className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-purple-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          Mark Delivery Attempts
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {(!order.deliveryAttempts || order.deliveryAttempts.length === 0) && (
+                            <button
+                              onClick={() => handleDeliveryAttempt(order._id, 1)}
+                              disabled={updatingOrderId === order._id}
+                              className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-medium transition-colors disabled:opacity-50"
+                              style={{ fontFamily: 'Poppins, sans-serif' }}
+                            >
+                              Mark 1st Attempt
+                            </button>
+                          )}
+                          {order.deliveryAttempts && order.deliveryAttempts.length === 1 && (
+                            <button
+                              onClick={() => handleDeliveryAttempt(order._id, 2)}
+                              disabled={updatingOrderId === order._id}
+                              className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-medium transition-colors disabled:opacity-50"
+                              style={{ fontFamily: 'Poppins, sans-serif' }}
+                            >
+                              Mark 2nd Attempt
+                            </button>
+                          )}
+                        </div>
+                        {order.deliveryAttempts && order.deliveryAttempts.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {order.deliveryAttempts.map((attempt: any, index: number) => (
+                              <p key={index} className="text-xs text-purple-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                Attempt {attempt.attemptNumber}: <span className="font-medium">{attempt.status}</span>
+                                {attempt.notes && ` - ${attempt.notes}`}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
 
                 {/* Action Buttons */}
                 {statusActions[order.status] && statusActions[order.status].length > 0 && (
                   <div className={`${order.status === 'shipped' ? '' : 'border-t'} pt-4`}>
-                    <div className="flex flex-col sm:flex-row flex-wrap gap-2">
                     <div className="flex flex-wrap gap-2">
                       {statusActions[order.status].map((action) => {
                         const Icon = action.icon;
@@ -895,7 +1056,6 @@ const ManageOrders = () => {
                             key={action.nextStatus}
                             onClick={() => handleUpdateStatus(order._id, action.nextStatus)}
                             disabled={updatingOrderId === order._id}
-                            className={`flex items-center justify-center gap-2 px-4 py-2 ${action.color} text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-sm sm:text-base`}
                             className={`flex items-center gap-2 px-4 py-2 ${action.color} text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
                             style={{ fontFamily: 'Poppins, sans-serif' }}
                           >
@@ -933,16 +1093,6 @@ const ManageOrders = () => {
                 onClick={() => setCurrentPage(pagination.currentPage - 1)}
                 disabled={!pagination.hasPrevPage}
                 className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-          <div className="mt-6 flex items-center justify-between bg-white rounded-lg shadow-sm px-6 py-4">
-            <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Page {pagination.currentPage} of {pagination.totalPages}
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setCurrentPage(pagination.currentPage - 1)}
-                disabled={!pagination.hasPrevPage}
-                className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 Previous
@@ -972,7 +1122,6 @@ const ManageOrders = () => {
                 onClick={() => setCurrentPage(pagination.currentPage + 1)}
                 disabled={!pagination.hasNextPage}
                 className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-                className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 Next
@@ -980,7 +1129,6 @@ const ManageOrders = () => {
             </div>
           </div>
         )}
-      </div>
 
       {/* Custom Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
@@ -1026,6 +1174,76 @@ const ManageOrders = () => {
                 } text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200`}
               >
                 OK
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delivery Attempt Dialog */}
+      <Dialog open={showDeliveryAttemptDialog} onOpenChange={setShowDeliveryAttemptDialog}>
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl p-8">
+          <DialogTitle className="text-xl font-semibold text-gray-900 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Mark Delivery Attempt #{deliveryAttemptData?.attemptNumber}
+          </DialogTitle>
+          <div className="flex flex-col gap-4">
+            <p className="text-gray-600 text-center" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              Record the delivery attempt for this order
+            </p>
+
+            {/* Status Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Status <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={deliveryAttemptData?.status || 'failed'}
+                onChange={(e) => deliveryAttemptData && setDeliveryAttemptData({
+                  ...deliveryAttemptData,
+                  status: e.target.value as 'failed' | 'successful'
+                })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                <option value="failed">Failed Delivery</option>
+                <option value="successful">Successful Delivery</option>
+              </select>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Notes (Optional)
+              </label>
+              <textarea
+                value={deliveryAttemptData?.notes || ''}
+                onChange={(e) => deliveryAttemptData && setDeliveryAttemptData({
+                  ...deliveryAttemptData,
+                  notes: e.target.value
+                })}
+                placeholder="e.g., Customer not home, will reattempt tomorrow..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+                rows={3}
+                maxLength={500}
+              />
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeliveryAttemptDialog(false)}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeliveryAttempt}
+                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+              >
+                Mark Attempt
               </button>
             </div>
           </div>
@@ -1078,6 +1296,7 @@ const ManageOrders = () => {
           </DialogContent>
         </Dialog>
       )}
+      </div>
     </div>
   );
 };

@@ -54,9 +54,13 @@ interface OrderDetails {
   };
   sellerId: string;
   sellerName: string;
-  notes?: string;
   refusalReason?: string;
   refusalDate?: string;
+  refusalProof?: {
+    fileUrl: string;
+    fileName: string;
+    uploadedAt: string;
+  }[];
   cancellationRequest?: {
     requestedBy: 'buyer';
     reason?: string;
@@ -130,6 +134,7 @@ export default function OrderDetailsPage() {
   // Cancel confirmation dialog state
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [cancelReasonCategory, setCancelReasonCategory] = useState<'change_address' | 'modify_order' | 'wrong_item' | 'changed_mind' | 'duplicate_order' | 'other'>('other');
   
   // Receive confirmation dialog state
   const [showReceiveDialog, setShowReceiveDialog] = useState(false);
@@ -137,6 +142,8 @@ export default function OrderDetailsPage() {
   // Refuse delivery dialog state
   const [showRefuseDialog, setShowRefuseDialog] = useState(false);
   const [refuseReason, setRefuseReason] = useState('');
+  const [refuseProofFiles, setRefuseProofFiles] = useState<File[]>([]);
+  const [uploadingProof, setUploadingProof] = useState(false);
   
   // Result dialog state
   const [resultDialog, setResultDialog] = useState<{
@@ -213,7 +220,8 @@ export default function OrderDetailsPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          reason: cancelReason
+          reason: cancelReason,
+          reasonCategory: cancelReasonCategory
         })
       });
 
@@ -222,6 +230,7 @@ export default function OrderDetailsPage() {
       if (response.ok) {
         setShowCancelDialog(false);
         setCancelReason(''); // Reset reason
+        setCancelReasonCategory('other'); // Reset category
         
         // Check if it requires approval
         if (data.requiresApproval) {
@@ -321,6 +330,7 @@ export default function OrderDetailsPage() {
   const handleRefuseDelivery = async () => {
     if (!order) return;
     setRefuseReason('');
+    setRefuseProofFiles([]);
     setShowRefuseDialog(true);
   };
 
@@ -338,13 +348,47 @@ export default function OrderDetailsPage() {
 
     try {
       setRefusing(true);
+      
+      // Upload proof files if any
+      let uploadedProofs: { fileUrl: string; fileName: string }[] = [];
+      
+      if (refuseProofFiles.length > 0) {
+        setUploadingProof(true);
+        
+        for (const file of refuseProofFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('orderId', orderId);
+          formData.append('type', 'refusal_proof');
+          
+          const uploadResponse = await fetch('/api/upload/refusal-proof', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+          });
+          
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json();
+            uploadedProofs.push({
+              fileUrl: uploadData.fileUrl,
+              fileName: file.name
+            });
+          }
+        }
+        
+        setUploadingProof(false);
+      }
+      
       const response = await fetch(`/api/buyer/orders/${orderId}/refuse`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ reason: refuseReason })
+        body: JSON.stringify({ 
+          reason: refuseReason,
+          proofFiles: uploadedProofs
+        })
       });
 
       const data = await response.json();
@@ -452,7 +496,9 @@ export default function OrderDetailsPage() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
-      currency: 'PHP'
+      currency: 'PHP',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(amount);
   };
 
@@ -709,18 +755,6 @@ export default function OrderDetailsPage() {
                 </div>
               </div>
 
-              {/* Notes */}
-              {order.notes && (
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    Order Notes
-                  </h2>
-                  <p className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    {order.notes}
-                  </p>
-                </div>
-              )}
-
               {/* Cancellation Request Status */}
               {order.cancellationRequest && (
                 <div className={`border rounded-lg shadow-sm p-6 ${
@@ -811,6 +845,44 @@ export default function OrderDetailsPage() {
                           {order.refusalReason}
                         </p>
                       </div>
+                      
+                      {/* Display Proof Files */}
+                      {order.refusalProof && order.refusalProof.length > 0 && (
+                        <div className="bg-white rounded-lg p-4 border border-orange-200 mt-3">
+                          <p className="text-sm font-medium text-gray-700 mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                            Proof of Refusal ({order.refusalProof.length} {order.refusalProof.length === 1 ? 'file' : 'files'}):
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            {order.refusalProof.map((proof, index) => (
+                              <a
+                                key={index}
+                                href={proof.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-col items-center p-3 border border-gray-200 rounded-lg hover:border-orange-300 hover:bg-orange-50 transition-colors"
+                              >
+                                {proof.fileName.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                  <img 
+                                    src={proof.fileUrl} 
+                                    alt={proof.fileName}
+                                    className="w-full h-24 object-cover rounded mb-2"
+                                  />
+                                ) : (
+                                  <div className="w-full h-24 flex items-center justify-center bg-gray-100 rounded mb-2">
+                                    <Download className="w-8 h-8 text-gray-400" />
+                                  </div>
+                                )}
+                                <p className="text-xs text-gray-600 text-center truncate w-full" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                  {proof.fileName}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                                  {new Date(proof.uploadedAt).toLocaleDateString()}
+                                </p>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1092,23 +1164,47 @@ export default function OrderDetailsPage() {
             
             {/* Reason Textarea - Only show for confirmed/preparing/shipped orders */}
             {order && ['confirmed', 'preparing', 'shipped'].includes(order.status) && (
-              <div className="w-full">
-                <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  Reason for Cancellation
-                </label>
-                <textarea
-                  value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
-                  placeholder="Please explain why you want to cancel this order..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
-                  style={{ fontFamily: 'Poppins, sans-serif' }}
-                  rows={4}
-                  maxLength={500}
-                  disabled={cancelling}
-                />
-                <p className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  {cancelReason.length}/500 characters
-                </p>
+              <div className="w-full space-y-4">
+                {/* Reason Category Dropdown */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    Reason Category <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={cancelReasonCategory}
+                    onChange={(e) => setCancelReasonCategory(e.target.value as any)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                    disabled={cancelling}
+                  >
+                    <option value="change_address">Change Delivery Address</option>
+                    <option value="modify_order">Modify Order Items</option>
+                    <option value="wrong_item">Ordered Wrong Item</option>
+                    <option value="changed_mind">Changed My Mind</option>
+                    <option value="duplicate_order">Duplicate Order</option>
+                    <option value="other">Other Reason</option>
+                  </select>
+                </div>
+
+                {/* Additional Details */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    Additional Details (Optional)
+                  </label>
+                  <textarea
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    placeholder="Please provide more details if needed..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                    rows={3}
+                    maxLength={500}
+                    disabled={cancelling}
+                  />
+                  <p className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    {cancelReason.length}/500 characters
+                  </p>
+                </div>
               </div>
             )}
             
@@ -1118,6 +1214,7 @@ export default function OrderDetailsPage() {
                 onClick={() => {
                   setShowCancelDialog(false);
                   setCancelReason('');
+                  setCancelReasonCategory('other');
                 }}
                 disabled={cancelling}
                 className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg transition-colors duration-200 disabled:opacity-50"
@@ -1196,15 +1293,62 @@ export default function OrderDetailsPage() {
             </p>
             
             {/* Reason Input */}
-            <textarea
-              value={refuseReason}
-              onChange={(e) => setRefuseReason(e.target.value)}
-              placeholder="e.g., Damaged items, wrong order, quality issues..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
-              style={{ fontFamily: 'Poppins, sans-serif' }}
-              rows={4}
-              disabled={refusing}
-            />
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Reason <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={refuseReason}
+                onChange={(e) => setRefuseReason(e.target.value)}
+                placeholder="e.g., Damaged items, wrong order, quality issues..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+                rows={3}
+                disabled={refusing}
+              />
+            </div>
+            
+            {/* File Upload for Proof */}
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Upload Proof/Documentation (Optional)
+              </label>
+              <input
+                type="file"
+                multiple
+                accept="image/*,.pdf"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  setRefuseProofFiles(files);
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                style={{ fontFamily: 'Poppins, sans-serif' }}
+                disabled={refusing}
+              />
+              <p className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Upload photos of damaged/wrong items (Max 5 files, 5MB each)
+              </p>
+              {refuseProofFiles.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {refuseProofFiles.map((file, index) => (
+                    <div key={index} className="text-xs text-gray-600 flex items-center gap-2">
+                      <span>📎 {file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setRefuseProofFiles(prev => prev.filter((_, i) => i !== index))}
+                        className="text-red-500 hover:text-red-700"
+                        disabled={refusing}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {uploadingProof && (
+                <p className="text-xs text-blue-600 mt-2">Uploading proof files...</p>
+              )}
+            </div>
             
             {/* Buttons */}
             <div className="flex gap-3 w-full">

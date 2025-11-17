@@ -45,6 +45,7 @@ interface OrderDetails {
     city: string;
     province: string;
     zipCode: string;
+    barangay?: string;
     fullAddress?: string;
   };
   paymentMethod: string;
@@ -56,6 +57,13 @@ interface OrderDetails {
   lalamove_order_id?: string;
   lalamove_quotation_id?: string;
   lalamove_share_link?: string;
+  refusalReason?: string;
+  refusalDate?: string;
+  refusalProof?: {
+    fileUrl: string;
+    fileName: string;
+    uploadedAt: string;
+  }[];
   cancellationRequest?: {
     requestedBy: 'buyer';
     reason?: string;
@@ -92,7 +100,7 @@ export default function SellerOrderDetailsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = params?.orderId as string;
-  const activeTab = searchParams.get('tab') || 'details';
+  const activeTab = (searchParams?.get('tab') || 'details') as string;
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -314,6 +322,62 @@ export default function SellerOrderDetailsPage() {
                 <p className="text-xs text-red-600">
                   Requested on: {new Date(order.cancellationRequest.requestedAt).toLocaleString()}
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Refusal Information */}
+        {order.status === 'cancelled' && order.refusalReason && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div className="flex items-start gap-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-orange-900 mb-1">
+                  Delivery Refused by Buyer
+                </p>
+                <p className="text-sm text-orange-700 mb-2">
+                  The buyer refused to accept this delivery on {order.refusalDate && new Date(order.refusalDate).toLocaleDateString()}
+                </p>
+                {order.refusalReason && (
+                  <div className="bg-white border border-orange-200 rounded p-3 mb-3">
+                    <p className="text-xs font-medium text-gray-700 mb-1">Refusal Reason:</p>
+                    <p className="text-sm text-gray-900">{order.refusalReason}</p>
+                  </div>
+                )}
+                {order.refusalProof && order.refusalProof.length > 0 && (
+                  <div className="bg-white border border-orange-200 rounded p-3">
+                    <p className="text-xs font-medium text-gray-700 mb-2">
+                      Proof of Refusal ({order.refusalProof.length} {order.refusalProof.length === 1 ? 'file' : 'files'}):
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {order.refusalProof.map((proof, index) => (
+                        <a
+                          key={index}
+                          href={proof.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex flex-col items-center p-2 border border-gray-200 rounded hover:border-orange-300 hover:bg-orange-50 transition-colors"
+                        >
+                          {proof.fileName.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                            <img 
+                              src={proof.fileUrl} 
+                              alt={proof.fileName}
+                              className="w-full h-20 object-cover rounded mb-1"
+                            />
+                          ) : (
+                            <div className="w-full h-20 flex items-center justify-center bg-gray-100 rounded mb-1">
+                              <Package className="w-8 h-8 text-gray-400" />
+                            </div>
+                          )}
+                          <p className="text-xs text-gray-600 text-center truncate w-full">
+                            {proof.fileName}
+                          </p>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

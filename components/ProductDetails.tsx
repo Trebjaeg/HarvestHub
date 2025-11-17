@@ -11,9 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import FavoriteButton from '@/components/FavoriteButton';
 import ReviewItem from '@/components/ReviewItem';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-
+import AuthModal from '@/components/AuthModal';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -763,7 +761,9 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
           <span className="text-sm font-medium">Back</span>
-        {/* Back Button */}
+        </button>
+
+        {/* Back Button - Desktop */}
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-[#103C2E] hover:text-[#0d2e23] mb-4 transition-colors font-medium"
@@ -893,7 +893,6 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
             <div ref={imageRef} className="relative aspect-square bg-white rounded-lg overflow-hidden shadow-lg">
               <Image
                 src={images[selectedImage]}
-                alt={product.name}
                 alt={extractUnitFromName(product.name).cleanName}
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -927,7 +926,6 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
                   >
                     <Image
                       src={img}
-                      alt={`${product.name} ${idx + 1}`}
                       alt={`${extractUnitFromName(product.name).cleanName} ${idx + 1}`}
                       fill
                       className="object-cover"
@@ -986,28 +984,6 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
                       </span>
                     )}
                   </>
-                )}
-              {(() => {
-                    const { unit: extractedUnit } = extractUnitFromName(product.name, product.unit);
-                    const displayUnit = extractedUnit || product.unit;
-                    return (
-                      <>
-                        <span className="text-4xl font-bold text-[#40613D]" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          ₱{product.price.toFixed(2)}
-                        </span>
-                        {product.originalPrice && (
-                          <span className="text-xl text-gray-400 line-through" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                            ₱{product.originalPrice.toFixed(2)}
-                          </span>
-                        )}
-                        {displayUnit && (
-                          <span className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                            / {displayUnit}
-                          </span>
-                        )}
-                      </>
-                    );
-                  })()
                 )}
                 {product.price == null && (
                   <span className="text-2xl text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -1537,7 +1513,6 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
               </p>
             </div>
           )}
-          </div>
         </div>
       </div>
 
@@ -1663,6 +1638,7 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

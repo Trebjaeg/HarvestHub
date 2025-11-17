@@ -23,18 +23,13 @@ export const useAuthUserData = () => {
 
     setLoading(true);
     try {
-      // Get base URL for API calls
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-
       // Fetch both in parallel for better performance
       const [cartResponse, notificationResponse] = await Promise.all([
-        fetch(`${baseUrl}/api/user/cart/count`, {
-          credentials: 'include',
-          signal: AbortSignal.timeout(5000) // 5 second timeout
+        fetch('/api/user/cart/count', {
+          credentials: 'include'
         }),
-        fetch(`${baseUrl}/api/user/notifications/count`, {
-          credentials: 'include',
-          signal: AbortSignal.timeout(5000) // 5 second timeout
+        fetch('/api/user/notifications/count', {
+          credentials: 'include'
         })
       ]);
 
@@ -46,10 +41,7 @@ export const useAuthUserData = () => {
         notificationCount: notificationData.count || 0
       });
     } catch (error) {
-      // Silently fail for better UX - don't log in production
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to fetch user data:', error);
-      }
+      // Silently fail - don't break the UI
       setUserData({ cartCount: 0, notificationCount: 0 });
     } finally {
       setLoading(false);
@@ -57,14 +49,11 @@ export const useAuthUserData = () => {
   };
 
   useEffect(() => {
-    // Debounce timer to prevent rapid successive calls
-    const timeoutId = setTimeout(() => {
+    // Only fetch once when component mounts and user is authenticated
+    if (isAuthenticated) {
       fetchUserData();
-    }, 300); // Wait 300ms before fetching
-
-    // Cleanup timeout on unmount or dependency change
-    return () => clearTimeout(timeoutId);
-  }, [isAuthenticated, user]);
+    }
+  }, [isAuthenticated]);
 
   // Listen for cart update events
   useEffect(() => {
@@ -74,9 +63,6 @@ export const useAuthUserData = () => {
           ...prev,
           cartCount: event.detail.count
         }));
-      } else {
-        // Refetch if no count provided
-        fetchUserData();
       }
     };
 
@@ -85,7 +71,7 @@ export const useAuthUserData = () => {
     return () => {
       window.removeEventListener('cart-updated', handleCartUpdate as EventListener);
     };
-  }, [isAuthenticated, user]);
+  }, []);
 
   return {
     ...userData,

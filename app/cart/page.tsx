@@ -52,6 +52,24 @@ export default function CartPage() {
   });
   const [isFetching, setIsFetching] = useState(false);
   
+  // Voucher states
+  const [voucherCode, setVoucherCode] = useState('');
+  const [appliedVoucher, setAppliedVoucher] = useState<{
+    code: string;
+    description: string;
+    type: string;
+    discount: number;
+    freeDelivery: boolean;
+  } | null>(null);
+  const [voucherLoading, setVoucherLoading] = useState(false);
+  const [voucherError, setVoucherError] = useState('');
+  const [availableVouchers, setAvailableVouchers] = useState<Array<{
+    code: string;
+    description: string;
+    type: string;
+  }>>([]);
+  const [showVoucherSelector, setShowVoucherSelector] = useState(false);
+  
   // Notification states and refs
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationButtonRef = useRef<HTMLButtonElement>(null);
@@ -62,8 +80,24 @@ export default function CartPage() {
   useEffect(() => {
     if (!isFetching) {
       fetchCart();
+      fetchAvailableVouchers();
     }
   }, []);
+
+  const fetchAvailableVouchers = async () => {
+    try {
+      const response = await fetch('/api/vouchers/available', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableVouchers(data.vouchers || []);
+      }
+    } catch (error) {
+      console.error('Error fetching vouchers:', error);
+    }
+  };
 
   // Update cart count when initial value changes
   useEffect(() => {
@@ -463,7 +497,62 @@ export default function CartPage() {
     .reduce((sum, item) => sum + item.totalPrice, 0);
   
   const selectedShippingFee = selectedItems.size > 0 ? shippingFee : 0;
-  const selectedTotal = selectedSubtotal + selectedShippingFee;
+  const selectedTotal = selectedSubtotal + selectedShippingFee - (appliedVoucher?.discount || 0);
+
+  // ==================== VOUCHER HANDLERS ====================
+  
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim()) {
+      setVoucherError('Please enter a voucher code');
+      return;
+    }
+
+    setVoucherLoading(true);
+    setVoucherError('');
+
+    try {
+      const response = await fetch('/api/vouchers/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          code: voucherCode.toUpperCase().trim(),
+          subtotal: selectedSubtotal
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setVoucherError(data.error || 'Invalid voucher code');
+        setAppliedVoucher(null);
+        return;
+      }
+
+      setAppliedVoucher(data.voucher);
+      setVoucherError('');
+      setShowVoucherSelector(false);
+    } catch (error) {
+      console.error('Error applying voucher:', error);
+      setVoucherError('Failed to apply voucher. Please try again.');
+      setAppliedVoucher(null);
+    } finally {
+      setVoucherLoading(false);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherCode('');
+    setVoucherError('');
+  };
+
+  const handleSelectVoucher = (code: string) => {
+    setVoucherCode(code);
+    setShowVoucherSelector(false);
+  };
 
   // ==================== CHECKOUT HANDLER ====================
   
@@ -486,7 +575,8 @@ export default function CartPage() {
       items: selectedCartItems,
       subtotal: selectedSubtotal,
       shippingFee: selectedShippingFee,
-      total: selectedTotal
+      total: selectedTotal,
+      voucher: appliedVoucher // Pass voucher to checkout page
     }));
 
     // Navigate to checkout
@@ -942,8 +1032,23 @@ export default function CartPage() {
                   </div>
                   <div className="flex justify-between text-gray-700 text-sm md:text-base">
                     <span>Shipping</span>
-                    <span className="font-semibold">₱{selectedShippingFee.toFixed(2)}</span>
+                    <span className="font-semibold">
+                      {appliedVoucher?.freeDelivery ? (
+                        <>
+                          <span className="line-through text-gray-400">₱{selectedShippingFee.toFixed(2)}</span>
+                          <span className="text-green-600 ml-2">FREE</span>
+                        </>
+                      ) : (
+                        `₱${selectedShippingFee.toFixed(2)}`
+                      )}
+                    </span>
                   </div>
+                  {appliedVoucher && appliedVoucher.discount > 0 && (
+                    <div className="flex justify-between text-green-600 text-sm md:text-base">
+                      <span>Voucher Discount</span>
+                      <span className="font-semibold">-₱{appliedVoucher.discount.toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t pt-3 md:pt-4 mb-4 md:mb-6">
@@ -951,23 +1056,111 @@ export default function CartPage() {
                     <span>Total</span>
                     <span className="text-[#4A7C59]">₱{selectedTotal.toFixed(2)}</span>
                   </div>
+                  {appliedVoucher && (
+                    <div className="text-xs text-green-600 mt-1 text-right">
+                      {appliedVoucher.freeDelivery && `Free delivery saved!`}
+                      {appliedVoucher.discount > 0 && ` You saved ₱${appliedVoucher.discount.toFixed(2)}`}
+                    </div>
+                  )}
                 </div>
 
-                {/* Coupon/Discount */}
+                {/* Voucher Section */}
                 <div className="mb-4 md:mb-6">
-                  <div className="border border-gray-300 rounded-lg p-3 md:p-4 mb-3">
-                    <input
-                      type="text"
-                      placeholder="Voucher Code"
-                      className="w-full focus:outline-none text-sm"
-                    />
-                  </div>
-                  <button className="w-full bg-[#4A7C59] hover:bg-[#3d6549] text-white py-2.5 md:py-3 rounded-lg font-medium transition-colors text-sm md:text-base">
-                    Apply Voucher
-                  </button>
-                  <button className="w-full mt-2 text-[#4A7C59] hover:bg-green-50 py-2 rounded-lg font-medium transition-colors border border-[#4A7C59] text-sm md:text-base">
-                    Select Voucher
-                  </button>
+                  <label className="text-sm font-medium text-gray-700 block mb-3">Have a Voucher?</label>
+
+                  {!appliedVoucher ? (
+                    <>
+                      {/* Available Vouchers - Always Show */}
+                      {availableVouchers.length > 0 && (
+                        <div className="mb-3">
+                          <div className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                            <span>🎟️</span>
+                            <span>Available Vouchers ({availableVouchers.length})</span>
+                          </div>
+                          <div className="space-y-2 max-h-48 overflow-y-auto bg-gradient-to-br from-green-50 to-blue-50 p-3 rounded-lg border border-green-200">
+                            {availableVouchers.map((voucher) => (
+                              <button
+                                key={voucher.code}
+                                onClick={() => handleSelectVoucher(voucher.code)}
+                                className="w-full text-left p-3 bg-white border-2 border-transparent rounded-lg hover:border-green-500 hover:shadow-md transition-all duration-200 group"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="font-bold text-sm text-[#4A7C59] group-hover:text-green-600">
+                                      {voucher.code}
+                                    </div>
+                                    <div className="text-xs text-gray-600 mt-1">
+                                      {voucher.description}
+                                    </div>
+                                  </div>
+                                  <div className="text-[#4A7C59] opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2 italic">
+                            💡 Click any voucher above to apply it instantly
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Manual Input */}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={voucherCode}
+                          onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                          placeholder="Or enter code manually"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A7C59] text-sm"
+                          disabled={voucherLoading}
+                        />
+                        <button 
+                          onClick={handleApplyVoucher}
+                          disabled={voucherLoading || !voucherCode.trim()}
+                          className="px-4 py-2 bg-[#4A7C59] hover:bg-[#3d6549] text-white rounded-lg font-medium transition-colors text-sm disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+                        >
+                          {voucherLoading ? 'Applying...' : 'Apply'}
+                        </button>
+                      </div>
+                      {voucherError && (
+                        <p className="text-xs text-red-600 mt-2">{voucherError}</p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">🎟️</span>
+                            <div>
+                              <div className="font-semibold text-green-700 text-sm">{appliedVoucher.code}</div>
+                              <div className="text-xs text-green-600">{appliedVoucher.description}</div>
+                            </div>
+                          </div>
+                          {appliedVoucher.discount > 0 && (
+                            <div className="text-xs text-green-700 font-semibold mt-2">
+                              💰 Saved ₱{appliedVoucher.discount.toFixed(2)}
+                            </div>
+                          )}
+                          {appliedVoucher.freeDelivery && (
+                            <div className="text-xs text-green-700 font-semibold mt-1">
+                              🚚 Free Delivery Applied!
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={handleRemoveVoucher}
+                          className="text-red-600 hover:text-red-700 text-sm font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Checkout Button */}

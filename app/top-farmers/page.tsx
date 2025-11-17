@@ -16,7 +16,7 @@ import { Star } from 'lucide-react';
 const TopFarmersPageContent = () => {
   const { t } = useTranslation();
   const { isAuthenticated, cartCount, notificationCount } = useAuthUserData();
-  const [selectedPerformance, setSelectedPerformance] = useState<string[]>([]);
+  const [selectedPerformance, setSelectedPerformance] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string[]>([]);
   const [selectedRating, setSelectedRating] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -37,7 +37,7 @@ const TopFarmersPageContent = () => {
     setFilters,
     refetch
   } = useTopFarmers({
-    performance: selectedPerformance.length > 0 ? selectedPerformance.join(',') : undefined,
+    performance: selectedPerformance.length > 0 ? selectedPerformance : undefined,
     category: selectedCategory.length > 0 ? selectedCategory.join(',') : undefined,
     page: currentPage,
     limit: 10,
@@ -53,20 +53,11 @@ const TopFarmersPageContent = () => {
   }, [sorting, currentSort]);
 
   const handlePerformanceChange = (performance: string) => {
-    let newSelection: string[];
-    if (performance === 'all') {
-      newSelection = [];
-    } else {
-      if (selectedPerformance.includes(performance)) {
-        newSelection = selectedPerformance.filter(p => p !== performance);
-      } else {
-        newSelection = [...selectedPerformance, performance];
-      }
-    }
+    const newSelection = performance === selectedPerformance ? '' : performance;
     
     setSelectedPerformance(newSelection);
     setFilters({ 
-      performance: newSelection.length > 0 ? newSelection.join(',') : undefined,
+      performance: newSelection.length > 0 ? newSelection : undefined,
       category: selectedCategory.length > 0 ? selectedCategory.join(',') : undefined,
       sort: currentSort,
       rating: selectedRating > 0 ? selectedRating : undefined
@@ -89,7 +80,7 @@ const TopFarmersPageContent = () => {
     
     setSelectedCategory(newSelection);
     setFilters({ 
-      performance: selectedPerformance.length > 0 ? selectedPerformance.join(',') : undefined,
+      performance: selectedPerformance.length > 0 ? selectedPerformance : undefined,
       category: newSelection.length > 0 ? newSelection.join(',') : undefined,
       sort: currentSort,
       rating: selectedRating > 0 ? selectedRating : undefined
@@ -99,12 +90,14 @@ const TopFarmersPageContent = () => {
   };
 
   const handleRatingChange = (rating: number) => {
-    setSelectedRating(rating);
+    // Toggle rating: if clicking the same rating, deselect it
+    const newRating = rating === selectedRating ? 0 : rating;
+    setSelectedRating(newRating);
     setFilters({
-      performance: selectedPerformance.length > 0 ? selectedPerformance.join(',') : undefined,
+      performance: selectedPerformance.length > 0 ? selectedPerformance : undefined,
       category: selectedCategory.length > 0 ? selectedCategory.join(',') : undefined,
       sort: currentSort,
-      rating: rating > 0 ? rating : undefined
+      rating: newRating > 0 ? newRating : undefined
     });
     setCurrentPage(1);
     setApiCurrentPage(1);
@@ -113,7 +106,7 @@ const TopFarmersPageContent = () => {
   const handleSortChange = (newSort: string) => {
     setCurrentSort(newSort);
     setFilters({
-      performance: selectedPerformance.length > 0 ? selectedPerformance.join(',') : undefined,
+      performance: selectedPerformance.length > 0 ? selectedPerformance : undefined,
       category: selectedCategory.length > 0 ? selectedCategory.join(',') : undefined,
       sort: newSort,
       rating: selectedRating > 0 ? selectedRating : undefined
@@ -335,10 +328,11 @@ const TopFarmersPageContent = () => {
                 <div className="space-y-3">
                   <label className="flex items-center cursor-pointer">
                     <input
-                      type="checkbox"
-                      checked={selectedPerformance.includes('top-rated')}
-                      onChange={() => handlePerformanceChange('top-rated')}
-                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      type="radio"
+                      name="performance"
+                      checked={selectedPerformance === 'top_rated'}
+                      onChange={() => handlePerformanceChange('top_rated')}
+                      className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
                     />
                     <span className="ml-3 text-sm text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       Top Rated
@@ -346,10 +340,11 @@ const TopFarmersPageContent = () => {
                   </label>
                   <label className="flex items-center cursor-pointer">
                     <input
-                      type="checkbox"
-                      checked={selectedPerformance.includes('top-sellers')}
-                      onChange={() => handlePerformanceChange('top-sellers')}
-                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      type="radio"
+                      name="performance"
+                      checked={selectedPerformance === 'top_sellers'}
+                      onChange={() => handlePerformanceChange('top_sellers')}
+                      className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
                     />
                     <span className="ml-3 text-sm text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       Top Sellers
@@ -357,32 +352,11 @@ const TopFarmersPageContent = () => {
                   </label>
                   <label className="flex items-center cursor-pointer">
                     <input
-                      type="checkbox"
-                      checked={selectedPerformance.includes('most-productive')}
-                      onChange={() => handlePerformanceChange('most-productive')}
-                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                    />
-                    <span className="ml-3 text-sm text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      Most Productive
-                    </span>
-                  </label>
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedPerformance.includes('trending')}
-                      onChange={() => handlePerformanceChange('trending')}
-                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                    />
-                    <span className="ml-3 text-sm text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      Trending
-                    </span>
-                  </label>
-                  <label className="flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedPerformance.includes('most-reviewed')}
-                      onChange={() => handlePerformanceChange('most-reviewed')}
-                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                      type="radio"
+                      name="performance"
+                      checked={selectedPerformance === 'most_reviewed'}
+                      onChange={() => handlePerformanceChange('most_reviewed')}
+                      className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
                     />
                     <span className="ml-3 text-sm text-gray-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       Most Reviewed
@@ -470,7 +444,7 @@ const TopFarmersPageContent = () => {
               {filtersConfig?.ratings.enabled && (
                 <div className="mb-6">
                   <h3 className="text-base font-medium text-gray-900 mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    Minimum Rating
+                    Rating Filter
                   </h3>
                   <div className="space-y-2">
                     <label className="flex items-center cursor-pointer">
@@ -538,29 +512,6 @@ const TopFarmersPageContent = () => {
                 </p>
               </div>
               
-              {/* Dynamic Sort Dropdown */}
-              {sorting && (
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  <div className="hidden sm:flex items-center gap-2">
-                    <label className="text-sm text-gray-600 whitespace-nowrap" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      {t('topFarmers.sortBy')}
-                    </label>
-                  </div>
-                  
-                  <Select value={sorting.current} onValueChange={handleSortChange}>
-                    <SelectTrigger className="w-full sm:w-48">
-                      <SelectValue placeholder="Sort by..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sorting.options.map((option) => (
-                        <SelectItem key={option.id} value={option.id}>
-                          {option.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
             </div>
 
             {/* Farmers Table/Grid - Enhanced mobile responsiveness */}
@@ -801,7 +752,38 @@ const TopFarmersPageContent = () => {
                                     </button>
                                   </Link>
                                   <button 
-                                    onClick={() => alert('Messaging feature coming soon! For now, you can contact the seller through their shop page.')}
+                                    onClick={async () => {
+                                      try {
+                                        // Create conversation with seller
+                                        const response = await fetch('/api/chat/conversations', {
+                                          method: 'POST',
+                                          credentials: 'include',
+                                          headers: {
+                                            'Content-Type': 'application/json',
+                                          },
+                                          body: JSON.stringify({
+                                            receiverId: farmer._id,
+                                            message: `Hi! I'm interested in your products.`
+                                          })
+                                        });
+
+                                        const data = await response.json();
+                                        
+                                        if (response.ok) {
+                                          // Redirect to inbox
+                                          window.location.href = '/inbox';
+                                        } else {
+                                          if (response.status === 401) {
+                                            alert('Please log in to message this seller.');
+                                          } else {
+                                            alert(data.error || 'Failed to start conversation. Please try again.');
+                                          }
+                                        }
+                                      } catch (error) {
+                                        console.error('Error creating conversation:', error);
+                                        alert('Failed to start conversation. Please try again.');
+                                      }
+                                    }}
                                     className="inline-flex items-center min-h-[44px] px-3 py-2 border border-green-600 text-xs font-medium rounded-md text-green-600 bg-white hover:bg-green-50 transition-colors" 
                                     style={{ fontFamily: 'Poppins, sans-serif' }}
                                   >
@@ -920,7 +902,38 @@ const TopFarmersPageContent = () => {
                                 </button>
                               </Link>
                               <button 
-                                onClick={() => alert('Messaging feature coming soon! For now, you can contact the seller through their shop page.')}
+                                onClick={async () => {
+                                  try {
+                                    // Create conversation with seller
+                                    const response = await fetch('/api/chat/conversations', {
+                                      method: 'POST',
+                                      credentials: 'include',
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                      },
+                                      body: JSON.stringify({
+                                        receiverId: farmer._id,
+                                        message: `Hi! I'm interested in your products.`
+                                      })
+                                    });
+
+                                    const data = await response.json();
+                                    
+                                    if (response.ok) {
+                                      // Redirect to inbox
+                                      window.location.href = '/inbox';
+                                    } else {
+                                      if (response.status === 401) {
+                                        alert('Please log in to message this seller.');
+                                      } else {
+                                        alert(data.error || 'Failed to start conversation. Please try again.');
+                                      }
+                                    }
+                                  } catch (error) {
+                                    console.error('Error creating conversation:', error);
+                                    alert('Failed to start conversation. Please try again.');
+                                  }
+                                }}
                                 className="flex-1 inline-flex items-center justify-center min-h-[44px] px-4 py-3 border border-green-600 text-sm font-medium rounded-md text-green-600 bg-white hover:bg-green-50 transition-colors" 
                                 style={{ fontFamily: 'Poppins, sans-serif' }}
                               >

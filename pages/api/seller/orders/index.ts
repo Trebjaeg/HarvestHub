@@ -103,7 +103,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .sort(sort as any)
         .skip(skip)
         .limit(limitNum)
-        .select('orderNumber orderDate buyerName buyerEmail products totalAmount deliveryFee finalAmount status paymentStatus deliveryAddress estimatedDelivery actualDelivery cancellationRequest')
+        .select('orderNumber orderDate buyerName buyerEmail products totalAmount deliveryFee finalAmount status paymentStatus deliveryAddress estimatedDelivery actualDelivery cancellationRequest refusalReason refusalDate refusalProof deliveryAttempts')
         .lean()
         .exec(),
       Order.countDocuments(filter).exec()
@@ -140,6 +140,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         requestedAt: order.cancellationRequest.requestedAt.toISOString(),
         status: order.cancellationRequest.status
       } : undefined,
+      refusalReason: order.refusalReason,
+      refusalDate: order.refusalDate ? order.refusalDate.toISOString() : null,
+      refusalProof: order.refusalProof,
+      deliveryAttempts: order.deliveryAttempts,
       estimatedDelivery: order.estimatedDelivery ? order.estimatedDelivery.toISOString() : null,
       actualDelivery: order.actualDelivery ? order.actualDelivery.toISOString() : null,
       totalItems: order.products.reduce((sum: number, p: any) => sum + p.quantity, 0),

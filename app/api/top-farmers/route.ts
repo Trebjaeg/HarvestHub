@@ -13,8 +13,6 @@ interface FarmerStats {
   reviewCount: number;
   categories: string[];
   score: number;
-  firstName: string;
-  createdAt: Date;
 }
 
 interface FilterCriteria {
@@ -116,44 +114,102 @@ export async function GET(request: NextRequest) {
     // Get or compute top farmer rankings with real-time data
     const rankings = await getTopFarmerRankingsRealTime(config);
 
-    // Apply sorting based on user selection
-    const sortOption = config.sorting.options.find((opt: SortOption) => opt.id === effectiveSort);
-    let farmerIds: string[];
-    
-    if (sortOption) {
-      farmerIds = Object.entries(rankings)
-        .sort(([, a], [, b]) => {
-          const aValue = (a as any)[sortOption.field];
-          const bValue = (b as any)[sortOption.field];
-          
-          // Handle different field types
-          if (sortOption.field === 'firstName' || sortOption.field === 'name') {
-            // String comparison for name sorting
-            const aStr = String(aValue || '').toLowerCase();
-            const bStr = String(bValue || '').toLowerCase();
-            const result = aStr.localeCompare(bStr);
-            return sortOption.direction === 'asc' ? result : -result;
-          } else {
-            // Numeric comparison for other fields
-            const aNum = Number(aValue) || 0;
-            const bNum = Number(bValue) || 0;
-            const result = aNum - bNum;
-            return sortOption.direction === 'asc' ? result : -result;
+    // Apply filters on rankings before sorting
+    let filteredRankings = Object.fromEntries(
+      Object.entries(rankings).filter(([_, stats]) => {
+        // Apply performance filter
+        if (performance && performance !== 'all') {
+          const { topFarmersCriteria } = config;
+          switch (performance) {
+            case 'top_rated':
+              if (stats.averageRating < topFarmersCriteria.minRatingForTopFarmer) return false;
+              break;
+            case 'top_sellers':
+              if (stats.totalSales < topFarmersCriteria.minSalesForTopFarmer) return false;
+              break;
+            case 'most_reviewed':
+              if (stats.reviewCount < 1) return false;
+              break;
           }
-        })
-        .map(([id]) => id);
-    } else {
-      // Fallback to default sorting if option not found
-      farmerIds = Object.entries(rankings)
-        .sort(([, a], [, b]) => (b as any).totalSales - (a as any).totalSales)
-        .map(([id]) => id);
-    }
+        }
 
-    // Apply additional filters but maintain ranking order
-    const filteredQuery = { ...query, _id: { $in: farmerIds } };
+        // Apply rating filter - exact star range
+        if (rating && parseFloat(rating) > 0) {
+          const ratingNum = parseFloat(rating);
+          const farmerRating = stats.averageRating;
+          
+          // Rating ranges:
+          // 5 stars: exactly 5.0
+          // 4 stars: 4.0 to 4.9
+          // 3 stars: 3.0 to 3.9
+          // 2 stars: 2.0 to 2.9
+          // 1 star: 1.0 to 1.9
+          
+          if (ratingNum === 5) {
+            // 5 stars: must be exactly 5.0
+            if (farmerRating < 5.0) return false;
+          } else {
+            // For 1-4 stars: check if rating falls within range
+            if (farmerRating < ratingNum || farmerRating >= (ratingNum + 1)) return false;
+          }
+        }
+
+        // Apply category filter
+        if (category && category !== 'all') {
+          // Split comma-separated categories and check if farmer has any of them
+          const categoryFilters = category.split(',').map(c => c.trim().toLowerCase());
+          
+          const hasMatchingCategory = categoryFilters.some(catFilter => 
+            stats.categories.some(farmerCat => {
+              // Normalize both sides: lowercase, remove special chars, replace spaces with dashes
+              const normalizedFarmerCat = (farmerCat || '')
+                .toLowerCase()
+                .replace(/[&]/g, '') // Remove ampersands
+                .replace(/[\s-]+/g, '-') // Replace spaces and multiple dashes with single dash
+                .replace(/^-+|-+$/g, ''); // Remove leading/trailing dashes
+              
+              const normalizedFilter = catFilter
+                .replace(/[&]/g, '')
+                .replace(/[\s-]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+              
+              return normalizedFarmerCat === normalizedFilter;
+            })
+          );
+          
+          if (!hasMatchingCategory) return false;
+        }
+
+        return true;
+      })
+    );
+
+    // Sort farmers by their computed sales (real-time from products)
+    const farmerIds = Object.entries(filteredRankings)
+      .sort(([, a], [, b]) => {
+        // Sort by totalSales primarily
+        const salesDiff = (b as any).totalSales - (a as any).totalSales;
+        if (salesDiff !== 0) return salesDiff;
+        
+        // Then by rating if sales are equal
+        const ratingDiff = (b as any).averageRating - (a as any).averageRating;
+        if (ratingDiff !== 0) return ratingDiff;
+        
+        // Finally by product count
+        return (b as any).productCount - (a as any).productCount;
+      })
+      .map(([id]) => id);
+
+    // Simple query for User collection - only filter by role/status/verified
+    const userQuery = {
+      role: { $in: ['farmer', 'seller'] },
+      status: 'active',
+      isVerified: true,
+      _id: { $in: farmerIds }
+    };
 
     // Get farmers with their computed statistics
-    const farmers = await User.find(filteredQuery)
+    const farmers = await User.find(userQuery)
       .select('firstName lastName name email profilePicture profileImage specialties createdAt updatedAt')
       .lean();
 
@@ -163,14 +219,14 @@ export async function GET(request: NextRequest) {
     // Enhance farmers with real-time computed statistics from their products
     const enhancedFarmers = farmerIds
       .filter(id => {
-        const stats = rankings[id];
+        const stats = filteredRankings[id];
         // Only show farmers with at least 1 product
         return farmerMap.has(id) && stats && stats.productCount > 0;
       })
       .slice(skip, skip + limit)
       .map((farmerId: string, index: number) => {
         const farmer: any = farmerMap.get(farmerId);
-        const stats = rankings[farmerId];
+        const stats = filteredRankings[farmerId];
         
         if (!farmer || !stats) return null;
 
@@ -201,15 +257,20 @@ export async function GET(request: NextRequest) {
 
     // Get total count for pagination (only farmers with products)
     const totalFarmers = farmerIds.filter(id => {
-      const stats = rankings[id];
+      const stats = filteredRankings[id];
       return farmerMap.has(id) && stats && stats.productCount > 0;
     }).length;
 
-    // Get dynamic performance filters with counts
-    const performanceFilters = await getDynamicPerformanceFilters(config, query);
+    // Get dynamic performance filters with counts - pass base user query only
+    const baseQuery = {
+      role: { $in: ['farmer', 'seller'] },
+      status: 'active',
+      isVerified: true
+    };
+    const performanceFilters = await getDynamicPerformanceFilters(config, baseQuery);
 
     // Get dynamic categories with counts
-    const categoryFilters = await getDynamicCategoryFilters(config, query);
+    const categoryFilters = await getDynamicCategoryFilters(config, baseQuery);
 
     return NextResponse.json({
       farmers: enhancedFarmers,
@@ -217,11 +278,17 @@ export async function GET(request: NextRequest) {
       categoryFilters,
       banner: config.banner.enabled ? config.banner : null,
       sorting: {
-        options: config.sorting.options.filter((opt: SortOption) => opt.enabled).sort((a: SortOption, b: SortOption) => a.order - b.order),
+        options: config.sorting.options
+          .filter((opt: SortOption) => opt.enabled)
+          .filter((opt: SortOption) => !['newest', 'name', 'most_productive', 'trending'].includes(opt.id))
+          .sort((a: SortOption, b: SortOption) => a.order - b.order),
         current: effectiveSort
       },
       filters: {
-        performance: config.filters.performance.filter((perf: PerformanceFilter) => perf.enabled).sort((a: PerformanceFilter, b: PerformanceFilter) => a.order - b.order),
+        performance: config.filters.performance
+          .filter((perf: PerformanceFilter) => perf.enabled)
+          .filter((perf: PerformanceFilter) => !['most_productive', 'trending'].includes(perf.id))
+          .sort((a: PerformanceFilter, b: PerformanceFilter) => a.order - b.order),
         categories: config.filters.categories.filter((cat: CategoryFilter) => cat.enabled).sort((a: CategoryFilter, b: CategoryFilter) => a.order - b.order),
         ratings: config.filters.ratings
       },
@@ -267,9 +334,9 @@ async function loadTopFarmersConfig() {
     return defaultConfig;
   }
 
-  configCache = config;
+  configCache = config as ITopFarmersConfig;
   configCacheTime = now;
-  return config;
+  return config as ITopFarmersConfig;
 }
 
 // Create default configuration
@@ -359,14 +426,6 @@ async function buildTopFarmersQuery(config: ITopFarmersConfig, filters: FilterCr
         // Only filter if user specifically wants top sellers
         query.totalSales = { $gte: topFarmersCriteria.minSalesForTopFarmer };
         break;
-      case 'most_productive':
-        // Only filter if user specifically wants most productive
-        query.productCount = { $gte: topFarmersCriteria.minProductsForTopFarmer };
-        break;
-      case 'trending':
-        const recentDate = new Date(Date.now() - topFarmersCriteria.timeframeDays * 24 * 60 * 60 * 1000);
-        query.updatedAt = { $gte: recentDate };
-        break;
       case 'most_reviewed':
         // Only filter if user specifically wants most reviewed
         query.reviewCount = { $gte: 1 }; // At least 1 review
@@ -444,15 +503,16 @@ async function getTopFarmerRankingsRealTime(config: ITopFarmersConfig): Promise<
   
   // Get all verified active farmers/sellers
   const farmers = await User.find({
-    role: { $in: ['farmer', 'seller'] },  // ✅ Include both farmers AND sellers
+    role: { $in: ['farmer', 'seller'] },  // Include both farmers AND sellers
     status: 'active',
     isVerified: true
-  }).select('_id firstName updatedAt createdAt').lean();
+  }).select('_id updatedAt').lean();
 
   const rankings: Record<string, FarmerStats> = {};
   
-  // Import Order model for computing sales
+  // Import Order and Review models
   const Order = (await import('../../../models/Order')).default;
+  const Review = (await import('../../../models/Review')).default;
   
   // Compute real-time stats for each farmer from their products AND orders
   await Promise.all(
@@ -463,7 +523,7 @@ async function getTopFarmerRankingsRealTime(config: ITopFarmersConfig): Promise<
       const farmerProducts = await Product.find({ 
         farmerId: farmer._id,
         isActive: true
-      }).select('_id category rating reviews').lean();
+      }).select('_id category rating').lean();
 
       if (farmerProducts.length === 0) {
         rankings[farmerId] = {
@@ -472,9 +532,7 @@ async function getTopFarmerRankingsRealTime(config: ITopFarmersConfig): Promise<
           productCount: 0,
           reviewCount: 0,
           categories: [],
-          score: 0,
-          firstName: (farmer as any).firstName || '',
-          createdAt: (farmer as any).createdAt || farmer.updatedAt
+          score: 0
         };
         return;
       }
@@ -505,8 +563,11 @@ async function getTopFarmerRankingsRealTime(config: ITopFarmersConfig): Promise<
         ? productsWithRating.reduce((sum, p: any) => sum + (p.rating || 0), 0) / productsWithRating.length
         : 0;
       
-      // Count total reviews across all products
-      const reviewCount = farmerProducts.reduce((sum, p: any) => sum + ((p.reviews as any)?.length || 0), 0);
+      // Count total reviews from Review collection for this seller
+      const reviewCount = await Review.countDocuments({
+        sellerId: farmerId,
+        status: 'active'
+      });
       
       // Get unique categories
       const categories = [...new Set(farmerProducts.map((p: any) => p.category as string))].slice(0, 3);
@@ -533,9 +594,7 @@ async function getTopFarmerRankingsRealTime(config: ITopFarmersConfig): Promise<
         productCount: farmerProducts.length,
         reviewCount,
         categories,
-        score,
-        firstName: (farmer as any).firstName || '',
-        createdAt: (farmer as any).createdAt || farmer.updatedAt
+        score
       };
     })
   );
@@ -562,13 +621,6 @@ async function getDynamicPerformanceFilters(config: ITopFarmersConfig, baseQuery
             break;
           case 'top_sellers':
             filterQuery.totalSales = { $gte: 5 };
-            break;
-          case 'most_productive':
-            filterQuery.productCount = { $gte: 3 };
-            break;
-          case 'trending':
-            const recentDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-            filterQuery.updatedAt = { $gte: recentDate };
             break;
           case 'most_reviewed':
             filterQuery.reviewCount = { $gte: 5 };

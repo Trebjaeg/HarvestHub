@@ -34,15 +34,28 @@ export interface IOrder {
   orderDate: Date;
   estimatedDelivery?: Date;
   actualDelivery?: Date;
-  notes?: string | { text: string; createdAt: Date }[];
+  notes?: { text: string; createdAt: Date }[];
   refusalReason?: string;
   refusalDate?: Date;
+  refusalProof?: {
+    fileUrl: string;
+    fileName: string;
+    uploadedAt: Date;
+  }[];
   cancellationRequest?: {
-    requestedBy: 'buyer';
+    requestedBy: 'buyer' | 'seller';
     reason?: string;
+    reasonCategory?: 'change_address' | 'modify_order' | 'wrong_item' | 'changed_mind' | 'duplicate_order' | 'other';
     requestedAt: Date;
     status: 'pending' | 'approved' | 'rejected';
   };
+  deliveryAttempts?: {
+    attemptNumber: number;
+    attemptDate: Date;
+    status: 'failed' | 'successful';
+    notes?: string;
+    markedBy: string; // seller ID
+  }[];
   // Lalamove delivery fields
   delivery_provider?: 'lalamove' | 'manual';
   lalamove_order_id?: string;
@@ -174,10 +187,16 @@ const OrderSchema = new mongoose.Schema<IOrder>({
   actualDelivery: {
     type: Date
   },
-  notes: {
-    type: mongoose.Schema.Types.Mixed,
-    default: null
-  },
+  notes: [{
+    text: {
+      type: String,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   refusalReason: {
     type: String,
     maxlength: [1000, 'Refusal reason cannot exceed 1000 characters']
@@ -185,16 +204,34 @@ const OrderSchema = new mongoose.Schema<IOrder>({
   refusalDate: {
     type: Date
   },
+  refusalProof: [{
+    fileUrl: {
+      type: String,
+      required: true
+    },
+    fileName: {
+      type: String,
+      required: true
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   cancellationRequest: {
     type: {
       requestedBy: {
         type: String,
-        enum: ['buyer'],
+        enum: ['buyer', 'seller'],
         required: true
       },
       reason: {
         type: String,
         maxlength: [500, 'Cancellation reason cannot exceed 500 characters']
+      },
+      reasonCategory: {
+        type: String,
+        enum: ['change_address', 'modify_order', 'wrong_item', 'changed_mind', 'duplicate_order', 'other']
       },
       requestedAt: {
         type: Date,
@@ -210,6 +247,32 @@ const OrderSchema = new mongoose.Schema<IOrder>({
     },
     required: false
   },
+  deliveryAttempts: [{
+    attemptNumber: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 2
+    },
+    attemptDate: {
+      type: Date,
+      required: true,
+      default: Date.now
+    },
+    status: {
+      type: String,
+      enum: ['failed', 'successful'],
+      required: true
+    },
+    notes: {
+      type: String,
+      maxlength: [500, 'Notes cannot exceed 500 characters']
+    },
+    markedBy: {
+      type: String,
+      required: true
+    }
+  }],
   // Lalamove delivery fields
   delivery_provider: {
     type: String,

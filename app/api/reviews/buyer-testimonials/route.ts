@@ -3,6 +3,11 @@ import dbConnect from '@/lib/mongodb';
 import Review from '@/models/Review';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 300; // Cache for 5 minutes
+
+// In-memory cache
+let cachedTestimonials: { data: any; timestamp: number } | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 /**
  * GET /api/reviews/buyer-testimonials
@@ -13,11 +18,22 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
-
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get('limit') || '20');
     const minRating = parseInt(searchParams.get('minRating') || '4');
+
+    // Check cache first
+    const now = Date.now();
+    if (cachedTestimonials && (now - cachedTestimonials.timestamp) < CACHE_DURATION) {
+      return NextResponse.json({
+        success: true,
+        testimonials: cachedTestimonials.data.slice(0, limit),
+        total: Math.min(cachedTestimonials.data.length, limit),
+        cached: true
+      });
+    }
+
+    await dbConnect();
 
     // Aggregate reviews with complete user profile and product information
     const testimonials = await Review.aggregate([
@@ -110,6 +126,12 @@ export async function GET(request: NextRequest) {
         $limit: limit
       }
     ]);
+
+    // Update cache
+    cachedTestimonials = {
+      data: testimonials,
+      timestamp: Date.now()
+    };
 
     return NextResponse.json({
       success: true,

@@ -130,4 +130,7 @@ ReviewSchema.index({ orderId: 1, productId: 1, buyerId: 1 }, { unique: true });
 ReviewSchema.index({ productId: 1, status: 1, createdAt: -1 });
 ReviewSchema.index({ sellerId: 1, status: 1, createdAt: -1 });
 
+// Index for buyer testimonials query (status + verified + rating + createdAt)
+ReviewSchema.index({ status: 1, verified: 1, rating: -1, createdAt: -1 });
+
 export default mongoose.models.Review || mongoose.model<IReview>('Review', ReviewSchema);

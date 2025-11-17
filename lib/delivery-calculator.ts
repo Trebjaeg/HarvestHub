@@ -52,7 +52,7 @@ interface VehicleConfig {
   etaPerKm: number;    // Estimated minutes per kilometer
 }
 
-const VEHICLE_CONFIG: Record<string, VehicleConfig> = {
+export const VEHICLE_CONFIG: Record<string, VehicleConfig> = {
   MOTORCYCLE: { 
     base: 30,      // Sobrang baba na (was 50)
     perKm: 1.5,    // Napakamura per km (was 2)

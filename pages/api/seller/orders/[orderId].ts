@@ -28,8 +28,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     let sellerId: string;
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; id?: string };
-      sellerId = decoded.userId || decoded.id;
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId?: string; id?: string };
+      sellerId = (decoded.userId || decoded.id) as string;
+      if (!sellerId) {
+        return res.status(401).json({ message: 'Invalid token payload' });
+      }
     } catch {
       return res.status(401).json({ message: 'Invalid token' });
     }
@@ -43,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Find order and verify it belongs to the seller
-    const order = await Order.findById(orderId).lean();
+    const order = await Order.findById(orderId).lean() as any;
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
@@ -75,6 +78,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         estimatedDelivery: order.estimatedDelivery,
         actualDelivery: order.actualDelivery,
         notes: order.notes,
+        // Include refusal data
+        refusalReason: order.refusalReason,
+        refusalDate: order.refusalDate,
+        refusalProof: order.refusalProof,
         // Include Lalamove tracking data
         lalamove_order_id: order.lalamove_order_id,
         lalamove_quotation_id: order.lalamove_quotation_id,

@@ -182,6 +182,7 @@ ProductSchema.index({ category: 1, isActive: 1, price: 1 }); // Category + activ
 ProductSchema.index({ isActive: 1, featured: 1, createdAt: -1 }); // Active featured products
 ProductSchema.index({ farmerId: 1, isActive: 1, createdAt: -1 }); // Farmer products sorted
 ProductSchema.index({ farmerId: 1, inventory_available: 1 }); // Farmer inventory management
+ProductSchema.index({ isActive: 1, inventory_available: 1 }); // Top-rated products query
 // Note: sku index is automatically created by unique: true in schema definition
 
 export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);

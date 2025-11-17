@@ -4,6 +4,10 @@ import dbConnect from '@/lib/mongodb';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
+// In-memory cache: userId -> { count, timestamp }
+const notificationCache = new Map<string, { count: number; timestamp: number }>();
+const CACHE_DURATION = 30 * 1000; // 30 seconds (shorter cache since notifications update frequently)
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -44,12 +48,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({ count: 0 });
     }
 
+    // Check cache first
+    const cached = notificationCache.get(userId);
+    const now = Date.now();
+    if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+      return res.status(200).json({ count: cached.count, cached: true });
+    }
+
+    await dbConnect();
+
     // Get unread notification count from database
     const Notification = (await import('@/models/Notification')).default;
     const count = await Notification.countDocuments({ 
       userId, 
       isRead: false 
     });
+    
+    // Update cache
+    notificationCache.set(userId, { count, timestamp: now });
     
     res.status(200).json({ count });
 

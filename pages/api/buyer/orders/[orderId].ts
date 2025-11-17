@@ -50,7 +50,7 @@ async function getOrderDetails(req: NextApiRequest, res: NextApiResponse, orderI
       _id: orderId, 
       buyerId: buyerId 
     })
-    .select('orderNumber orderDate products totalAmount deliveryFee finalAmount status paymentStatus paymentMethod estimatedDelivery actualDelivery deliveryAddress sellerId sellerName notes refusalReason refusalDate cancellationRequest createdAt updatedAt')
+    .select('orderNumber orderDate products totalAmount deliveryFee finalAmount status paymentStatus paymentMethod estimatedDelivery actualDelivery deliveryAddress sellerId sellerName refusalReason refusalDate refusalProof cancellationRequest createdAt updatedAt')
     .lean()
     .exec();
 

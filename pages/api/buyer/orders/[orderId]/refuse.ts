@@ -21,7 +21,7 @@ export default async function handler(
     await dbConnect();
 
     const { orderId } = req.query;
-    const { reason } = req.body;
+    const { reason, proofFiles } = req.body;
 
     if (!orderId || typeof orderId !== 'string') {
       return res.status(400).json({ message: 'Invalid order ID' });
@@ -72,8 +72,18 @@ export default async function handler(
 
     // Update order status to cancelled and store refusal reason
     order.status = 'cancelled';
+    order.paymentStatus = 'refunded'; // Update payment status when refused
     order.refusalReason = reason.trim();
     order.refusalDate = new Date();
+    
+    // Store proof files if provided
+    if (proofFiles && Array.isArray(proofFiles) && proofFiles.length > 0) {
+      order.refusalProof = proofFiles.map((file: any) => ({
+        fileUrl: file.fileUrl,
+        fileName: file.fileName,
+        uploadedAt: new Date()
+      }));
+    }
     
     // Add to notes for audit trail
     if (!order.notes) {
@@ -127,8 +137,10 @@ export default async function handler(
         _id: order._id,
         orderNumber: order.orderNumber,
         status: order.status,
+        paymentStatus: order.paymentStatus,
         refusalReason: order.refusalReason,
-        refusalDate: order.refusalDate
+        refusalDate: order.refusalDate,
+        refusalProof: order.refusalProof
       }
     });
 

@@ -4,6 +4,11 @@ import Product from '@/models/Product';
 import Review from '@/models/Review';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 300; // Cache for 5 minutes
+
+// Simple in-memory cache
+let cachedData: { data: any; timestamp: number } | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 interface ReviewStat {
   _id: string;
@@ -71,12 +76,22 @@ interface EnrichedProduct {
  */
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
-
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get('limit') || '20');
     const minRating = parseFloat(searchParams.get('minRating') || '4.0');
     const minReviews = parseInt(searchParams.get('minReviews') || '1');
+
+    // Check cache first
+    const now = Date.now();
+    if (cachedData && (now - cachedData.timestamp) < CACHE_DURATION) {
+      return NextResponse.json({
+        success: true,
+        products: cachedData.data.slice(0, limit),
+        cached: true
+      });
+    }
+
+    await dbConnect();
 
     // Aggregate reviews to get average ratings and counts for all products
     const reviewStats = await Review.aggregate([
@@ -187,6 +202,12 @@ export async function GET(request: NextRequest) {
       const indexB = productIds.findIndex(id => id.toString() === b._id.toString());
       return indexA - indexB;
     });
+
+    // Update cache with fresh data
+    cachedData = {
+      data: sortedProducts,
+      timestamp: Date.now()
+    };
 
     return NextResponse.json({
       success: true,

@@ -52,8 +52,7 @@ const NotificationSchema = new mongoose.Schema<INotification>({
     required: true
   },
   orderId: {
-    type: String,
-    index: true
+    type: String
   },
   orderNumber: {
     type: String

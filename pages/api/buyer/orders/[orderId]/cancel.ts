@@ -69,7 +69,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Get cancellation reason from request body
-    const { reason } = req.body || {};
+    const { reason, reasonCategory } = req.body || {};
 
     // For pending orders, allow direct cancellation
     if (order.status === 'pending') {
@@ -222,6 +222,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         cancellationRequest: {
           requestedBy: 'buyer',
           reason: reason || 'Buyer requested cancellation',
+          reasonCategory: reasonCategory || 'other',
           requestedAt: new Date(),
           status: 'pending'
         }
