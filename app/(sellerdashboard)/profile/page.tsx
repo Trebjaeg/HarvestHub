@@ -127,10 +127,16 @@ export default function Profile() {
 
       if (response.ok) {
         const data = await response.json();
+
         setLowStockProducts(data.products || []);
+      } else {
+        console.error('Failed to fetch low stock products:', response.status, response.statusText);
+
       }
     } catch (error) {
       console.error('Error fetching low stock products:', error);
+    } finally {
+      setLoadingLowStock(false);
     }
   };
 
@@ -386,19 +392,30 @@ export default function Profile() {
 
         {/* Low Stock Alert */}
         <Card className="p-6 bg-white border border-gray-200">
-          <div className="flex items-center gap-3 mb-4">
-            <AlertTriangle className="w-5 h-5 text-orange-500" />
-            <h2 className="text-lg font-semibold text-[#103C2E]">
-              Low Stock Alert
-            </h2>
-            {lowStockProducts.length > 0 && (
-              <Badge className="bg-orange-100 text-orange-800">
-                {lowStockProducts.length} items
-              </Badge>
-            )}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-orange-500" />
+              <h2 className="text-lg font-semibold text-[#103C2E]">
+                Low Stock Alert
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              {lowStockProducts.length > 0 && (
+                <>
+                  <Badge className="bg-orange-100 text-orange-800">
+                    {lowStockProducts.length} items
+                  </Badge>
+                  {lowStockProducts.some(p => p.currentStock <= (p.lowStockAlert / 2)) && (
+                    <Badge className="bg-red-100 text-red-800 animate-pulse">
+                      Critical
+                    </Badge>
+                  )}
+                </>
+              )}
+            </div>
           </div>
           
-          {loading ? (
+          {loadingLowStock ? (
             <div className="space-y-3">
               {Array(3).fill(0).map((_, i) => (
                 <div key={i} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
@@ -422,7 +439,13 @@ export default function Profile() {
                       </h3>
                     </div>
                     <p className="text-sm text-gray-600 mt-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      SKU: {product.sku} • Alert when below {product.lowStockAlert} {product.unit}
+                      SKU: {product.sku} • Critical Level: {product.lowStockAlert} {product.unit}
+                    </p>
+                    <p className="text-xs text-orange-600 mt-1 font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      {product.currentStock <= (product.lowStockAlert / 2) 
+                        ? '🚨 CRITICAL: Restock immediately!' 
+                        : '⚠️ WARNING: Consider restocking soon'
+                      }
                     </p>
                   </div>
                   <div className="text-right">

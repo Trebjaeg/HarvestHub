@@ -23,7 +23,8 @@ export async function GET(req: NextRequest) {
         role: user.role,
         sellerStatus: user.sellerStatus,
         status: user.status,
-        profileImage: user.profileImage
+        profileImage: user.profileImage,
+        phone: user.phone
       },
       permissions: {
         canAccessSellerFeatures: RoleHierarchy.canAccessSellerFeatures(user),

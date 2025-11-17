@@ -516,7 +516,6 @@ const ManageOrders = () => {
 
         {/* Filters and Search */}
         <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 flex-1">
               {/* Search */}
@@ -689,20 +688,6 @@ const ManageOrders = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-3 sm:space-y-4">
-            {orders.map((order) => (
-              <div key={order._id} className="bg-white rounded-lg shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow">
-                {/* Order Header */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 mb-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
-                      <h3 className="text-base sm:text-lg font-semibold text-[#103C2E] break-all" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        #{order.orderNumber}
-                      </h3>
-                      <span className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${statusColors[order.status]}`}>
-                        {getStatusIcon(order.status)}
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      </span>
           <div className="space-y-4">
             {orders.map((order) => (
               <div key={order._id} className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
@@ -740,19 +725,6 @@ const ManageOrders = () => {
                       <span className="flex items-center gap-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         <Mail className="w-4 h-4 flex-shrink-0" />
                         <span className="break-all">{order.buyerName}</span>
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-left sm:text-right flex-shrink-0">
-                    <div className="text-xl sm:text-2xl font-bold text-[#103C2E]" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        <Clock className="w-4 h-4" />
-                        {formatDate(order.orderDate)}
-                      </span>
-                      <span className="flex items-center gap-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        <Mail className="w-4 h-4" />
-                        {order.buyerName}
                       </span>
                     </div>
                   </div>
@@ -886,7 +858,6 @@ const ManageOrders = () => {
                 {/* Action Buttons */}
                 {statusActions[order.status] && statusActions[order.status].length > 0 && (
                   <div className={`${order.status === 'shipped' ? '' : 'border-t'} pt-4`}>
-                    <div className="flex flex-col sm:flex-row flex-wrap gap-2">
                     <div className="flex flex-wrap gap-2">
                       {statusActions[order.status].map((action) => {
                         const Icon = action.icon;
@@ -895,7 +866,6 @@ const ManageOrders = () => {
                             key={action.nextStatus}
                             onClick={() => handleUpdateStatus(order._id, action.nextStatus)}
                             disabled={updatingOrderId === order._id}
-                            className={`flex items-center justify-center gap-2 px-4 py-2 ${action.color} text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-sm sm:text-base`}
                             className={`flex items-center gap-2 px-4 py-2 ${action.color} text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
                             style={{ fontFamily: 'Poppins, sans-serif' }}
                           >
@@ -933,16 +903,6 @@ const ManageOrders = () => {
                 onClick={() => setCurrentPage(pagination.currentPage - 1)}
                 disabled={!pagination.hasPrevPage}
                 className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-          <div className="mt-6 flex items-center justify-between bg-white rounded-lg shadow-sm px-6 py-4">
-            <div className="text-sm text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Page {pagination.currentPage} of {pagination.totalPages}
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setCurrentPage(pagination.currentPage - 1)}
-                disabled={!pagination.hasPrevPage}
-                className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 Previous
@@ -972,7 +932,6 @@ const ManageOrders = () => {
                 onClick={() => setCurrentPage(pagination.currentPage + 1)}
                 disabled={!pagination.hasNextPage}
                 className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-                className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ fontFamily: 'Poppins, sans-serif' }}
               >
                 Next

@@ -123,18 +123,23 @@ export async function GET(request: NextRequest) {
     if (sortOption) {
       farmerIds = Object.entries(rankings)
         .sort(([, a], [, b]) => {
-          const aValue = (a as any)[sortOption.field];
-          const bValue = (b as any)[sortOption.field];
-          
           // Handle different field types
           if (sortOption.field === 'firstName' || sortOption.field === 'name') {
             // String comparison for name sorting
-            const aStr = String(aValue || '').toLowerCase();
-            const bStr = String(bValue || '').toLowerCase();
+            const aStr = String((a as any).firstName || '').toLowerCase();
+            const bStr = String((b as any).firstName || '').toLowerCase();
             const result = aStr.localeCompare(bStr);
             return sortOption.direction === 'asc' ? result : -result;
+          } else if (sortOption.field === 'createdAt') {
+            // Date comparison for newest sorting
+            const aDate = new Date((a as any).createdAt || 0).getTime();
+            const bDate = new Date((b as any).createdAt || 0).getTime();
+            const result = aDate - bDate;
+            return sortOption.direction === 'asc' ? result : -result;
           } else {
-            // Numeric comparison for other fields
+            // Numeric comparison for other fields (totalSales, averageRating, reviewCount, etc.)
+            const aValue = (a as any)[sortOption.field];
+            const bValue = (b as any)[sortOption.field];
             const aNum = Number(aValue) || 0;
             const bNum = Number(bValue) || 0;
             const result = aNum - bNum;
@@ -453,6 +458,7 @@ async function getTopFarmerRankingsRealTime(config: ITopFarmersConfig): Promise<
   
   // Import Order model for computing sales
   const Order = (await import('../../../models/Order')).default;
+  const Review = (await import('../../../models/Review')).default;
   
   // Compute real-time stats for each farmer from their products AND orders
   await Promise.all(
@@ -463,7 +469,7 @@ async function getTopFarmerRankingsRealTime(config: ITopFarmersConfig): Promise<
       const farmerProducts = await Product.find({ 
         farmerId: farmer._id,
         isActive: true
-      }).select('_id category rating reviews').lean();
+      }).select('_id category').lean();
 
       if (farmerProducts.length === 0) {
         rankings[farmerId] = {
@@ -499,14 +505,17 @@ async function getTopFarmerRankingsRealTime(config: ITopFarmersConfig): Promise<
         });
       });
       
-      // Compute average rating across all products
-      const productsWithRating = farmerProducts.filter((p: any) => p.rating && p.rating > 0);
-      const averageRating = productsWithRating.length > 0
-        ? productsWithRating.reduce((sum, p: any) => sum + (p.rating || 0), 0) / productsWithRating.length
+      // Get reviews for this seller from the Review model
+      const reviews = await Review.find({
+        sellerId: farmerId,
+        status: 'active'
+      }).select('rating').lean();
+
+      // Count total reviews and compute average rating from actual reviews
+      const reviewCount = reviews.length;
+      const averageRating = reviews.length > 0
+        ? reviews.reduce((sum, review: any) => sum + (review.rating || 0), 0) / reviews.length
         : 0;
-      
-      // Count total reviews across all products
-      const reviewCount = farmerProducts.reduce((sum, p: any) => sum + ((p.reviews as any)?.length || 0), 0);
       
       // Get unique categories
       const categories = [...new Set(farmerProducts.map((p: any) => p.category as string))].slice(0, 3);
@@ -571,7 +580,7 @@ async function getDynamicPerformanceFilters(config: ITopFarmersConfig, baseQuery
             filterQuery.updatedAt = { $gte: recentDate };
             break;
           case 'most_reviewed':
-            filterQuery.reviewCount = { $gte: 5 };
+            filterQuery.reviewCount = { $gte: 1 };
             break;
         }
         

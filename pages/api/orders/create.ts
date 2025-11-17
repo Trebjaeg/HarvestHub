@@ -301,6 +301,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const insertedOrders = await Order.insertMany(ordersToCreate, { session });
       createdOrders.push(...insertedOrders.map(o => o._id.toString()));
 
+      // Check for low stock alerts after order creation
+      try {
+        const { notifyLowStock } = await import('../../../lib/notification-utils');
+        
+        for (const item of allOrderItems) {
+          const product = await Product.findById(item.productId).select('stock lowStockAlert name unit farmerId').lean();
+          if (product && product.stock <= (product.lowStockAlert || 5)) {
+            await notifyLowStock(
+              product.farmerId,
+              product.name,
+              item.productId,
+              product.stock,
+              product.lowStockAlert || 5,
+              product.unit || 'pcs'
+            );
+          }
+        }
+      } catch (notifyError) {
+        console.error('Error checking low stock after order creation:', notifyError);
+        // Don't fail the order if notification fails
+      }
+
       // Create Lalamove order for the first order (main order)
       if (lalamoveQuotationId && insertedOrders.length > 0) {
         try {

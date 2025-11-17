@@ -27,15 +27,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as any;
     const sellerId = decoded.userId || decoded.id;
+    
+
 
     await dbConnect();
 
-    // Get actual low stock products from database
-    const lowStockProducts = await Product.find({
-      farmerId: sellerId,
-      isActive: true,
-      $expr: { $lte: ["$stock", "$lowStockAlert"] }
-    }).select('name stock lowStockAlert unit category createdAt').lean();
+    // Get actual low stock products using aggregation pipeline for better type handling
+    const lowStockProducts = await Product.aggregate([
+      {
+        $match: {
+          farmerId: sellerId.toString(), // Ensure string comparison
+          isActive: true
+        }
+      },
+      {
+        $addFields: {
+          // Convert to numbers and set default lowStockAlert if not set
+          stockNum: { $toDouble: { $ifNull: ["$stock", 0] } },
+          alertNum: { $toDouble: { $ifNull: ["$lowStockAlert", 5] } }
+        }
+      },
+      {
+        $match: {
+          $expr: { $lte: ["$stockNum", "$alertNum"] }
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          stock: 1,
+          lowStockAlert: 1,
+          unit: 1,
+          category: 1,
+          createdAt: 1
+        }
+      }
+    ]);
+
+
 
     // Map to the expected format
     const formattedProducts = lowStockProducts.map((product: any) => ({
@@ -48,6 +77,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       category: product.category,
       unit: product.unit || 'kg'
     }));
+
+
+
+    // Also check for alerts when fetching products
+    try {
+      const { checkLowStockAlerts } = await import('../../../models/Product');
+      await checkLowStockAlerts(sellerId.toString());
+    } catch (error) {
+      console.error('Error checking low stock alerts:', error);
+      // Don't fail the request if alert checking fails
+    }
 
     res.status(200).json({ products: formattedProducts });
   } catch (error) {

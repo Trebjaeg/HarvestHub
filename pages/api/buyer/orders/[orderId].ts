@@ -50,7 +50,7 @@ async function getOrderDetails(req: NextApiRequest, res: NextApiResponse, orderI
       _id: orderId, 
       buyerId: buyerId 
     })
-    .select('orderNumber orderDate products totalAmount deliveryFee finalAmount status paymentStatus paymentMethod estimatedDelivery actualDelivery deliveryAddress sellerId sellerName notes refusalReason refusalDate cancellationRequest createdAt updatedAt')
+    .select('orderNumber orderDate buyerName buyerEmail buyerPhone products totalAmount deliveryFee finalAmount status paymentStatus paymentMethod estimatedDelivery actualDelivery deliveryAddress sellerId sellerName sellerEmail sellerPhone notes refusalReason refusalDate cancellationRequest createdAt updatedAt')
     .lean()
     .exec();
 
@@ -74,6 +74,46 @@ async function getOrderDetails(req: NextApiRequest, res: NextApiResponse, orderI
       map[product._id.toString()] = product.image;
       return map;
     }, {});
+
+    // Fetch buyer and seller contact information from User model
+    let buyerPhone = null;
+    let sellerFullName = null;
+    let sellerEmail = null;
+    let sellerPhone = null;
+    
+    try {
+      const User = (await import('../../../../models/User')).default;
+      
+      // Fetch buyer info
+      if (buyerId) {
+        const buyer = await User.findById(buyerId)
+          .select('phone')
+          .lean()
+          .exec();
+        if (buyer) {
+          buyerPhone = (buyer as any).phone;
+        }
+      }
+      
+      // Fetch seller info
+      if ((order as any).sellerId) {
+        const seller = await User.findById((order as any).sellerId)
+          .select('name firstName lastName email phone')
+          .lean()
+          .exec();
+        
+        if (seller) {
+          const sellerData = seller as { name?: string; firstName?: string; lastName?: string; email?: string; phone?: string };
+          sellerFullName = sellerData.name || 
+                          `${sellerData.firstName || ''} ${sellerData.lastName || ''}`.trim() || 
+                          null;
+          sellerEmail = sellerData.email;
+          sellerPhone = sellerData.phone;
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching user contact information:', err);
+    }
 
     // Generate tracking timeline based on order status
     const generateTrackingTimeline = (orderData: any) => {
@@ -156,6 +196,9 @@ async function getOrderDetails(req: NextApiRequest, res: NextApiResponse, orderI
       _id: orderData._id.toString(),
       orderNumber: orderData.orderNumber,
       orderDate: orderData.orderDate.toISOString(),
+      buyerName: orderData.buyerName,
+      buyerEmail: orderData.buyerEmail,
+      buyerPhone: buyerPhone,
       products: orderData.products.map((product: any) => ({
         productId: product.productId,
         productName: product.productName,
@@ -179,10 +222,15 @@ async function getOrderDetails(req: NextApiRequest, res: NextApiResponse, orderI
         city: orderData.deliveryAddress.city,
         province: orderData.deliveryAddress.province,
         zipCode: orderData.deliveryAddress.zipCode,
+        fullName: orderData.deliveryAddress.fullName,
+        phone: orderData.deliveryAddress.phone,
         fullAddress: `${orderData.deliveryAddress.street}, ${orderData.deliveryAddress.city}, ${orderData.deliveryAddress.province} ${orderData.deliveryAddress.zipCode}`
       },
       sellerId: orderData.sellerId,
       sellerName: orderData.sellerName,
+      sellerFullName: sellerFullName,
+      sellerEmail: sellerEmail,
+      sellerPhone: sellerPhone,
       notes: orderData.notes || null,
       refusalReason: orderData.refusalReason || null,
       refusalDate: orderData.refusalDate ? orderData.refusalDate.toISOString() : null,

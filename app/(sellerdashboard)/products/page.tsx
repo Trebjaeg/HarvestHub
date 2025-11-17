@@ -1,12 +1,12 @@
 'use client';
 
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Plus, Package, Edit, Trash2, FileText } from "lucide-react";
+import { Search, Plus, Package, Edit, Trash2, FileText, Trophy, Star } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -40,6 +40,16 @@ interface Product {
   inventory_reserved?: number;
   inventory_committed?: number;
   inventory_on_hand?: number;
+  bestSellerScore?: number;
+  isBestSeller?: boolean;
+  sku?: string;
+  // Real sales metrics from API
+  totalSold?: number;
+  totalRevenue?: number;
+  orderCount?: number;
+  daysSinceLastOrder?: number;
+  avgOrderValue?: number;
+  salesRank?: number;
 }
 
 interface Appeal {
@@ -75,6 +85,8 @@ export default function Products() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [successMessage, setSuccessMessage] = useState({ title: '', message: '' });
+  const [bestSellerProducts, setBestSellerProducts] = useState<Product[]>([]);
+  const [loadingBestSellers, setLoadingBestSellers] = useState(true);
 
   const categories = [
     "Leafy Greens",
@@ -91,6 +103,7 @@ export default function Products() {
     fetchProducts();
     fetchAppeals();
     checkVerificationStatus();
+    fetchBestSellerProducts();
   }, []);
 
   const checkVerificationStatus = async () => {
@@ -126,6 +139,27 @@ export default function Products() {
       }
     } catch (error) {
       setAppeals([]);
+    }
+  };
+
+  const fetchBestSellerProducts = async () => {
+    try {
+      setLoadingBestSellers(true);
+      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
+      const response = await fetch('/api/seller/best-seller-products', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        cache: 'no-store'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBestSellerProducts(data.products || []);
+      }
+    } catch (error) {
+      console.error('Error fetching best seller products:', error);
+      setBestSellerProducts([]);
+    } finally {
+      setLoadingBestSellers(false);
     }
   };
 
@@ -184,6 +218,7 @@ export default function Products() {
         setShowAddModal(false);
         // Refresh the products list
         await fetchProducts();
+        await fetchBestSellerProducts();
         // Show success dialog
         setSuccessMessage({
           title: 'Success!',
@@ -224,6 +259,7 @@ export default function Products() {
         setEditingProduct(null);
         // Refresh the products list
         await fetchProducts();
+        await fetchBestSellerProducts();
         // Show success dialog
         setSuccessMessage({
           title: 'Updated!',
@@ -273,6 +309,7 @@ export default function Products() {
         setProductToDelete(null);
         // Refresh the products list
         await fetchProducts();
+        await fetchBestSellerProducts();
         // Show success message
         setSuccessMessage({
           title: 'Deleted!',
@@ -425,6 +462,131 @@ export default function Products() {
           </div>
         </Card>
 
+        {/* Best Seller Items Section */}
+        {isVerified && (
+          <Card className="p-3 sm:p-4 lg:p-6 mb-4 sm:mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200">
+            <div className="flex items-center gap-2 sm:gap-3 mb-4">
+              <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600 flex-shrink-0" />
+              <h2 className="text-base sm:text-lg font-bold text-yellow-800" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Top Selling Products
+              </h2>
+              <Badge className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 ml-auto">
+                All-Time Best Performers
+              </Badge>
+            </div>
+            
+            {loadingBestSellers ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {Array(5).fill(0).map((_, i) => (
+                  <div key={i} className="h-32 bg-yellow-100 rounded-lg animate-pulse"></div>
+                ))}
+              </div>
+            ) : bestSellerProducts.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {bestSellerProducts.map((product) => (
+                  <div 
+                    key={product._id}
+                    className={`bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer relative min-h-[200px] border-yellow-200`}
+                    onClick={() => router.push(`/product/${product._id}`)}
+                  >
+                    {/* Best Seller Badge */}
+                    <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+                      <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs px-2 py-1 shadow-sm">
+                        <Star className="w-3 h-3 mr-1" />
+                        Best Seller
+                      </Badge>
+                      {(product.stock || 0) <= (product.lowStockAlert || 5) && (
+                        <Badge className="bg-red-500 text-white text-xs px-2 py-1 shadow-sm">
+                          Low Stock
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {/* Product Image */}
+                    <div className="h-20 sm:h-24 bg-gray-100 rounded-t-lg overflow-hidden">
+                      {product.images && product.images.length > 0 ? (
+                        <Image
+                          src={product.images[0]}
+                          alt={product.name}
+                          width={208}
+                          height={96}
+                          className="object-cover w-full h-full"
+                          unoptimized={product.images[0].includes('digitaloceanspaces.com')}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-6 h-6 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Product Info */}
+                    <div className="p-2 space-y-1 flex-1">
+                      <h3 className="font-medium text-xs text-gray-900 line-clamp-2 leading-tight" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {product.name}
+                      </h3>
+                      <p className="text-xs font-semibold text-[#103C2E]">
+                        ₱{product.price}/{product.unit}
+                      </p>
+                      
+                      {/* Real Sales Metrics */}
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Sold:</span>
+                          <span className="font-bold text-green-600">{product.totalSold || 0}</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Revenue:</span>
+                          <span className="font-bold text-blue-600 text-xs">₱{(product.totalRevenue || 0).toLocaleString()}</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Orders:</span>
+                          <span className="font-medium text-purple-600">{product.orderCount || 0}</span>
+                        </div>
+                        
+                        {product.salesRank && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Rank:</span>
+                            <span className="font-bold text-yellow-700">#{product.salesRank}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-xs border-t border-gray-200 pt-1 mt-1">
+                        <span className={`${
+                          (product.stock || 0) <= (product.lowStockAlert || 5) 
+                            ? 'text-red-600 font-semibold' 
+                            : 'text-gray-500'
+                        }`}>
+                          Stock: {product.stock || 0}
+                          {(product.stock || 0) <= (product.lowStockAlert || 5) && ' ⚠️'}
+                        </span>
+                        {product.rating && (
+                          <div className="flex items-center gap-1">
+                            <Star className="w-3 h-3 text-yellow-500 fill-current" />
+                            <span className="text-gray-600">{product.rating.toFixed(1)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <Trophy className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+                <p className="text-sm text-yellow-700" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  No best seller products yet. Keep selling to earn best seller status!
+                </p>
+              </div>
+            )}
+          </Card>
+        )}
+
+
+
         {/* Products Table/Cards */}
         {loading ? (
           <Card className="p-6 bg-white border border-gray-200">
@@ -457,8 +619,8 @@ export default function Products() {
         ) : (
           <>
             {/* Desktop Card Grid View - ProductCard Style */}
-            <div className="hidden md:block">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 lg:gap-10 justify-items-center">
+            <div className="hidden sm:block">
+              <div className="product-card-container">
                 {filteredProducts.map((product) => {
                   const productAppeal = appeals.find(
                     (appeal) => appeal.productId === product._id && appeal.type === 'listing_removal'
@@ -469,35 +631,56 @@ export default function Products() {
                     <div 
                       key={product._id}
                       onClick={() => router.push(`/product/${product._id}`)}
-                      className={`relative w-full max-w-[280px] rounded-3xl border-2 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] cursor-pointer ${
-                        isDeactivated ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'
+                      className={`relative w-full rounded-2xl sm:rounded-3xl border-2 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] cursor-pointer ${
+                        isDeactivated 
+                          ? 'bg-red-50 border-red-200' 
+                          : (product.stock || 0) <= (product.lowStockAlert || 5)
+                          ? 'bg-white border-red-400 ring-2 ring-red-100'
+                          : 'bg-white border-gray-200'
                       }`}
-                      style={{ height: '310px' }}
+                      style={{ aspectRatio: '3/4' }}
                     >
                       {/* Product Image */}
-                      <div className="relative" style={{ height: '210px' }}>
+                      <div className="relative w-full h-[65%]">
                         {product.images && product.images.length > 0 ? (
                           <Image
                             src={product.images[0]}
                             alt={product.name}
                             fill
                             className="object-cover"
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, (max-width: 1536px) 25vw, 20vw"
                             unoptimized={product.images[0].includes('digitaloceanspaces.com')}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                            <Package className="w-12 h-12 text-gray-400" />
+                            <Package className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
                           </div>
                         )}
                         
-                        {/* Deactivation Badge */}
-                        {isDeactivated && (
-                          <div className="absolute top-2 right-2">
-                            <Badge className="bg-red-100 text-red-800 text-xs">
+                        {/* Badges */}
+                        <div className="absolute top-2 left-2 flex flex-col gap-1">
+                          {/* Best Seller Badge */}
+                          {bestSellerProducts.some(bp => bp._id === product._id) && (
+                            <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs px-2 py-1 shadow-sm">
+                              <Star className="w-3 h-3 mr-1" />
+                              Best Seller
+                            </Badge>
+                          )}
+                          
+                          {/* Low Stock Badge */}
+                          {!isDeactivated && (product.stock || 0) <= (product.lowStockAlert || 5) && (
+                            <Badge className="bg-red-500 text-white text-xs px-2 py-1 shadow-sm">
+                              ⚠️ Low Stock
+                            </Badge>
+                          )}
+                          
+                          {/* Deactivation Badge */}
+                          {isDeactivated && (
+                            <Badge className="bg-red-500 text-white text-xs px-2 py-1">
                               Deactivated
                             </Badge>
-                          </div>
-                        )}
+                          )}
+                        </div>
 
                         {/* Action Buttons */}
                         {!isDeactivated && (
@@ -507,20 +690,20 @@ export default function Products() {
                                 e.stopPropagation();
                                 setEditingProduct(product);
                               }}
-                              className="p-1.5 bg-white/90 hover:bg-white rounded-full shadow-md transition-all"
+                              className="p-1.5 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all backdrop-blur-sm"
                               title="Edit Product"
                             >
-                              <Edit className="w-3.5 h-3.5 text-[#103C2E]" />
+                              <Edit className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#103C2E]" />
                             </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteProduct(product._id!);
                               }}
-                              className="p-1.5 bg-white/90 hover:bg-white rounded-full shadow-md transition-all"
+                              className="p-1.5 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all backdrop-blur-sm"
                               title="Delete Product"
                             >
-                              <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                              <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-red-600" />
                             </button>
                           </div>
                         )}
@@ -533,53 +716,54 @@ export default function Products() {
                                 e.stopPropagation();
                                 router.push(`/my-appeals?product=${product._id}&name=${encodeURIComponent(product.name)}`);
                               }}
-                              className="w-full flex items-center justify-center gap-1 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 transition-colors"
+                              className="w-full flex items-center justify-center gap-1 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-lg px-2 py-1.5 transition-colors font-medium"
                               title="Appeal this deactivation"
                             >
                               <FileText className="w-3 h-3" />
-                              Appeal Deactivation
+                              <span className="hidden sm:inline">Appeal</span>
                             </button>
                           </div>
                         )}
                       </div>
 
                       {/* Product Details */}
-                      <div className="p-4" style={{ height: '100px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                        <div>
-                          <h3 className={`font-semibold text-sm line-clamp-2 mb-1 ${
+                      <div className="p-3 sm:p-4 h-[35%] flex flex-col justify-between">
+                        <div className="flex-1">
+                          <h3 className={`font-semibold text-xs sm:text-sm leading-tight mb-1 line-clamp-2 product-name ${
                             isDeactivated ? 'text-red-800' : 'text-gray-900'
                           }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
                             {product.name}
                           </h3>
-                          <p className={`text-lg font-bold ${
+                          <p className={`text-sm sm:text-base lg:text-lg font-bold mb-1 ${
                             isDeactivated ? 'text-red-700' : 'text-[#103C2E]'
                           }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
                             ₱{product.price.toFixed(2)}/{product.unit}
                           </p>
                         </div>
-                        <div className="flex items-center justify-between text-xs" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                          <div className="flex items-center gap-y-0 w-full mr-4">
-                            <div className="flex items-center gap-1">
-                              <span className="text-gray-600">Stock:</span>
-                              <span className={`font-medium ${
-                                isDeactivated ? 'text-red-600' : 'text-green-600'
-                              }`}>
-                                {product.inventory_available ?? product.stock}
-                              </span>
-                              {(product.inventory_reserved || 0) > 0 && (
-                                <span className="text-gray-400 mx-2">•</span>
-                              )}
-                            </div>
+                        
+                        <div className="flex items-center justify-between gap-2 text-xs" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          <div className="flex items-center gap-1 min-w-0 flex-1">
+                            <span className="text-gray-600 flex-shrink-0">Stock:</span>
+                            <span className={`font-medium flex-shrink-0 ${
+                              isDeactivated 
+                                ? 'text-red-600' 
+                                : (product.stock || 0) <= (product.lowStockAlert || 5)
+                                ? 'text-red-600 font-bold'
+                                : 'text-green-600'
+                            }`}>
+                              {product.inventory_available ?? product.stock}
+                              {!isDeactivated && (product.stock || 0) <= (product.lowStockAlert || 5) && ' ⚠️'}
+                            </span>
                             {(product.inventory_reserved || 0) > 0 && (
-                              <div className="flex items-center gap-1">
-                                <span className="text-yellow-600 font-medium">
-                                  {product.inventory_reserved}
+                              <>
+                                <span className="text-gray-400 mx-1">•</span>
+                                <span className="text-yellow-600 font-medium text-xs">
+                                  {product.inventory_reserved} reserved
                                 </span>
-                                <span className="text-gray-600">reserved</span>
-                              </div>
+                              </>
                             )}
                           </div>
-                          <Badge className={`${getStatusColor(product.status || 'Available')} text-xs whitespace-nowrap flex-shrink-0`}>
+                          <Badge className={`${getStatusColor(product.status || 'Available')} text-xs px-1.5 py-0.5 flex-shrink-0`}>
                             {product.status || 'Available'}
                           </Badge>
                         </div>
@@ -591,7 +775,7 @@ export default function Products() {
             </div>
 
             {/* Mobile Card View */}
-            <div className="md:hidden space-y-4">
+            <div className="sm:hidden space-y-3">
               {filteredProducts.map((product) => {
                 const productAppeal = appeals.find(
                   (appeal) => appeal.productId === product._id && appeal.type === 'listing_removal'
@@ -602,69 +786,102 @@ export default function Products() {
                   <Card 
                     key={product._id} 
                     className={`p-4 ${
-                      isDeactivated ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'
+                      isDeactivated 
+                        ? 'bg-red-50 border-red-200' 
+                        : (product.stock || 0) <= (product.lowStockAlert || 5)
+                        ? 'bg-white border-red-400 ring-1 ring-red-100'
+                        : 'bg-white border-gray-200'
                     }`}
+                    onClick={() => router.push(`/product/${product._id}`)}
                   >
                     <div className="flex gap-3">
                       {/* Product Image */}
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                      <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
                         {product.images && product.images.length > 0 ? (
                           <Image
                             src={product.images[0]}
                             alt={product.name}
-                            width={64}
-                            height={64}
+                            width={80}
+                            height={80}
                             className="w-full h-full object-cover"
                             unoptimized={product.images[0].includes('digitaloceanspaces.com')}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Package className="w-6 h-6 text-gray-400" />
+                            <Package className="w-8 h-8 text-gray-400" />
                           </div>
                         )}
                       </div>
 
                       {/* Product Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className={`font-semibold text-base mb-1 line-clamp-1 ${
-                          isDeactivated ? 'text-red-800' : 'text-gray-900'
-                        }`}>
-                          {product.name}
-                        </h3>
-                        
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className={`text-lg font-bold ${
-                            isDeactivated ? 'text-red-700' : 'text-[#103C2E]'
-                          }`}>
-                            ₱{product.price.toFixed(2)}/{product.unit}
-                          </span>
-                          <Badge className={`${getStatusColor(product.status || 'Available')} text-xs`}>
-                            {product.status || 'Available'}
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1 pr-2">
+                            <h3 className={`font-semibold text-sm leading-tight product-name ${
+                              isDeactivated ? 'text-red-800' : 'text-gray-900'
+                            }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
+                              {product.name}
+                            </h3>
+                            {/* Badges for Mobile */}
+                            <div className="flex gap-1 mt-1 flex-wrap">
+                              {bestSellerProducts.some(bp => bp._id === product._id) && (
+                                <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs px-2 py-1 shadow-sm inline-flex items-center">
+                                  <Star className="w-3 h-3 mr-1" />
+                                  Best Seller
+                                </Badge>
+                              )}
+                              {!isDeactivated && (product.stock || 0) <= (product.lowStockAlert || 5) && (
+                                <Badge className="bg-red-500 text-white text-xs px-2 py-1 shadow-sm inline-flex items-center">
+                                  ⚠️ Low Stock
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <Badge className={`${getStatusColor(product.status || 'Available')} text-xs flex-shrink-0 px-2 py-1`}>
+                            {(product.status || 'Available')}
                           </Badge>
                         </div>
+                        
+                        <p className={`text-lg font-bold mb-2 ${
+                          isDeactivated ? 'text-red-700' : 'text-[#103C2E]'
+                        }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          ₱{product.price.toFixed(2)}/{product.unit}
+                        </p>
 
-                        <div className="text-sm text-gray-600">
-                          <span>Stock: </span>
-                          <span className={`font-medium ${
-                            isDeactivated ? 'text-red-600' : 'text-green-600'
-                          }`}>
-                            {product.inventory_available ?? product.stock}
-                          </span>
-                          {(product.inventory_reserved || 0) > 0 && (
-                            <span className="text-yellow-600 ml-2">
-                              • {product.inventory_reserved} reserved
-                            </span>
-                          )}
+                        <div className="text-sm text-gray-600 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-1">
+                              <span>Stock:</span>
+                              <span className={`font-medium ${
+                                isDeactivated 
+                                  ? 'text-red-600' 
+                                  : (product.stock || 0) <= (product.lowStockAlert || 5)
+                                  ? 'text-red-600 font-bold'
+                                  : 'text-green-600'
+                              }`}>
+                                {product.inventory_available ?? product.stock}
+                                {!isDeactivated && (product.stock || 0) <= (product.lowStockAlert || 5) && ' ⚠️'}
+                              </span>
+                            </div>
+                            {(product.inventory_reserved || 0) > 0 && (
+                              <div className="flex items-center gap-1 text-yellow-600 text-xs">
+                                <span>•</span>
+                                <span className="font-medium">{product.inventory_reserved}</span>
+                                <span>reserved</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {/* Deactivation Status */}
                         {isDeactivated && (
-                          <div className="mt-2">
-                            <Badge className="bg-red-100 text-red-800 text-xs">
+                          <div className="mb-2">
+                            <Badge className="bg-red-500 text-white text-xs mb-1">
                               Deactivated by Admin
                             </Badge>
                             {productAppeal && (
-                              <p className="text-xs mt-1 font-medium" style={{
+                              <p className="text-xs font-medium" style={{
+                                fontFamily: 'Poppins, sans-serif',
                                 color: productAppeal.status === 'pending' ? '#FFA726' :
                                        productAppeal.status === 'under_review' ? '#42A5F5' :
                                        productAppeal.status === 'approved' ? '#4A7C59' : '#EF5350'
@@ -680,7 +897,7 @@ export default function Products() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex gap-2 mt-4 pt-3 border-t border-gray-200">
                       {!isDeactivated ? (
                         <>
                           <button
@@ -688,9 +905,10 @@ export default function Products() {
                               e.stopPropagation();
                               setEditingProduct(product);
                             }}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-[#103C2E] bg-green-50 hover:bg-green-100 active:bg-green-100 rounded-lg transition-colors border border-green-200 touch-manipulation"
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-[#103C2E] bg-green-50 hover:bg-green-100 active:bg-green-100 rounded-lg transition-colors border border-green-200 touch-manipulation touch-target"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-4 h-4 flex-shrink-0" />
                             <span>Edit</span>
                           </button>
                           <button
@@ -698,9 +916,10 @@ export default function Products() {
                               e.stopPropagation();
                               handleDeleteProduct(product._id!);
                             }}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 active:bg-red-100 rounded-lg transition-colors border border-red-200 touch-manipulation"
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 active:bg-red-100 rounded-lg transition-colors border border-red-200 touch-manipulation touch-target"
+                            style={{ fontFamily: 'Poppins, sans-serif' }}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4 flex-shrink-0" />
                             <span>Delete</span>
                           </button>
                         </>
@@ -710,9 +929,10 @@ export default function Products() {
                             e.stopPropagation();
                             router.push(`/my-appeals?product=${product._id}&name=${encodeURIComponent(product.name)}`);
                           }}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-700 rounded-lg transition-colors touch-manipulation"
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-700 rounded-lg transition-colors touch-manipulation touch-target"
+                          style={{ fontFamily: 'Poppins, sans-serif' }}
                         >
-                          <FileText className="w-4 h-4" />
+                          <FileText className="w-4 h-4 flex-shrink-0" />
                           <span>Appeal Deactivation</span>
                         </button>
                       )}

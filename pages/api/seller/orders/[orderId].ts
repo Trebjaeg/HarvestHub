@@ -54,37 +54,83 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(403).json({ message: 'Access denied' });
     }
 
+    // Fetch buyer and seller contact information from User model
+    let buyerPhone = null;
+    let sellerFullName = null;
+    let sellerEmail = null;
+    let sellerPhone = null;
+    
+    try {
+      const User = (await import('../../../../models/User')).default;
+      
+      // Fetch buyer info
+      if ((order as any).buyerId) {
+        const buyer = await User.findById((order as any).buyerId)
+          .select('phone')
+          .lean()
+          .exec();
+        if (buyer) {
+          buyerPhone = (buyer as any).phone;
+        }
+      }
+      
+      // Fetch seller info
+      if ((order as any).sellerId) {
+        const seller = await User.findById((order as any).sellerId)
+          .select('name firstName lastName email phone')
+          .lean()
+          .exec();
+        
+        if (seller) {
+          const sellerData = seller as { name?: string; firstName?: string; lastName?: string; email?: string; phone?: string };
+          sellerFullName = sellerData.name || 
+                          `${sellerData.firstName || ''} ${sellerData.lastName || ''}`.trim() || 
+                          null;
+          sellerEmail = sellerData.email;
+          sellerPhone = sellerData.phone;
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching user contact information:', err);
+    }
+
+    const orderData = order as any;
+    
     return res.status(200).json({
       order: {
-        _id: order._id.toString(),
-        orderNumber: order.orderNumber,
-        buyerId: order.buyerId,
-        buyerName: order.buyerName,
-        buyerEmail: order.buyerEmail,
-        sellerId: order.sellerId,
-        sellerName: order.sellerName,
-        products: order.products,
-        totalAmount: order.totalAmount,
-        deliveryFee: order.deliveryFee,
-        finalAmount: order.finalAmount,
-        deliveryAddress: order.deliveryAddress,
-        status: order.status,
-        paymentMethod: order.paymentMethod,
-        paymentStatus: order.paymentStatus,
-        orderDate: order.orderDate,
-        estimatedDelivery: order.estimatedDelivery,
-        actualDelivery: order.actualDelivery,
-        notes: order.notes,
+        _id: orderData._id.toString(),
+        orderNumber: orderData.orderNumber,
+        buyerId: orderData.buyerId,
+        buyerName: orderData.buyerName,
+        buyerEmail: orderData.buyerEmail,
+        buyerPhone: buyerPhone,
+        sellerId: orderData.sellerId,
+        sellerName: orderData.sellerName,
+        sellerFullName: sellerFullName,
+        sellerEmail: sellerEmail,
+        sellerPhone: sellerPhone,
+        products: orderData.products,
+        totalAmount: orderData.totalAmount,
+        deliveryFee: orderData.deliveryFee,
+        finalAmount: orderData.finalAmount,
+        deliveryAddress: orderData.deliveryAddress,
+        status: orderData.status,
+        paymentMethod: orderData.paymentMethod,
+        paymentStatus: orderData.paymentStatus,
+        orderDate: orderData.orderDate,
+        estimatedDelivery: orderData.estimatedDelivery,
+        actualDelivery: orderData.actualDelivery,
+        notes: orderData.notes,
         // Include Lalamove tracking data
-        lalamove_order_id: order.lalamove_order_id,
-        lalamove_quotation_id: order.lalamove_quotation_id,
-        lalamove_share_link: order.lalamove_share_link,
+        lalamove_order_id: orderData.lalamove_order_id,
+        lalamove_quotation_id: orderData.lalamove_quotation_id,
+        lalamove_share_link: orderData.lalamove_share_link,
         // Include cancellation request data
-        cancellationRequest: order.cancellationRequest ? {
-          requestedBy: order.cancellationRequest.requestedBy,
-          reason: order.cancellationRequest.reason,
-          requestedAt: order.cancellationRequest.requestedAt,
-          status: order.cancellationRequest.status
+        cancellationRequest: orderData.cancellationRequest ? {
+          requestedBy: orderData.cancellationRequest.requestedBy,
+          reason: orderData.cancellationRequest.reason,
+          requestedAt: orderData.cancellationRequest.requestedAt,
+          status: orderData.cancellationRequest.status
         } : undefined
       }
     });

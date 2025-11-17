@@ -14,9 +14,6 @@ import ReviewItem from '@/components/ReviewItem';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-
 // Utility function to extract unit from product name with asterisk annotation
 const extractUnitFromName = (productName: string, fallbackUnit?: string) => {
   // Look for pattern: "ProductName *unit" (e.g., "Tomatoes *kg", "Cabbage *sack")
@@ -763,6 +760,8 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
           <span className="text-sm font-medium">Back</span>
+        </button>
+
         {/* Back Button */}
         <button
           onClick={() => router.back()}
@@ -970,24 +969,8 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
 
               {/* Price */}
               <div className="flex items-baseline gap-3 mb-6">
-                {product.price != null && (
-                  <>
-                    <span className="text-4xl font-bold text-[#40613D]" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      ₱{product.price.toFixed(2)}
-                    </span>
-                    {product.originalPrice && (
-                      <span className="text-xl text-gray-400 line-through" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        ₱{product.originalPrice.toFixed(2)}
-                      </span>
-                    )}
-                    {product.unit && (
-                      <span className="text-gray-600" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        / {product.unit}
-                      </span>
-                    )}
-                  </>
-                )}
-              {(() => {
+                {product.price != null ? (
+                  (() => {
                     const { unit: extractedUnit } = extractUnitFromName(product.name, product.unit);
                     const displayUnit = extractedUnit || product.unit;
                     return (
@@ -1008,8 +991,7 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
                       </>
                     );
                   })()
-                )}
-                {product.price == null && (
+                ) : (
                   <span className="text-2xl text-gray-500" style={{ fontFamily: 'Poppins, sans-serif' }}>
                     Price not available
                   </span>
@@ -1537,7 +1519,6 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
               </p>
             </div>
           )}
-          </div>
         </div>
       </div>
 
@@ -1609,6 +1590,7 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
           </div>
         </div>
       )}
+    </div>
 
       {/* Takedown Confirmation Dialog */}
       <Dialog open={showTakedownDialog} onOpenChange={setShowTakedownDialog}>

@@ -148,6 +148,37 @@ export async function notifyNewOrder(
 }
 
 /**
+ * Create notification for low stock alert (notify seller)
+ */
+export async function notifyLowStock(
+  sellerId: string,
+  productName: string,
+  productId: string,
+  currentStock: number,
+  criticalLevel: number,
+  unit: string
+): Promise<void> {
+  await createNotification({
+    userId: sellerId,
+    userRole: 'seller',
+    type: 'low_stock_alert',
+    title: 'Low Stock Alert',
+    message: `${productName} is running low (${currentStock} ${unit} remaining)`,
+    relatedUserId: productId,
+    relatedUserName: productName,
+    metadata: {
+      productId,
+      productName,
+      currentStock,
+      criticalLevel,
+      unit,
+      alertLevel: currentStock <= criticalLevel / 2 ? 'critical' : 'warning',
+      actionUrl: `/products?edit=${productId}`
+    }
+  });
+}
+
+/**
  * Create notification for order status update (notify buyer)
  */
 export async function notifyOrderStatusUpdate(
