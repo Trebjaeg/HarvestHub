@@ -21,6 +21,7 @@ export interface AuthenticatedUser {
   sellerStatus: 'none' | 'pending' | 'verified' | 'rejected';
   status: 'active' | 'suspended' | 'deleted';
   profileImage?: string;
+  phone?: string;
 }
 
 /**
@@ -113,7 +114,7 @@ export async function fetchAuthoritativeUser(userId: string): Promise<Authentica
     await dbConnect();
     
     const user = await User.findById(userId)
-      .select('name email role sellerStatus status profileImage')
+      .select('name email role sellerStatus status profileImage phone')
       .lean();
     
     if (!user) {
@@ -127,7 +128,8 @@ export async function fetchAuthoritativeUser(userId: string): Promise<Authentica
       role: user.role,
       sellerStatus: user.sellerStatus || 'none',
       status: user.status,
-      profileImage: user.profileImage || undefined
+      profileImage: user.profileImage || undefined,
+      phone: user.phone || undefined
     };
   } catch (error) {
     console.error('Error fetching authoritative user:', error);

@@ -98,6 +98,7 @@ async function handlePUT(req: NextApiRequest, res: NextApiResponse, id: string) 
       stock,
       images,
       harvestDate,
+      lowStockAlert,
       sku
     } = req.body;
 
@@ -127,6 +128,7 @@ async function handlePUT(req: NextApiRequest, res: NextApiResponse, id: string) 
         images 
       }),
       ...(harvestDate && { harvestDate: new Date(harvestDate) }),
+      ...(lowStockAlert !== undefined && { lowStockAlert: parseInt(lowStockAlert) }),
       ...(productSKU && { sku: productSKU }),
       updatedAt: new Date()
     };

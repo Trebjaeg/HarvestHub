@@ -31,7 +31,7 @@ const PROVINCE_CITIES: Record<string, string[]> = {
     'San Mateo', 'Tanay', 'Teresa', 'Morong', 'Baras', 'Cardona', 'Jalajala', 'Pililla'
   ],
   'Cavite': [
-    'Bacoor', 'Imus', 'Dasmariñas', 'Cavite City', 'Las Piñas', 'General Trias', 
+    'Bacoor', 'Imus', 'Dasmariñas', 'Cavite City', 'General Trias', 
     'Rosario', 'Silang', 'Carmona', 'General Mariano Alvarez', 'Trece Martires'
   ],
   'Laguna': [
@@ -125,6 +125,245 @@ const CITY_BARANGAYS: Record<string, string[]> = {
     'Abangan Norte', 'Abangan Sur', 'Bancal', 'Ibayo', 'Lambakin', 'Lias', 'Loma de Gato', 
     'Patubig', 'Poblacion', 'Prenza I', 'Prenza II', 'Saog', 'Santa Rosa I', 'Santa Rosa II', 
     'Tabing Ilog'
+  ],
+  
+  // Rizal Cities
+  'Antipolo': [
+    'Bagong Nayon', 'Beverly Hills', 'Cupang', 'Dalig', 'dela Paz', 'Fort Bonifacio', 
+    'Generoso', 'Inarawan', 'Izaak Walton', 'Muntindilaw', 'Olandes', 'Pag-ibig', 
+    'Poblacion', 'San Isidro', 'San Jose', 'San Juan', 'San Luis', 'San Roque', 
+    'Santa Cruz', 'Santo Niño', 'Taktak', 'Tugos'
+  ],
+  'Cainta': [
+    'Dayap', 'dela Paz', 'Kasunduan', 'Marikina Heights', 'Poblacion', 'San Agustin', 
+    'San Andres', 'San Isidro', 'San Juan', 'Santo Domingo', 'Santo Niño'
+  ],
+  'Taytay': [
+    'Bagumbayan', 'Baybayin', 'Dalig', 'dela Paz', 'Dolores', 'Kinabutasan', 'Matatalaib', 
+    'Muzon', 'Poblacion', 'San Isidro', 'San Juan', 'Santa Ana'
+  ],
+  'Angono': [
+    'Bagumbayan', 'Mahabang Parang', 'Poblacion', 'San Isidro', 'San Pedro', 'San Roque'
+  ],
+  'Binangonan': [
+    'Bagong Silangan', 'Bombongan', 'Calumpang', 'Darangan', 'Itlog', 'Janosa', 'Kinabutasan', 
+    'Libid', 'Libis', 'Mahabang Parang', 'Malakaban', 'Poblacion', 'Pag-asa', 'Patiis', 
+    'Pintong Bukawe', 'Pintong Gubat', 'San Carlos', 'San Isidro', 'Tatala', 'Tayuman'
+  ],
+  'Rodriguez': [
+    'Burgos', 'Geronimo', 'Macabud', 'Manggahan', 'Montalban Proper', 'Mountain View', 
+    'Poblacion', 'San Isidro', 'San Jose', 'San Rafael'
+  ],
+  'San Mateo': [
+    'Ampid I', 'Ampid II', 'Banaba', 'Dulongbayan', 'Guitnang Bayan I', 'Guitnang Bayan II', 
+    'Malanday', 'Maly', 'Nangka', 'Poblacion'
+  ],
+
+  // Pampanga Cities
+  'Angeles': [
+    'Agapito del Rosario', 'Amsic', 'Balibago', 'Capaya', 'Claro M. Recto', 'Cuayan', 
+    'Cutcut', 'Cutud', 'Lourdes Norte', 'Lourdes Sur', 'Malabanias', 'Margot', 
+    'Mining', 'Ninoy Aquino', 'Pampang', 'Poblacion', 'Pulung Cacutud', 'Pulung Maragul', 
+    'Sapalibutad', 'Sapangbato', 'Santo Cristo', 'Santo Domingo', 'Santo Rosario', 
+    'Tabun', 'Virgen delos Remedios'
+  ],
+  'San Fernando': [
+    'Alasas', 'Baliti', 'Bulaon', 'Calulut', 'Dela Paz Norte', 'Dela Paz Sur', 'Dolores', 
+    'Juliana', 'Lara', 'Lazatin', 'Lourdes', 'Magliman', 'Maimpis', 'Malino', 'Panipuan', 
+    'Poblacion', 'Pulung Bulu', 'Quebiawan', 'Saguin', 'San Agustin', 'San Felipe', 'San Isidro', 
+    'San Jose', 'San Juan', 'San Nicolas', 'San Pedro', 'Santa Lucia', 'Santa Teresita', 'Santo Niño', 'Santo Rosario'
+  ],
+  'Mabalacat': [
+    'Atlu-Bola', 'Bical', 'Bundagul', 'Cacutud', 'Calumpang', 'Camachiles', 'Dapdap', 
+    'Dolores', 'Duquit', 'Lakandula', 'Mabiga', 'Marcos Village', 'Poblacion', 
+    'Poblacion II', 'Poblacion III', 'Poblacion IV', 'Poblacion V', 'Poblacion VI', 
+    'Poblacion VII', 'Poblacion VIII', 'Poblacion IX', 'Poblacion X', 'Santa Ines', 'Sapang Biabas', 'Tabun'
+  ],
+
+  // Cavite Cities
+  'Bacoor': [
+    'Alima', 'Aniban I', 'Aniban II', 'Aniban III', 'Aniban IV', 'Aniban V', 'Bagong Silang', 
+    'Banay-banay', 'Bayanan', 'Campo Santo', 'Daang Bukid', 'Daang Hari', 'Digman', 
+    'Dulong Bayan', 'Habay I', 'Habay II', 'Kaingin', 'Kalye Uno', 'Ligas I', 'Ligas II', 
+    'Ligas III', 'Maliksi I', 'Maliksi II', 'Maliksi III', 'Mambog I', 'Mambog II', 
+    'Mambog III', 'Mambog IV', 'Molino I', 'Molino II', 'Molino III', 'Molino IV', 
+    'Molino V', 'Niog I', 'Niog II', 'Niog III', 'Panapaan I', 'Panapaan II', 'Panapaan III', 
+    'Panapaan IV', 'Panapaan V', 'Panapaan VI', 'Panapaan VII', 'Panapaan VIII', 'Queens Row Central', 
+    'Queens Row East', 'Queens Row West', 'Real I', 'Real II', 'Salinas I', 'Salinas II', 
+    'San Nicolas I', 'San Nicolas II', 'San Nicolas III', 'Springville', 'Talaba I', 'Talaba II', 
+    'Talaba III', 'Talaba IV', 'Talaba V', 'Talaba VI', 'Talaba VII', 'Zapote I', 'Zapote II', 
+    'Zapote III', 'Zapote IV', 'Zapote V'
+  ],
+  'Imus': [
+    'Alapan I-A', 'Alapan I-B', 'Alapan I-C', 'Alapan II-A', 'Alapan II-B', 'Anabu I-A', 
+    'Anabu I-B', 'Anabu I-C', 'Anabu I-D', 'Anabu I-E', 'Anabu I-F', 'Anabu I-G', 
+    'Anabu I-H', 'Anabu I-I', 'Anabu I-J', 'Anabu II-A', 'Anabu II-B', 'Anabu II-C', 
+    'Anabu II-D', 'Anabu II-E', 'Anabu II-F', 'Bayan Luma I', 'Bayan Luma II', 'Bayan Luma III', 
+    'Bayan Luma IV', 'Bayan Luma V', 'Bayan Luma VI', 'Bayan Luma VII', 'Bayan Luma VIII', 
+    'Bayan Luma IX', 'Bucandala I', 'Bucandala II', 'Bucandala III', 'Bucandala IV', 'Bucandala V', 
+    'Maharlika', 'Malagasang I-A', 'Malagasang I-B', 'Malagasang I-C', 'Malagasang I-D', 
+    'Malagasang I-E', 'Malagasang I-F', 'Malagasang I-G', 'Malagasang II-A', 'Malagasang II-B', 
+    'Malagasang II-C', 'Malagasang II-D', 'Malagasang II-E', 'Malagasang II-F', 'Medicion I-A', 
+    'Medicion I-B', 'Medicion I-C', 'Medicion I-D', 'Medicion II-A', 'Medicion II-B', 
+    'Medicion II-C', 'Medicion II-D', 'Medicion II-E', 'Medicion II-F', 'Palico I', 'Palico II', 
+    'Palico III', 'Palico IV', 'Poblacion I-A', 'Poblacion I-B', 'Poblacion I-C', 'Poblacion II-A', 
+    'Poblacion II-B', 'Poblacion III-A', 'Poblacion III-B', 'Poblacion IV-A', 'Poblacion IV-B', 
+    'Poblacion IV-C', 'Pulo le Munti', 'Tanzang Luma I', 'Tanzang Luma II', 'Tanzang Luma III', 
+    'Tanzang Luma IV', 'Tanzang Luma V', 'Tanzang Luma VI', 'Toclong I-A', 'Toclong I-B', 
+    'Toclong I-C', 'Toclong II-A', 'Toclong II-B'
+  ],
+  'Dasmariñas': [
+    'Bagong Bayan', 'Burol I', 'Burol II', 'Burol III', 'Fatima I', 'Fatima II', 'Fatima III', 
+    'Langkaan I', 'Langkaan II', 'Lunsad', 'Paliparan I', 'Paliparan II', 'Paliparan III', 
+    'Poblacion I', 'Poblacion II', 'Poblacion III', 'Poblacion IV', 'Salawag', 'Salitran I', 
+    'Salitran II', 'Salitran III', 'Salitran IV', 'Sampalukan I', 'Sampalukan II', 'Sampalukan III', 
+    'Sampalukan IV', 'San Agustin I', 'San Agustin II', 'San Agustin III', 'San Dionisio', 
+    'San Jose', 'San Miguel I', 'San Miguel II', 'Zone I', 'Zone II', 'Zone III', 'Zone IV'
+  ],
+  'General Trias': [
+    'Alingaro', 'Arnaldo Poblacion', 'Bacao I', 'Bacao II', 'Bagumbayan Poblacion', 'Biclatan', 
+    'Buenavista I', 'Buenavista II', 'Buenavista III', 'Corregidor Poblacion', 'Dulong Bayan Poblacion', 
+    'Gov. Ferrer Poblacion', 'Javalera', 'Manggahan', 'Navarro', 'Ninety Six', 'Panungyanan', 
+    'Pasong Camachile I', 'Pasong Camachile II', 'Pasong Kawayan I', 'Pasong Kawayan II', 
+    'Pinagtipunan', 'Poblacion', 'Prinza Poblacion', 'San Francisco', 'San Gabriel Poblacion', 
+    'San Juan I', 'San Juan II', 'Santiago', 'Tabhawainan', 'Tejero', 'Vibora Poblacion'
+  ],
+  'Cavite City': [
+    'Barangay 1', 'Barangay 2', 'Barangay 3', 'Barangay 4', 'Barangay 5', 'Barangay 6', 
+    'Barangay 7', 'Barangay 8', 'Barangay 9', 'Barangay 10', 'Barangay 11', 'Barangay 12', 
+    'Barangay 13', 'Barangay 14', 'Barangay 15', 'Barangay 16', 'Barangay 17', 'Barangay 18', 
+    'Barangay 19', 'Barangay 20', 'Barangay 21', 'Barangay 22', 'Barangay 23', 'Barangay 24', 
+    'Barangay 25', 'Barangay 26', 'Barangay 27', 'Barangay 28', 'Barangay 29', 'Barangay 30', 
+    'Barangay 31', 'Barangay 32', 'Barangay 33', 'Barangay 34', 'Barangay 35', 'Barangay 36', 
+    'Barangay 37', 'Barangay 38', 'Barangay 39', 'Barangay 40', 'Barangay 41', 'Barangay 42', 
+    'Barangay 43', 'Barangay 44', 'Barangay 45', 'Barangay 46', 'Barangay 47', 'Barangay 48', 
+    'Barangay 49', 'Barangay 50', 'Barangay 51', 'Barangay 52', 'Barangay 53', 'Barangay 54', 
+    'Barangay 55', 'Barangay 56', 'Barangay 57', 'Barangay 58', 'Barangay 59', 'Barangay 60', 
+    'Barangay 61', 'Barangay 62', 'Barangay 63', 'Barangay 64', 'Barangay 65', 'Barangay 66', 
+    'Barangay 67', 'Barangay 68', 'Barangay 69', 'Barangay 70', 'Barangay 71', 'Barangay 72', 
+    'Barangay 73', 'Barangay 74', 'Barangay 75', 'Barangay 76', 'Barangay 77', 'Barangay 78', 
+    'Barangay 79', 'Barangay 80', 'Barangay 81', 'Barangay 82', 'Barangay 83', 'Barangay 84'
+  ],
+  'Las Piñas': [
+    'Almanza Dos', 'Almanza Uno', 'B.F. International Village', 'Daang Hari', 'Daniel Fajardo', 
+    'Elias Aldana', 'Ilaya', 'Manuyo Dos', 'Manuyo Uno', 'Pamplona Dos', 'Pamplona Tres', 
+    'Pamplona Uno', 'Pilar', 'Poblacion', 'Pulang Lupa Dos', 'Pulang Lupa Uno', 'Talon Dos', 
+    'Talon Kuatro', 'Talon Singko', 'Talon Tres', 'Talon Uno', 'Zapote'
+  ],
+  'Rosario': [
+    'Kanluran', 'Ligtong I', 'Ligtong II', 'Ligtong III', 'Ligtong IV', 'Poblacion', 
+    'Salinas I', 'Salinas II', 'Salinas III', 'Salinas IV', 'Silangan I', 'Silangan II', 
+    'Sapa I', 'Sapa II', 'Sapa III', 'Tejeros Convention', 'Wawa I', 'Wawa II'
+  ],
+  'Silang': [
+    'Adlas', 'Anahaw I', 'Anahaw II', 'Balite I', 'Balite II', 'Biga I', 'Biga II', 
+    'Bol-os', 'Bucal', 'Bulihan', 'Carmen', 'Hukay', 'Iba', 'Lalaan I', 'Lalaan II', 
+    'Litlit', 'Maguyam', 'Malabag', 'Mataas na Burol', 'Narra I', 'Narra II', 'Paligawan', 
+    'Poblacion I', 'Poblacion II', 'Poblacion III', 'Pooc I', 'Pooc II', 'Pulong Bunga', 
+    'Pulong Saging', 'Sabang', 'Santolan', 'Tartaria', 'Tibig', 'Tubigan'
+  ],
+  'Carmona': [
+    'Bancal', 'Barangay 1', 'Barangay 2', 'Barangay 3', 'Barangay 4', 'Barangay 5', 
+    'Barangay 6', 'Barangay 7', 'Barangay 8', 'Barangay 9', 'Barangay 10', 'Barangay 11', 
+    'Barangay 12', 'Barangay 13', 'Barangay 14', 'Barangay 15', 'Barangay 16', 'Barangay 17', 
+    'Barangay 18', 'Barangay 19', 'Barangay 20', 'Barangay 21', 'Barangay 22', 'Barangay 23', 
+    'Barangay 24', 'Barangay 25', 'Barangay 26', 'Barangay 27', 'Barangay 28', 'Barangay 29', 
+    'Barangay 30', 'Barangay 31', 'Barangay 32', 'Barangay 33', 'Barangay 34', 'Barangay 35', 
+    'Barangay 36', 'Barangay 37', 'Barangay 38', 'Barangay 39', 'Barangay 40', 'Barangay 41', 
+    'Barangay 42', 'Barangay 43', 'Barangay 44', 'Barangay 45', 'Barangay 46', 'Barangay 47', 
+    'Barangay 48', 'Cabilang Baybay', 'Lantic', 'Maduya', 'Mabuhay', 'Milagrosa'
+  ],
+  'General Mariano Alvarez': [
+    'Barangay I (Poblacion)', 'Barangay II (Poblacion)', 'Barangay III (Poblacion)', 'Barangay IV (Poblacion)', 
+    'Barangay V (Poblacion)', 'Barangay VI (Poblacion)', 'Barangay VII (Poblacion)', 'Barangay VIII (Poblacion)', 
+    'Barangay IX (Poblacion)', 'Barangay X (Poblacion)', 'Barangay XI (Poblacion)', 'Barangay XII (Poblacion)', 
+    'Barangay XIII (Poblacion)', 'Barangay XIV (Poblacion)', 'Barangay XV (Poblacion)', 'Barangay XVI (Poblacion)', 
+    'Barangay XVII (Poblacion)', 'Barangay XVIII (Poblacion)', 'Barangay XIX (Poblacion)', 'Barangay XX (Poblacion)', 
+    'Barangay XXI (Poblacion)', 'Barangay XXII (Poblacion)', 'Barangay XXIII (Poblacion)', 'Barangay XXIV (Poblacion)', 
+    'Barangay XXV (Poblacion)', 'Barangay XXVI (Poblacion)', 'Barangay XXVII (Poblacion)', 'Barangay XXVIII (Poblacion)', 
+    'Barangay XXIX (Poblacion)', 'Barangay XXX (Poblacion)', 'Barangay XXXI (Poblacion)', 'Barangay XXXII (Poblacion)', 
+    'Barangay XXXIII (Poblacion)', 'Barangay XXXIV (Poblacion)', 'Barangay XXXV (Poblacion)', 'Barangay XXXVI (Poblacion)'
+  ],
+  'Trece Martires': [
+    'Aguado', 'Bagong Silang (Poblacion)', 'Cabezas', 'Cabuco', 'Conchu (Poblacion)', 'De La Salle', 
+    'Gregorio (Poblacion)', 'Hugo Perez (Poblacion)', 'Inocencio (Poblacion)', 'Lallana', 'Lapidario (Poblacion)', 
+    'Luciano (Poblacion)', 'Osorio (Poblacion)', 'Perez (Poblacion)', 'Quintero (Poblacion)', 'Riego (Poblacion)', 
+    'San Agustin (Poblacion)', 'Valentin (Poblacion)'
+  ],
+
+  // Laguna Cities
+  'Calamba': [
+    'Bagong Kalsada', 'Banadero', 'Banlic', 'Barandal', 'Batino', 'Bubuyan', 'Bucal', 
+    'Bunggo', 'Burgos', 'Burol', 'Camaligan', 'Canlubang', 'Halang', 'Hornalan', 
+    'Kay-Anlog', 'La Mesa', 'Laguna', 'Lawa', 'Lecheria', 'Lingga', 'Looc', 'Mabato', 
+    'Majada-Labas', 'Makiling', 'Mapagong', 'Masili', 'Maunong', 'Mayapa', 'Milagrosa', 
+    'Paciano Rizal', 'Palingon', 'Palo-Alto', 'Pansol', 'Parian', 'Poblacion', 'Punta', 
+    'Quinta', 'Real', 'Saimsim', 'Sampiruhan', 'San Cristobal', 'San Jose', 'San Juan', 
+    'Sirang Lupa', 'Sucol', 'Turbina', 'Ulango', 'Uwisan'
+  ],
+  'Santa Rosa': [
+    'Aplaya', 'Balibago', 'Caingin', 'Dila', 'Dita', 'Don Jose', 'Ibaba', 'Kanluran', 
+    'Labas', 'Macabling', 'Malusak', 'Market Area', 'Poblacion', 'Pulong Santa Cruz', 
+    'Sinalhan', 'Santo Domingo', 'Tagapo'
+  ],
+  'Biñan': [
+    'Bungahan', 'Canlalay', 'Casile', 'dela Paz', 'Ganado', 'Langkiwa', 'Loma', 'Malaban', 
+    'Malamig', 'Mamplasan', 'Platero', 'Poblacion', 'San Antonio', 'San Francisco', 'San Jose', 
+    'San Vicente', 'Santa Rosa', 'Santo Domingo', 'Santo Niño', 'Santo Tomas', 'Soro-soro', 
+    'Tubigan', 'Zapote'
+  ],
+  'San Pedro': [
+    'Bagong Silang Poblacion', 'Calendola', 'Chrysanthemum', 'Cuyab', 'Estrella Poblacion', 
+    'G.S.I.S.', 'Landayan', 'Langgam', 'Laram', 'Magsaysay', 'Maharlika Poblacion', 
+    'Narra', 'Nueva', 'Pacita I', 'Pacita II', 'Poblacion', 'Riverside', 'Rosario Poblacion', 
+    'Sampaguita Village', 'San Antonio Poblacion', 'San Roque Poblacion', 'San Vicente Poblacion', 
+    'Santo Niño Poblacion', 'United Bayanihan', 'United Better Living'
+  ],
+  'Los Baños': [
+    'Anos', 'Bagong Silang', 'Bambang', 'Batong Malake', 'Bay', 'Baybayin', 'Bayog', 
+    'Lalakay', 'Malinta', 'Mayondon', 'Poblacion', 'Putho-Tuntungin', 'San Antonio', 'Tadlac', 'Timugan'
+  ],
+  'Cabuyao': [
+    'Banay-Banay', 'Banlic', 'Barangay Uno', 'Bigaa', 'Butong', 'Casile', 'Diezmo', 
+    'Gulod', 'Mamatid', 'Marinig', 'Niugan', 'Pittland', 'Poblacion Dos', 'Poblacion Tres', 
+    'Poblacion Uno', 'Pulo', 'Sala', 'San Isidro'
+  ],
+  'San Pablo': [
+    'I-A (Poblacion)', 'I-B (Poblacion)', 'I-C (Poblacion)', 'II-A (Poblacion)', 'II-B (Poblacion)', 
+    'II-C (Poblacion)', 'II-D (Poblacion)', 'II-E (Poblacion)', 'II-F (Poblacion)', 'III-A (Poblacion)', 
+    'III-B (Poblacion)', 'III-C (Poblacion)', 'III-D (Poblacion)', 'III-E (Poblacion)', 'III-F (Poblacion)', 
+    'IV-A (Poblacion)', 'IV-B (Poblacion)', 'IV-C (Poblacion)', 'V-A (Poblacion)', 'V-B (Poblacion)', 
+    'V-C (Poblacion)', 'V-D (Poblacion)', 'VI-A (Poblacion)', 'VI-B (Poblacion)', 'VI-C (Poblacion)', 
+    'VI-D (Poblacion)', 'VI-E (Poblacion)', 'VII-A (Poblacion)', 'VII-B (Poblacion)', 'VII-C (Poblacion)', 
+    'VII-D (Poblacion)', 'Atisan', 'Bagong Bayan', 'Bahay', 'Banakdo', 'Baras', 'Bautista', 
+    'Concepcion', 'Del Remedio', 'Dolores', 'San Antonio I (Balanga)', 'San Antonio II (Sapa)', 
+    'San Bartolome', 'San Buenaventura', 'San Crispin', 'San Cristobal', 'San Diego', 'San Francisco (Calihan)', 
+    'San Gabriel', 'San Gregorio', 'San Ignacio', 'San Isidro (Balagbag)', 'San Joaquin', 'San Jose (Malamig)', 
+    'San Juan', 'San Lorenzo (Saluban)', 'San Lucas I', 'San Lucas II', 'San Marcos (Tikew)', 'San Mateo', 
+    'San Miguel', 'San Nicolas', 'San Pedro', 'San Rafael (Magampon)', 'San Roque (Butucan)', 'San Vicente', 
+    'Santa Ana', 'Santa Catalina', 'Santa Cruz (Putol)', 'Santa Elena', 'Santa Filomena', 'Santa Isabel', 
+    'Santa Maria', 'Santa Maria Magdalena', 'Santa Monica', 'Santa Veronica', 'Santiago I (Bulaho)', 
+    'Santiago II', 'Santo Angel (Ilog)', 'Santo Cristo', 'Santo Niño (Arsum)', 'Santisimo Rosario'
+  ],
+  'Sta. Cruz': [
+    'Alipit', 'Bagumbayan', 'Buboy', 'Bubukal', 'Calios', 'Cambuja', 'Duhat', 'Gatid', 
+    'Jasaan', 'Labuin', 'Malinao', 'Maravilla', 'Olivarez', 'Pagsawitan', 'Paniki', 
+    'Poblacion I', 'Poblacion II', 'Poblacion III', 'Poblacion IV', 'Poblacion V', 
+    'San Jose', 'San Juan', 'San Pablo Norte', 'San Pablo Sur', 'Santisima Cruz'
+  ],
+  'Pagsanjan': [
+    'Anibong', 'Babatnin', 'Cabanbanan', 'Calusiche', 'Dingin', 'Lambac', 'Magdapio', 
+    'Maulawin', 'Mendiola', 'Poblacion I', 'Poblacion II', 'Sabang', 'Sampaloc', 
+    'San Isidro', 'Talahib', 'Two Rivers'
+  ],
+  'Liliw': [
+    'Bagong Anyo (Poblacion)', 'Bayate', 'Bongkol', 'Bubukal', 'Cabuyew', 'Calumpang', 
+    'Culoy', 'Dagatan', 'Daniw', 'Dita', 'Ibabang Palina', 'Ibabang San Roque', 
+    'Ibabang Sungi', 'Ibabang Taykin', 'Ilayang Palina', 'Ilayang San Roque', 
+    'Ilayang Sungi', 'Ilayang Taykin', 'Kanlurang Bukal', 'Laguan', 'Luquin', 
+    'Malabo-Kalantukan', 'Masalac', 'Maslun (Poblacion)', 'Mojon', 'Novaliches', 
+    'Oples', 'Pag-asa (Poblacion)', 'Palayan', 'Rizal (Poblacion)', 'San Isidro', 
+    'Silangang Bukal', 'Tuy-Baanan'
   ]
 };
 
@@ -474,6 +713,7 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
       ...formData, 
       city: selectedCity,
       barangay: '', // Reset barangay when city changes
+      street: '', // Reset street when city changes
       zipCode // Auto-generate zip code based on city
     });
     
@@ -671,7 +911,8 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                       ...formData, 
                       province: e.target.value,
                       city: '', // Reset city when province changes
-                      barangay: '' // Reset barangay when province changes
+                      barangay: '', // Reset barangay when province changes
+                      street: '' // Reset street when province changes
                     });
                   }}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent ${
@@ -718,7 +959,7 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
                 </label>
                 <select
                   value={formData.barangay}
-                  onChange={(e) => setFormData({ ...formData, barangay: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, barangay: e.target.value, street: '' })}
                   disabled={!formData.city}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#4A7C59] focus:border-transparent disabled:bg-gray-100 ${
                     validationErrors.barangay ? 'border-red-500' : 'border-gray-300'

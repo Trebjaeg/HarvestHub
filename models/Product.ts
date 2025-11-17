@@ -186,3 +186,52 @@ ProductSchema.index({ isActive: 1, inventory_available: 1 }); // Top-rated produ
 // Note: sku index is automatically created by unique: true in schema definition
 
 export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);
+
+/**
+ * Check for low stock products and send notifications
+ */
+export async function checkLowStockAlerts(sellerId?: string): Promise<void> {
+  try {
+    const query: any = {
+      isActive: true,
+      $expr: { $lte: ["$stock", "$lowStockAlert"] }
+    };
+    
+    if (sellerId) {
+      query.farmerId = sellerId;
+    }
+
+    const lowStockProducts = await mongoose.models.Product.find(query)
+      .select('name stock lowStockAlert unit farmerId')
+      .lean();
+
+    // Import notification function dynamically to avoid circular imports
+    const { notifyLowStock } = await import('../lib/notification-utils');
+
+    for (const product of lowStockProducts) {
+      // Check if we already sent a notification for this stock level
+      const Notification = (await import('../models/Notification')).default;
+      const recentAlert = await Notification.findOne({
+        userId: product.farmerId,
+        type: 'low_stock_alert',
+        'metadata.productId': product._id.toString(),
+        'metadata.currentStock': product.stock,
+        createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Last 24 hours
+      }).lean();
+
+      // Only send notification if we haven't sent one for this stock level recently
+      if (!recentAlert) {
+        await notifyLowStock(
+          product.farmerId,
+          product.name,
+          product._id.toString(),
+          product.stock,
+          product.lowStockAlert || 5,
+          product.unit || 'pcs'
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Error checking low stock alerts:', error);
+  }
+}

@@ -18,9 +18,12 @@ import {
   XCircle,
   Copy,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  Download,
+  Printer
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import jsPDF from 'jspdf';
 
 interface OrderDetails {
   _id: string;
@@ -105,6 +108,8 @@ export default function SellerOrderDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+  const [printingInvoice, setPrintingInvoice] = useState(false);
 
   const fetchOrderDetails = useCallback(async (showLoader = true) => {
     try {
@@ -202,6 +207,386 @@ export default function SellerOrderDetailsPage() {
       setError('Failed to update order status');
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const generateInvoicePDF = async () => {
+    if (!order) return;
+    
+    setDownloadingInvoice(true);
+    try {
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      
+      // Header - Clean gray style like the print version
+      pdf.setTextColor(150, 150, 150);
+      pdf.setFontSize(28);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('HARVEST HUB', pageWidth / 2, 30, { align: 'center' });
+      
+      pdf.setFontSize(12);
+      pdf.setFont(undefined, 'normal');
+      pdf.text('Fresh from Farm to Your Table', pageWidth / 2, 42, { align: 'center' });
+      
+      // Reset to black for rest of content
+      pdf.setTextColor(0, 0, 0);
+      
+      // Invoice Title
+      pdf.setFontSize(24);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('INVOICE', pageWidth / 2, 65, { align: 'center' });
+      
+      // Main info section with border - matching print layout
+      const infoY = 85;
+      const infoHeight = 85;
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(margin, infoY, pageWidth - (2 * margin), infoHeight);
+      
+      // Left column - Order Details and Customer Info
+      pdf.setFontSize(10);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Order Details:', margin + 5, infoY + 12);
+      
+      pdf.setFont(undefined, 'normal');
+      pdf.setFontSize(9);
+      pdf.text(`Order Number: ${order.orderNumber}`, margin + 5, infoY + 22);
+      pdf.text(`Date: ${new Date(order.orderDate).toLocaleDateString()}`, margin + 5, infoY + 30);
+      pdf.text(`Payment Status: ${order.paymentStatus.toUpperCase()}`, margin + 5, infoY + 38);
+      pdf.text(`Payment Method: ${order.paymentMethod}`, margin + 5, infoY + 46);
+      
+      // Customer Information
+      pdf.setFont(undefined, 'bold');
+      pdf.setFontSize(10);
+      pdf.text('Customer Information:', margin + 5, infoY + 58);
+      
+      pdf.setFont(undefined, 'normal');
+      pdf.setFontSize(9);
+      const customerName = order.deliveryAddress?.fullName || order.buyerName || 'N/A';
+      pdf.text(`Name: ${customerName}`, margin + 5, infoY + 68);
+      if (order.buyerEmail) {
+        pdf.text(`Email: ${order.buyerEmail}`, margin + 5, infoY + 76);
+      }
+      
+      // Right column - Seller Info and Delivery Address  
+      const rightX = pageWidth / 2 + 5;
+      pdf.setFont(undefined, 'bold');
+      pdf.setFontSize(10);
+      pdf.text('Seller Information:', rightX, infoY + 12);
+      
+      pdf.setFont(undefined, 'normal');
+      pdf.setFontSize(9);
+      const sellerName = order.sellerFullName || order.sellerName || 'N/A';
+      pdf.text(`Name: ${sellerName}`, rightX, infoY + 22);
+      if (order.sellerEmail) {
+        pdf.text(`Business Email: ${order.sellerEmail}`, rightX, infoY + 30);
+      }
+      if (order.sellerPhone) {
+        pdf.text(`Phone: ${order.sellerPhone}`, rightX, infoY + 38);
+      }
+      
+      // Delivery Address
+      pdf.setFont(undefined, 'bold');
+      pdf.setFontSize(10);
+      pdf.text('Delivery Address:', rightX, infoY + 50);
+      
+      pdf.setFont(undefined, 'normal');
+      pdf.setFontSize(9);
+      const address = order.deliveryAddress.fullAddress || 
+        `${order.deliveryAddress.street}, ${order.deliveryAddress.city}, ${order.deliveryAddress.province}`;
+      // Split long addresses
+      const addressLines = address.match(/.{1,45}/g) || [address];
+      addressLines.forEach((line, index) => {
+        pdf.text(line.trim(), rightX, infoY + 60 + (index * 8));
+      });
+      
+      // Products Table - matching print layout exactly
+      const tableY = 185;
+      
+      // Table header with gray background like print version
+      pdf.setFillColor(245, 245, 245);
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(margin, tableY, pageWidth - (2 * margin), 12, 'FD');
+      
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont(undefined, 'bold');
+      pdf.setFontSize(10);
+      pdf.text('Product Name', margin + 5, tableY + 8);
+      pdf.text('Quantity', margin + 70, tableY + 8);
+      pdf.text('Unit Price', margin + 110, tableY + 8);
+      pdf.text('Total', margin + 150, tableY + 8);
+      
+      // Table rows
+      let currentY = tableY + 12;
+      pdf.setFont(undefined, 'normal');
+      pdf.setFontSize(9);
+      
+      order.products.forEach((product) => {
+        const rowHeight = 12;
+        // Draw row border
+        pdf.rect(margin, currentY, pageWidth - (2 * margin), rowHeight, 'D');
+        
+        const productName = product.productName.length > 25 
+          ? product.productName.substring(0, 22) + '...' 
+          : product.productName;
+          
+        pdf.text(productName, margin + 5, currentY + 8);
+        pdf.text(`${product.quantity} ${product.unit}`, margin + 70, currentY + 8);
+        pdf.text(`P${product.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, margin + 110, currentY + 8);
+        pdf.text(`P${(product.quantity * product.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, margin + 150, currentY + 8);
+        
+        currentY += rowHeight;
+      });
+      
+      // Totals section - right aligned like print version
+      const totalsY = currentY + 15;
+      const totalsX = pageWidth - 85;
+      const totalsWidth = 70;
+      
+      // Totals box with border
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(totalsX - totalsWidth, totalsY, totalsWidth, 35, 'D');
+      
+      pdf.setFont(undefined, 'normal');
+      pdf.setFontSize(10);
+      pdf.text('Subtotal:', totalsX - totalsWidth + 5, totalsY + 10);
+      pdf.text(`P${(order.totalAmount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, totalsX - 5, totalsY + 10, { align: 'right' });
+      
+      pdf.text('Delivery Fee:', totalsX - totalsWidth + 5, totalsY + 20);
+      pdf.text(`P${(order.deliveryFee || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, totalsX - 5, totalsY + 20, { align: 'right' });
+      
+      // Final total with gray background
+      pdf.setFillColor(230, 230, 230);
+      pdf.rect(totalsX - totalsWidth, totalsY + 25, totalsWidth, 10, 'F');
+      pdf.setFont(undefined, 'bold');
+      pdf.setFontSize(11);
+      pdf.text('TOTAL:', totalsX - totalsWidth + 5, totalsY + 32);
+      pdf.text(`P${(order.finalAmount || order.totalAmount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, totalsX - 5, totalsY + 32, { align: 'right' });
+      
+      // Footer - matching print version
+      const footerY = totalsY + 55;
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont(undefined, 'normal');
+      pdf.setFontSize(9);
+      
+      pdf.text('Thank you for shopping with HarvestHub!', pageWidth / 2, footerY, { align: 'center' });
+      pdf.text('Supporting local farmers and bringing fresh produce to your table.', pageWidth / 2, footerY + 8, { align: 'center' });
+      pdf.text('For support: support@harvesthub.ph | Visit us at harvesthub.ph', pageWidth / 2, footerY + 16, { align: 'center' });
+      
+      pdf.setFontSize(8);
+      pdf.text(`Invoice #${order.orderNumber}`, pageWidth / 2, footerY + 28, { align: 'center' });
+      pdf.text(`Invoice #${order.orderNumber}`, pageWidth - 25, pageHeight - 10, { align: 'right' });
+      
+      // Download the PDF
+      pdf.save(`HarvestHub-Seller-Invoice-${order.orderNumber}.pdf`);
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating invoice. Please try again.');
+    } finally {
+      setDownloadingInvoice(false);
+    }
+  };
+
+  const printInvoice = async () => {
+    if (!order) return;
+    
+    setPrintingInvoice(true);
+    try {
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        alert('Please allow popups to print the invoice.');
+        return;
+      }
+      
+      // Generate HTML content for printing
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>HarvestHub Seller Invoice - ${order.orderNumber}</title>
+          <style>
+            body {
+              font-family: 'Arial', sans-serif;
+              margin: 0;
+              padding: 20px;
+              color: #333;
+            }
+            .header {
+              background-color: #103C2E;
+              color: white;
+              padding: 30px;
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .company-name {
+              font-size: 28px;
+              font-weight: bold;
+              margin-bottom: 5px;
+            }
+            .subtitle {
+              font-size: 14px;
+            }
+            .invoice-title {
+              font-size: 24px;
+              font-weight: bold;
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .info-section {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 30px;
+              border: 1px solid #ddd;
+              padding: 20px;
+            }
+            .info-column {
+              flex: 1;
+            }
+            .label {
+              font-weight: bold;
+              margin-bottom: 10px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 30px;
+            }
+            th, td {
+              border: 1px solid #ddd;
+              padding: 12px;
+              text-align: left;
+            }
+            th {
+              background-color: #f5f5f5;
+              font-weight: bold;
+            }
+            .totals {
+              float: right;
+              width: 300px;
+              border: 1px solid #ddd;
+              padding: 15px;
+            }
+            .total-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 8px;
+            }
+            .final-total {
+              background-color: #103C2E;
+              color: white;
+              padding: 10px;
+              font-weight: bold;
+              font-size: 16px;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 50px;
+              padding-top: 20px;
+              border-top: 1px solid #ddd;
+              font-size: 12px;
+              color: #666;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="company-name">HARVEST HUB</div>
+            <div class="subtitle">Seller Invoice</div>
+          </div>
+          
+          <div class="invoice-title">INVOICE</div>
+          
+          <div class="info-section">
+            <div class="info-column">
+              <div class="label">Order Details:</div>
+              <div>Order Number: ${order.orderNumber}</div>
+              <div>Date: ${new Date(order.orderDate).toLocaleDateString()}</div>
+              <div>Payment Status: ${order.paymentStatus.toUpperCase()}</div>
+              <div>Payment Method: ${order.paymentMethod}</div>
+              <br>
+              <div class="label">Customer Information:</div>
+              <div><strong>Name:</strong> ${order.deliveryAddress?.fullName || order.buyerName || 'N/A'}</div>
+              ${order.buyerEmail ? `<div><strong>Email:</strong> ${order.buyerEmail}</div>` : ''}
+              ${(order.buyerPhone || order.deliveryAddress?.phone) ? `<div><strong>Phone:</strong> ${order.buyerPhone || order.deliveryAddress?.phone}</div>` : ''}
+            </div>
+            <div class="info-column">
+              <div class="label">Seller Information:</div>
+              <div><strong>Name:</strong> ${order.sellerFullName || order.sellerName || 'N/A'}</div>
+              ${order.sellerEmail ? `<div><strong>Business Email:</strong> ${order.sellerEmail}</div>` : ''}
+              ${order.sellerPhone ? `<div><strong>Phone:</strong> ${order.sellerPhone}</div>` : ''}
+              <br>
+              <div class="label">Delivery Address:</div>
+              <div>${order.deliveryAddress.fullAddress || `${order.deliveryAddress.street}, ${order.deliveryAddress.city}, ${order.deliveryAddress.province} ${order.deliveryAddress.zipCode}`}</div>
+            </div>
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Product Name</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${order.products.map(product => `
+                <tr>
+                  <td>${product.productName}</td>
+                  <td>${product.quantity} ${product.unit}</td>
+                  <td>₱${product.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                  <td>₱${(product.quantity * product.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <div class="totals">
+            <div class="total-row">
+              <span>Subtotal:</span>
+              <span>₱${order.totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+            </div>
+            <div class="total-row">
+              <span>Delivery Fee:</span>
+              <span>₱${order.deliveryFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+            </div>
+            <div class="final-total">
+              <div class="total-row">
+                <span>TOTAL:</span>
+                <span>₱${order.finalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div style="clear: both;"></div>
+          
+          <div class="footer">
+            <div>Thank you for selling with HarvestHub!</div>
+            <div>Supporting local farmers and bringing fresh produce to communities.</div>
+            <div>For support: support@harvesthub.ph | Visit us at harvesthub.ph</div>
+            <div style="margin-top: 10px;">Invoice #${order.orderNumber}</div>
+          </div>
+        </body>
+        </html>
+      `;
+      
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      
+      // Wait for content to load, then print
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 500);
+      
+    } catch (error) {
+      console.error('Error printing invoice:', error);
+      alert('Error printing invoice. Please try again.');
+    } finally {
+      setPrintingInvoice(false);
     }
   };
 
@@ -507,6 +892,46 @@ export default function SellerOrderDetailsPage() {
                     <div>
                       <p className="text-sm text-gray-600">Order Date</p>
                       <p className="font-medium">{new Date(order.orderDate).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-[#103C2E]">
+                    Actions
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button 
+                        onClick={generateInvoicePDF}
+                        disabled={downloadingInvoice}
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {downloadingInvoice ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                        ) : (
+                          <Download className="w-4 h-4" />
+                        )}
+                        <span style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          {downloadingInvoice ? 'Generating...' : 'Download Invoice'}
+                        </span>
+                      </button>
+                      
+                      <button 
+                        onClick={printInvoice}
+                        disabled={printingInvoice}
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {printingInvoice ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                        ) : (
+                          <Printer className="w-4 h-4" />
+                        )}
+                        <span style={{ fontFamily: 'Poppins, sans-serif' }}>
+                          {printingInvoice ? 'Printing...' : 'Print Invoice'}
+                        </span>
+                      </button>
                     </div>
                   </div>
                 </div>

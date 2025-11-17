@@ -4,7 +4,7 @@ export interface INotification {
   _id?: string;
   userId: string;
   userRole: 'buyer' | 'seller' | 'admin';
-  type: 'order_created' | 'order_confirmed' | 'order_preparing' | 'order_shipped' | 'order_delivered' | 'order_cancelled' | 'order_completed' | 'system' | 'promotion' | 'review' | 'review_response' | 'message';
+  type: 'order_created' | 'order_confirmed' | 'order_preparing' | 'order_shipped' | 'order_delivered' | 'order_cancelled' | 'order_completed' | 'system' | 'promotion' | 'review' | 'review_response' | 'message' | 'low_stock_alert';
   title: string;
   message: string;
   orderId?: string;
@@ -39,7 +39,7 @@ const NotificationSchema = new mongoose.Schema<INotification>({
   },
   type: {
     type: String,
-    enum: ['order_created', 'order_confirmed', 'order_preparing', 'order_shipped', 'order_delivered', 'order_cancelled', 'order_completed', 'system', 'promotion', 'review', 'review_response', 'message'],
+    enum: ['order_created', 'order_confirmed', 'order_preparing', 'order_shipped', 'order_delivered', 'order_cancelled', 'order_completed', 'system', 'promotion', 'review', 'review_response', 'message', 'low_stock_alert'],
     required: true,
     index: true
   },
