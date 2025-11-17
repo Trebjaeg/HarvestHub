@@ -122,7 +122,7 @@ const TopFarmersPageContent = () => {
   };
 
   const clearFilters = () => {
-    setSelectedPerformance([]);
+    setSelectedPerformance('');
     setSelectedCategory([]);
     setSelectedRating(0);
     setCurrentSort(sorting?.current || 'top_rated');
