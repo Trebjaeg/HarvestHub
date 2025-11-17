@@ -86,8 +86,7 @@ export default function SellerChatPage() {
       
       if (existingConv) {
         // Open existing conversation
-        setSelectedConversation(existingConv);
-        setShowSidebar(false);
+        handleConversationClick(existingConv);
       } else if (!loadingUserInfo) {
         // Fetch user info and create new conversation placeholder
         setLoadingUserInfo(true);
@@ -215,22 +214,29 @@ export default function SellerChatPage() {
     onReadReceipt: handleReadReceipt
   });
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     try {
+      console.log('[SELLER] Fetching conversations for user:', user?.id, 'search:', searchQuery);
       const response = await fetch(`/api/chat/conversations?search=${searchQuery}`, {
-        credentials: 'include'
+        credentials: 'include',
+        cache: 'no-store'
       });
 
+      console.log('[SELLER] Response status:', response.status, 'ok:', response.ok);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('[SELLER] Received data:', data);
         setConversations(data.conversations || []);
+      } else {
+        console.error('[SELLER] Response not ok:', await response.text());
       }
     } catch (error) {
-      // Silent fail
+      console.error('[SELLER] Fetch error:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchQuery]);
 
   const fetchMessages = async (userId: string, silent = false) => {
     try {
@@ -339,10 +345,13 @@ export default function SellerChatPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (10MB)
-    const maxSize = 10 * 1024 * 1024;
+    // Check if it's a video file
+    const isVideo = file.type.startsWith('video/');
+    
+    // Validate file size (100MB for videos, 10MB for others)
+    const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert('File size must be less than 10MB');
+      alert(`File size must be less than ${isVideo ? '100MB' : '10MB'}`);
       return;
     }
 
@@ -357,7 +366,11 @@ export default function SellerChatPage() {
       'text/plain'
     ];
 
-    if (!allowedTypes.includes(file.type)) {
+    // Additional check for MOV files by extension (iOS sometimes reports wrong MIME type)
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    const isValidByExtension = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'mov', 'avi', 'mkv', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'].includes(fileExtension || '');
+
+    if (!allowedTypes.includes(file.type) && !isValidByExtension) {
       alert('Invalid file type. Please upload images (JPEG, PNG, GIF, WebP), videos (MP4, WebM, MOV), or documents (PDF, Word, Excel, Text).');
       return;
     }
@@ -379,10 +392,12 @@ export default function SellerChatPage() {
         setAttachments(prev => [...prev, data.file]);
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to upload file');
+        const errorMessage = error.details ? `${error.error}: ${error.details}` : error.error || 'Failed to upload file';
+        alert(errorMessage);
       }
     } catch (error) {
-      alert('Failed to upload file. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload file. Please try again.';
+      alert(errorMessage);
     } finally {
       setUploading(false);
       // Reset file input
@@ -402,6 +417,16 @@ export default function SellerChatPage() {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const truncateFileName = (fileName: string, maxLength: number = 20) => {
+    if (fileName.length <= maxLength) return fileName;
+    
+    const extension = fileName.split('.').pop() || '';
+    const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
+    const truncatedName = nameWithoutExt.substring(0, maxLength - extension.length - 3);
+    
+    return `${truncatedName}...${extension}`;
   };
 
   const scrollToBottom = () => {
@@ -446,13 +471,16 @@ export default function SellerChatPage() {
     }
   };
 
+  // Fetch conversations when user loads or search query changes
   useEffect(() => {
+    if (!user?.id) return;
+    
     const timer = setTimeout(() => {
       fetchConversations();
     }, 300); // Debounce search by 300ms
 
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [user?.id, searchQuery, fetchConversations]);
 
   useEffect(() => {
     if (selectedConversation) {
@@ -564,7 +592,10 @@ export default function SellerChatPage() {
               {/* Back button for mobile - only show when NOT in conversation list view */}
               {!showSidebar && (
                 <button
-                  onClick={() => router.push('/seller')}
+                  onClick={() => {
+                    setSelectedConversation(null);
+                    setShowSidebar(true);
+                  }}
                   className="md:hidden text-white hover:bg-white/10 p-1.5 rounded-lg transition-colors"
                   aria-label="Go back"
                 >
@@ -669,18 +700,8 @@ export default function SellerChatPage() {
                 {/* Back button for mobile - returns to conversation list */}
                 <button
                   onClick={() => {
-                    // Check if we came from a notification (has userId param)
-                    const userId = searchParams?.get('userId');
-                    if (userId) {
-                      // If from notification, go back to seller dashboard
-                      router.push('/seller');
-                    } else {
-                      // If from normal navigation, return to conversation list
-                      setSelectedConversation(null);
-                      setShowSidebar(true);
-                      // Clear any URL parameters
-                      router.replace('/message');
-                    }
+                    setSelectedConversation(null);
+                    setShowSidebar(true);
                   }}
                   className="md:hidden text-white hover:bg-white/10 p-2 rounded-lg transition-colors"
                   aria-label="Back to conversations"
@@ -790,7 +811,9 @@ export default function SellerChatPage() {
                                           Your browser does not support video playback.
                                         </video>
                                         <div className="mt-1">
-                                          <p className="text-xs font-medium truncate">{attachment.originalName}</p>
+                                          <p className="text-xs font-medium truncate" title={attachment.originalName}>
+                                            {truncateFileName(attachment.originalName, 30)}
+                                          </p>
                                           <p className="text-xs opacity-70">{formatFileSize(attachment.size)}</p>
                                         </div>
                                       </div>
@@ -798,7 +821,9 @@ export default function SellerChatPage() {
                                       <div className="flex items-center gap-2">
                                         <FileText className="w-4 h-4" />
                                         <div className="flex-1 min-w-0">
-                                          <p className="text-xs font-medium truncate">{attachment.originalName}</p>
+                                          <p className="text-xs font-medium truncate" title={attachment.originalName}>
+                                            {truncateFileName(attachment.originalName, 30)}
+                                          </p>
                                           <p className="text-xs opacity-70">{formatFileSize(attachment.size)}</p>
                                         </div>
                                         <button
@@ -877,7 +902,7 @@ export default function SellerChatPage() {
                       {attachments.length} attachment{attachments.length > 1 ? 's' : ''}
                     </span>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
                     {attachments.map((attachment) => (
                       <div key={attachment.id} className="flex items-center gap-2 p-2 bg-white rounded border">
                         {attachment.category === 'image' ? (
@@ -891,7 +916,9 @@ export default function SellerChatPage() {
                           <FileText className="w-4 h-4 text-gray-600" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{attachment.originalName}</p>
+                          <p className="text-sm font-medium truncate" title={attachment.originalName}>
+                            {truncateFileName(attachment.originalName, 25)}
+                          </p>
                           <p className="text-xs text-gray-500">{formatFileSize(attachment.size)}</p>
                         </div>
                         <button
@@ -906,7 +933,7 @@ export default function SellerChatPage() {
                 </div>
               )}
               
-              <form onSubmit={handleSendMessage} className="flex items-center space-x-2 md:space-x-3">
+              <form onSubmit={handleSendMessage} className="flex items-end space-x-2 md:space-x-3">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -927,18 +954,20 @@ export default function SellerChatPage() {
                     <Paperclip className="w-5 h-5 md:w-6 md:h-6" />
                   )}
                 </button>
-                <input
-                  type="text"
-                  placeholder={attachments.length > 0 ? "Add a message (optional)" : "Type a message..."}
-                  value={newMessage}
-                  onChange={handleInputChange}
-                  disabled={sending}
-                  className="flex-1 px-4 py-2.5 md:px-5 md:py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#103C2E] focus:border-transparent text-sm disabled:opacity-50 bg-gray-50 touch-manipulation"
-                />
+                <div className="flex-1 min-w-0">
+                  <input
+                    type="text"
+                    placeholder={attachments.length > 0 ? "Add a message (optional)" : "Type a message..."}
+                    value={newMessage}
+                    onChange={handleInputChange}
+                    disabled={sending}
+                    className="w-full px-4 py-2.5 md:px-5 md:py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#103C2E] focus:border-transparent text-sm disabled:opacity-50 bg-gray-50 touch-manipulation"
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={((!newMessage.trim() && attachments.length === 0) || sending)}
-                  className="bg-gradient-to-r from-[#103C2E] to-[#1a5f3f] text-white p-2.5 md:p-3.5 rounded-full hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 touch-manipulation"
+                  className="flex-shrink-0 bg-gradient-to-r from-[#103C2E] to-[#1a5f3f] text-white p-2.5 md:p-3.5 rounded-full hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 touch-manipulation"
                 >
                   {sending ? (
                     <div className="flex space-x-1">

@@ -94,18 +94,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // IMPORTANT: Don't logout on network errors!
       // Keep user logged in if there's a network issue (network change, offline, etc.)
       // Only logout if it's an actual auth failure (401/403)
-      if (error instanceof TypeError && error.message.includes('fetch')) {
+      
+      // Check if it's a network error
+      const isNetworkError = 
+        error instanceof TypeError || 
+        (error as any)?.message?.includes('fetch') ||
+        (error as any)?.message?.includes('network') ||
+        (error as any)?.message?.includes('Failed to fetch') ||
+        !navigator.onLine;
+      
+      if (isNetworkError) {
         // Network error - try to restore user from sessionStorage
         if (typeof window !== 'undefined') {
           const cachedUser = sessionStorage.getItem('auth_user');
           if (cachedUser) {
-            setUser(JSON.parse(cachedUser));
-            return true;
+            try {
+              setUser(JSON.parse(cachedUser));
+              return true;
+            } catch (e) {
+              // Invalid cached data
+            }
           }
         }
       } else {
         // Real auth error, logout
         setUser(null);
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('auth_user');
+        }
       }
       return false;
     }
@@ -240,19 +256,77 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Handle network reconnection - re-check auth without logging out
   useEffect(() => {
+    let checkTimeout: NodeJS.Timeout;
+    
     const handleOnline = () => {
-      // Silently check auth when network reconnects, but don't logout on failure
-      checkAuth().catch(() => {
-        // Keep user logged in even if auth check fails
-      });
+      // Wait a bit before checking auth to let network stabilize
+      clearTimeout(checkTimeout);
+      checkTimeout = setTimeout(() => {
+        // Silently check auth when network reconnects, but don't logout on failure
+        checkAuth().catch(() => {
+          // Keep user logged in even if auth check fails
+        });
+      }, 1000); // Wait 1 second for network to stabilize
+    };
+
+    const handleOffline = () => {
+      // Clear any pending auth checks when going offline
+      clearTimeout(checkTimeout);
     };
 
     window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
     
     return () => {
+      clearTimeout(checkTimeout);
       window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, [checkAuth]);
+
+  // Handle app visibility changes (mobile background/foreground)
+  useEffect(() => {
+    let visibilityTimeout: NodeJS.Timeout;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // App came back to foreground - restore user from cache if available
+        if (!user) {
+          const cachedUser = sessionStorage.getItem('auth_user');
+          if (cachedUser) {
+            try {
+              setUser(JSON.parse(cachedUser));
+            } catch (e) {
+              // Invalid cache
+            }
+          }
+        }
+        
+        // Wait before checking auth to avoid immediate logout
+        clearTimeout(visibilityTimeout);
+        visibilityTimeout = setTimeout(() => {
+          // Silently check auth, but keep user logged in on failure
+          checkAuth().catch(() => {
+            // Keep user logged in even if check fails
+          });
+        }, 2000); // Wait 2 seconds after app becomes visible
+      } else {
+        // App went to background - save user to cache
+        if (user) {
+          sessionStorage.setItem('auth_user', JSON.stringify(user));
+        }
+        // Cancel any pending auth checks
+        clearTimeout(visibilityTimeout);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearTimeout(visibilityTimeout);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [checkAuth, user]);
 
   const value: AuthContextType = {
     user,

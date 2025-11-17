@@ -65,11 +65,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { label, fullName, phone, street, barangay, city, province, zipCode, isDefault, type } = req.body;
 
       // Validate required fields
-      if (!label || !fullName || !phone || !street || !barangay || !city || !province) {
-      const { label, fullName, phone, street, barangay, city, province, zipCode, isDefault, type } = req.body;
-
-      // Validate required fields
-      if (!label || !fullName || !phone || !street || !barangay || !city || !province) {
+      if (!label || !fullName || !phone || !street || !city || !province) {
         clearTimeout(timeoutId);
         return res.status(400).json({ message: 'All required fields must be filled' });
       }
@@ -131,11 +127,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     clearTimeout(timeoutId);
     console.error('Error in addresses API:', error);
     console.error('Request body:', req.body);
+    console.error('Request method:', req.method);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     if (!res.headersSent) {
       return res.status(500).json({ 
         message: 'Internal server error',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: error instanceof Error ? error.stack : 'No additional details'
       });
     }
+  } finally {
+    clearTimeout(timeoutId);
   }
-}
+};

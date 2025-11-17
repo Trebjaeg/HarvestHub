@@ -908,7 +908,6 @@ const ManageOrders = () => {
                               <>
                                 <Icon className="w-4 h-4" />
                                 <span>{action.label}</span>
-                                {action.label}
                               </>
                             )}
                           </button>
