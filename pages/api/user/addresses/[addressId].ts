@@ -54,7 +54,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method === 'PUT') {
       // Update address
       const { label, fullName, phone, street, barangay, city, province, zipCode, isDefault, type } = req.body;
-      const { label, fullName, phone, street, barangay, city, province, zipCode, isDefault, type } = req.body;
 
       if (!user.addresses) {
         clearTimeout(timeoutId);

@@ -566,8 +566,14 @@ export default function AddressManager({ userRole }: { userRole: 'buyer' | 'sell
           <button
             onClick={() => setShowForm(true)}
             className="w-full sm:w-auto bg-[#4A7C59] hover:bg-[#3d6549] active:bg-[#3d6549] text-white py-2 px-4 rounded-lg font-medium transition-colors touch-manipulation"
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+          >
+            Add Address
+          </button>
+        )}
+      </div>
+
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold text-gray-900">Manage Addresses</h2>
         {!showForm && (
           <button

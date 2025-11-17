@@ -986,7 +986,8 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
                       </span>
                     )}
                   </>
-                  (() => {
+                )}
+              {(() => {
                     const { unit: extractedUnit } = extractUnitFromName(product.name, product.unit);
                     const displayUnit = extractedUnit || product.unit;
                     return (
