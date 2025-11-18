@@ -140,7 +140,18 @@ export async function logAdminAction(
 
 export async function verifyToken(request: NextRequest): Promise<AuthResult> {
   try {
-    const token = request.cookies.get('auth-token')?.value;
+    // Try multiple token sources (mobile browsers often don't send cookies)
+    let token = request.cookies.get('auth-token')?.value || 
+                request.cookies.get('userToken')?.value ||
+                request.cookies.get('hh_token')?.value;
+    
+    // Fallback to Authorization header (for mobile/API requests)
+    if (!token) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
     
     if (!token) {
       return { success: false, error: 'No token provided' };

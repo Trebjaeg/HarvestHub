@@ -383,9 +383,15 @@ export default function SellerChatPage() {
 
       console.log('🔼 Uploading file:', { name: file.name, size: file.size, type: file.type });
 
+      // Get token from localStorage for mobile browsers (cookies don't always work on mobile)
+      const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
+      
       const response = await fetch('/api/chat/upload', {
         method: 'POST',
         credentials: 'include',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: formData
       });
 
