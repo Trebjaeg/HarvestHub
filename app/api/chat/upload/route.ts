@@ -8,10 +8,10 @@ export const runtime = 'nodejs';
 export const maxDuration = 60; // 60 seconds
 export const dynamic = 'force-dynamic';
 
-// Maximum file sizes
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB for images
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB for videos
-const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024; // 10MB for documents
+// Maximum file sizes - INCREASED FOR DEFENSE
+const MAX_IMAGE_SIZE = 50 * 1024 * 1024; // 50MB for images
+const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB for videos
+const MAX_DOCUMENT_SIZE = 50 * 1024 * 1024; // 50MB for documents
 
 // Allowed file types (with mobile camera support)
 const ALLOWED_IMAGE_TYPES = [
@@ -66,42 +66,21 @@ export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin') || '';
   
   try {
-    // EMERGENCY: For defense presentation, allow uploads with basic auth check
-    // Try to verify token but don't block if it fails
-    const authResult = await verifyToken(request);
+    // EMERGENCY MODE: BYPASS AUTH CHECK FOR DEFENSE PRESENTATION
+    // Just use a default user ID to make uploads work
+    let userId = 'emergency-user-' + Date.now();
     
-    // Check for auth cookies for debugging
-    const cookies = request.cookies.getAll();
-    const hasCookie = cookies.some(c => c.name.includes('auth') || c.name.includes('token'));
-    
-    // Get authorization header
-    const authHeader = request.headers.get('authorization');
-    const hasAuthHeader = !!authHeader;
-    
-    console.log('🔐 Chat upload auth check:', {
-      success: authResult.success,
-      hasUser: !!authResult.user,
-      userId: authResult.user?.id,
-      userRole: authResult.user?.role,
-      error: authResult.error,
-      hasCookie,
-      hasAuthHeader,
-      cookieNames: cookies.map(c => c.name),
-      origin: request.headers.get('origin'),
-      referer: request.headers.get('referer')
-    });
-    
-    // Use authenticated user ID if available, otherwise use fallback
-    const userId = authResult.user?.id || 'anonymous-user';
-    
-    if (!authResult.success) {
-      console.warn('⚠️ Upload proceeding without proper auth (emergency mode):', {
-        error: authResult.error,
-        hasCookie,
-        hasAuthHeader
-      });
-    } else {
-      console.log('✅ Chat upload: User authenticated successfully', { userId, role: authResult.user.role });
+    // Still try to get real user ID if possible
+    try {
+      const authResult = await verifyToken(request);
+      if (authResult.success && authResult.user?.id) {
+        userId = authResult.user.id;
+        console.log('✅ Using authenticated user:', userId);
+      } else {
+        console.warn('⚠️ Auth failed, using emergency user ID:', userId);
+      }
+    } catch (authError) {
+      console.error('❌ Auth error, continuing with emergency mode:', authError);
     }
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -164,9 +143,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (file.size > maxSize) {
+      console.warn('⚠️ File too large:', { size: file.size, maxSize, fileName: file.name });
       return NextResponse.json(
-        { error: `File size too large. Maximum size for ${(isVideo || isVideoByExtension) ? 'videos' : (isImage || isImageByExtension) ? 'images' : 'documents'} is ${sizeLabel}.` },
-        { status: 400 }
+        { error: `File size too large. Maximum size for ${(isVideo || isVideoByExtension) ? 'videos (500MB)' : (isImage || isImageByExtension) ? 'images (50MB)' : 'documents (50MB)'} is ${sizeLabel}.` },
+        { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': origin || '*',
+            'Access-Control-Allow-Credentials': 'true',
+          }
+        }
       );
     }
 
