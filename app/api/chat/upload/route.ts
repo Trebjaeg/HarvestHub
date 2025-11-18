@@ -64,6 +64,13 @@ export async function POST(request: NextRequest) {
   
   // Add CORS headers for production
   const origin = request.headers.get('origin') || '';
+  const contentType = request.headers.get('content-type') || '';
+  
+  console.log('📋 Request headers:', {
+    origin,
+    contentType,
+    method: request.method
+  });
   
   try {
     // EMERGENCY MODE: BYPASS AUTH CHECK FOR DEFENSE PRESENTATION
@@ -82,7 +89,47 @@ export async function POST(request: NextRequest) {
     } catch (authError) {
       console.error('❌ Auth error, continuing with emergency mode:', authError);
     }
-    const formData = await request.formData();
+
+    // Check if content-type is multipart/form-data
+    if (!contentType.includes('multipart/form-data')) {
+      console.error('❌ Invalid content-type:', contentType);
+      return NextResponse.json(
+        { 
+          error: 'Invalid content type. Expected multipart/form-data',
+          received: contentType
+        },
+        { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': origin || '*',
+            'Access-Control-Allow-Credentials': 'true',
+          }
+        }
+      );
+    }
+
+    // Parse FormData with error handling
+    let formData;
+    try {
+      formData = await request.formData();
+      console.log('✅ FormData parsed successfully');
+    } catch (formError) {
+      console.error('❌ Failed to parse FormData:', formError);
+      return NextResponse.json(
+        { 
+          error: 'Failed to parse form data. Please try again.',
+          details: formError instanceof Error ? formError.message : 'Unknown error'
+        },
+        { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': origin || '*',
+            'Access-Control-Allow-Credentials': 'true',
+          }
+        }
+      );
+    }
+
     const file = formData.get('file') as File;
 
     if (!file) {

@@ -427,23 +427,37 @@ export default function SellerChatPage() {
       console.log('📥 Upload response:', { status: response.status, ok: response.ok });
 
       if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Upload successful:', data);
-        setAttachments(prev => [...prev, data.file]);
+        try {
+          const data = await response.json();
+          console.log('✅ Upload successful:', data);
+          setAttachments(prev => [...prev, data.file]);
+        } catch (parseError) {
+          console.error('❌ Failed to parse success response:', parseError);
+          alert('Upload completed but failed to parse response. Please refresh the page.');
+        }
       } else {
+        // Handle error response
         const contentType = response.headers.get('content-type');
         console.error('❌ Upload failed:', { status: response.status, contentType });
         
-        if (contentType?.includes('application/json')) {
-          const error = await response.json();
-          const errorMessage = error.details ? `${error.error}: ${error.details}` : error.error || 'Failed to upload file';
-          alert(errorMessage);
-        } else {
-          // Got HTML instead of JSON
-          const htmlText = await response.text();
-          console.error('❌ Got HTML response instead of JSON:', htmlText.substring(0, 200));
-          alert('Failed to upload file. Please make sure you are logged in and try again.');
+        let errorMessage = 'Failed to upload file. Please try again.';
+        
+        try {
+          if (contentType?.includes('application/json')) {
+            const error = await response.json();
+            errorMessage = error.details ? `${error.error}: ${error.details}` : error.error || errorMessage;
+          } else {
+            // Got HTML instead of JSON
+            const htmlText = await response.text();
+            console.error('❌ Got HTML response instead of JSON:', htmlText.substring(0, 200));
+            errorMessage = 'Server error. Please make sure you are logged in and try again.';
+          }
+        } catch (parseError) {
+          console.error('❌ Failed to parse error response:', parseError);
+          errorMessage = 'Upload failed. Please check your connection and try again.';
         }
+        
+        alert(errorMessage);
       }
     } catch (error) {
       console.error('❌ Upload error:', error);
