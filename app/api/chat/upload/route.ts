@@ -42,14 +42,33 @@ const ALLOWED_DOCUMENT_TYPES = [
 const ALL_ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES, ...ALLOWED_DOCUMENT_TYPES];
 
 export async function POST(request: NextRequest) {
+  console.log('📤 Chat upload API called');
+  
   try {
     // Verify authentication
     const authResult = await verifyToken(request);
+    
+    console.log('🔐 Chat upload auth check:', {
+      success: authResult.success,
+      hasUser: !!authResult.user,
+      userId: authResult.user?.id,
+      userRole: authResult.user?.role,
+      error: authResult.error
+    });
+    
     if (!authResult.success || !authResult.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      console.error('❌ Chat upload: Unauthorized attempt', {
+        error: authResult.error,
+        hasAuthResult: !!authResult
+      });
+      return NextResponse.json({ 
+        error: 'Unauthorized',
+        details: authResult.error || 'Please log in to upload files'
+      }, { status: 401 });
     }
 
     const userId = authResult.user.id;
+    console.log('✅ Chat upload: User authenticated successfully', { userId, role: authResult.user.role });
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -155,7 +174,10 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: unknown) {
-    console.error('Error uploading file:', error);
+    console.error('❌ Error uploading chat file:', error);
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
     return NextResponse.json(
       { 
         error: 'Internal server error',

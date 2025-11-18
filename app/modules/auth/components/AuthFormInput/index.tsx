@@ -460,7 +460,7 @@ const AuthFormInput: FC = () => {
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            // Reset to login view
+            // Reset to login view - RESET EVERYTHING including email verification
             setStep('email');
             setNextStep(false);
             updateFormState('nextStep', false);
@@ -469,6 +469,9 @@ const AuthFormInput: FC = () => {
             updateFormState('firstName', '');
             updateFormState('lastName', '');
             updateFormState('selectedRole', '');
+            updateFormState('emailVerified', false); // Reset email verification
+            setVerificationSent(false); // Reset verification sent status
+            setVerificationCode(''); // Clear verification code
             clearAllFieldErrors();
           }}
           aria-label={t('auth.back') || 'Back'}

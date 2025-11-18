@@ -53,8 +53,14 @@ interface OrderDetails {
     city: string;
     province: string;
     zipCode: string;
+    fullName?: string;
+    phone?: string;
     fullAddress: string;
   };
+  buyerId: string;
+  buyerName: string;
+  buyerEmail?: string;
+  buyerPhone?: string;
   sellerId: string;
   sellerName: string;
   refusalReason?: string;
@@ -541,11 +547,13 @@ export default function OrderDetailsPage() {
       
       pdf.setFont(undefined, 'normal');
       pdf.setFontSize(9);
-      const customerName = order.deliveryAddress?.fullName || order.buyerName || 'N/A';
+      const customerName = order.buyerName || order.deliveryAddress?.fullName || 'N/A';
       pdf.text(`Name: ${customerName}`, margin + 5, infoY + 68);
       if (order.buyerEmail) {
         pdf.text(`Email: ${order.buyerEmail}`, margin + 5, infoY + 76);
       }
+      const customerPhone = order.buyerPhone || order.deliveryAddress?.phone || 'N/A';
+      pdf.text(`Phone: ${customerPhone}`, margin + 5, infoY + 84);
       
       // Right column - Seller Info and Delivery Address  
       const rightX = pageWidth / 2 + 5;
@@ -800,9 +808,9 @@ export default function OrderDetailsPage() {
               <div>Payment Method: ${order.paymentMethod}</div>
               <br>
               <div class="label">Customer Information:</div>
-              <div><strong>Name:</strong> ${order.deliveryAddress?.fullName || order.buyerName || 'N/A'}</div>
+              <div><strong>Name:</strong> ${order.buyerName || order.deliveryAddress?.fullName || 'N/A'}</div>
               ${order.buyerEmail ? `<div><strong>Email:</strong> ${order.buyerEmail}</div>` : ''}
-              ${(order.buyerPhone || order.deliveryAddress?.phone) ? `<div><strong>Phone:</strong> ${order.buyerPhone || order.deliveryAddress?.phone}</div>` : ''}
+              <div><strong>Phone:</strong> ${order.buyerPhone || order.deliveryAddress?.phone || 'N/A'}</div>
             </div>
             <div class="info-column">
               <div class="label">Seller Information:</div>

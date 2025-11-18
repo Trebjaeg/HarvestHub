@@ -46,28 +46,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Generating printable report for seller:', sellerId);
     console.log('Date range:', start, 'to', end);
 
-    // Get all orders for the seller in the date range (try both formats)
+    // Get COMPLETED/DELIVERED orders only for the seller in the date range (try both formats)
     let orders = await Order.find({
       sellerId: sellerId,
+      status: { $in: ['completed', 'delivered'] }, // Only count completed orders for revenue
       createdAt: {
         $gte: start,
         $lte: end
       }
     }).lean();
 
-    console.log('Found orders with string sellerId:', orders.length);
+    console.log('Found completed orders with string sellerId:', orders.length);
     
     // If no orders found, also try with ObjectId conversion
     if (orders.length === 0) {
       console.log('No orders found with string, trying with ObjectId sellerId...');
       orders = await Order.find({
         sellerId: new ObjectId(sellerId),
+        status: { $in: ['completed', 'delivered'] }, // Only count completed orders for revenue
         createdAt: {
           $gte: start,
           $lte: end
         }
       }).lean();
-      console.log('Found orders with ObjectId sellerId:', orders.length);
+      console.log('Found completed orders with ObjectId sellerId:', orders.length);
     }
 
     // Calculate summary statistics

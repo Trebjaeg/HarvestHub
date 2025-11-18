@@ -104,16 +104,18 @@ const CITY_BARANGAYS: Record<string, string[]> = {
     'Santa Cruz', 'Santo Tomas', 'Silangan', 'Tabing Bakod', 'Tumana'
   ],
   'San Jose del Monte': [
-    'Assumption', 'Bagong Buhay I', 'Bagong Buhay II', 'Bagong Buhay III', 'Citrus', 
-    'Cruz na Daan', 'Dulong Bayan', 'Fatima I', 'Fatima II', 'Fatima III', 'Fatima IV', 
-    'Fatima V', 'Francisco Homes-Guijo', 'Francisco Homes-Mulawin', 'Francisco Homes-Narra', 
-    'Francisco Homes-Yakal', 'Gaya-gaya', 'Graceville', 'Gumaoc Central', 'Gumaoc East', 
-    'Gumaoc West', 'Habay', 'Kaypian', 'Lawang Pari', 'Maharlika', 'Minuyan I', 
-    'Minuyan II', 'Minuyan III', 'Minuyan IV', 'Minuyan V', 'Muzon', 'Paradise III', 
-    'Poblacion', 'Sacred Heart Village', 'San Isidro', 'San Manuel', 'San Martin I', 
-    'San Martin II', 'San Pedro', 'San Rafael I', 'San Rafael II', 'San Rafael III', 
-    'San Rafael IV', 'San Rafael V', 'San Roque', 'Santa Cruz', 'Santo Cristo', 'Santo Niño I', 
-    'Santo Niño II', 'Sapang Palay', 'Tungkong Mangga'
+  'Assumption', 'Bagong Buhay I', 'Bagong Buhay II', 'Bagong Buhay III', 'Citrus', 
+  'Ciudad Real', 'Dulong Bayan', 'Fatima', 'Fatima II', 'Fatima III', 'Fatima IV', 
+  'Fatima V', 'Francisco Homes – Guijo', 'Francisco Homes – Mulawin', 'Francisco Homes – Narra', 
+  'Francisco Homes – Yakal', 'Gaya-Gaya', 'Graceville', 'Gumaoc Central', 'Gumaoc East', 
+  'Gumaoc West', 'Kaybanban', 'Kaypian', 'Lawang Pari', 'Maharlika', 'Minuyan', 
+  'Minuyan II', 'Minuyan III', 'Minuyan IV', 'Minuyan Proper', 'Minuyan V', 'Muzon East', 
+  'Muzon Proper', 'Muzon South', 'Muzon West', 'Paradise III', 'Poblacion', 'Poblacion I', 
+  'Saint Martin de Porres', 'San Isidro', 'San Manuel', 'San Martin I', 'San Martin II', 
+  'San Martin III', 'San Martin IV', 'San Pedro', 'San Rafael I', 'San Rafael II', 
+  'San Rafael III', 'San Rafael IV', 'San Rafael V', 'San Roque', 'Santa Cruz I', 
+  'Santa Cruz II', 'Santa Cruz III', 'Santa Cruz IV', 'Santa Cruz V', 'Santo Cristo', 
+  'Santo Niño I', 'Santo Niño II', 'Sapang Palay', 'Tungkong Mangga'
   ],
   'Meycauayan': [
     'Bagbaguin', 'Bahay Pare', 'Bancal', 'Banga', 'Bayugo', 'Camalig', 'Calvario', 
@@ -125,6 +127,29 @@ const CITY_BARANGAYS: Record<string, string[]> = {
     'Abangan Norte', 'Abangan Sur', 'Bancal', 'Ibayo', 'Lambakin', 'Lias', 'Loma de Gato', 
     'Patubig', 'Poblacion', 'Prenza I', 'Prenza II', 'Saog', 'Santa Rosa I', 'Santa Rosa II', 
     'Tabing Ilog'
+  ],
+  'Bocaue': [
+    'Antipona', 'Bagumbayan', 'Bambang', 'Batia', 'Biñang I', 'Biñang II', 'Bolacan', 
+    'Bundukan', 'Bunlo', 'Caingin', 'Duhat', 'Igulot', 'Lolomboy', 'Poblacion', 
+    'Sulucan', 'Tambobong', 'Turo', 'Wakas'
+  ],
+  'Balagtas': [
+    'Borol I', 'Borol II', 'Dalig', 'Longos', 'Panginay', 'Pulong Gubat', 
+    'San Juan', 'Santol', 'Wawa'
+  ],
+  'Guiguinto': [
+    'Cutcut', 'Daungan', 'Ilang-Ilang', 'Malis', 'Panginay', 'Poblacion', 
+    'Pritil', 'Pulong Gubat', 'Santa Cruz', 'Santa Rita', 'Tabang', 'Tabe', 'Tuktukan'
+  ],
+  'Pandi': [
+    'Bagbaguin', 'Bagong Barrio', 'Baka-Bakahan', 'Bunsuran I', 'Bunsuran II', 'Bunsuran III', 
+    'Cacarong Bata', 'Cacarong Matanda', 'Cupang', 'Malibo', 'Manatal', 'Mapulang Lupa', 
+    'Masagana', 'Masuso', 'Pinagkuartelan', 'Poblacion', 'Real de Cacarong', 'San Roque', 
+    'Santo Niño', 'Siling Bata', 'Siling Matanda'
+  ],
+  'Obando': [
+    'Binuangan', 'Hulo', 'Lawa', 'Paco', 'Paliwas', 'Panghulo', 'Poblacion', 
+    'San Pascual', 'Salambao', 'Tawiran'
   ],
   
   // Rizal Cities
@@ -158,6 +183,36 @@ const CITY_BARANGAYS: Record<string, string[]> = {
     'Ampid I', 'Ampid II', 'Banaba', 'Dulongbayan', 'Guitnang Bayan I', 'Guitnang Bayan II', 
     'Malanday', 'Maly', 'Nangka', 'Poblacion'
   ],
+  'Tanay': [
+    'Cayabu', 'Cayuyong', 'Daraitan', 'Katipunan', 'Laiban', 'Mag-ampon', 'Mamuyao', 
+    'Plaza Aldea', 'Poblacion I', 'Poblacion II', 'Poblacion III', 'Sampaloc', 'San Andres', 
+    'Santa Inez', 'Santo Niño', 'Tabing Ilog', 'Tandang Kutyo', 'Wawa'
+  ],
+  'Teresa': [
+    'Bagumbayan', 'Calumpang', 'Dalig', 'Dulumbayan', 'May-Iba', 'Poblacion', 
+    'Prinza', 'San Gabriel', 'San Roque'
+  ],
+  'Morong': [
+    'Bombongan', 'Lagundi', 'Maybangcal', 'Poblacion', 'San Guillermo', 'San Jose', 
+    'San Juan', 'San Pedro', 'Santo Angel', 'Santo Niño'
+  ],
+  'Baras': [
+    'Concepcion', 'Evangelista', 'Mabini', 'Pinugay', 'Poblacion', 'Rizal', 
+    'San Jose', 'San Juan', 'San Salvador', 'Santiago'
+  ],
+  'Cardona': [
+    'Balibago', 'Boor', 'Calahan', 'Dalig', 'Iglesia', 'Lambac', 'Looc', 
+    'Malanggam', 'Nagsulo', 'Poblacion I', 'Poblacion II', 'Poblacion III', 
+    'Real', 'San Roque', 'Subay', 'Ticulio'
+  ],
+  'Jalajala': [
+    'Bagumbong', 'Lubo', 'Paalaman', 'Palaypalay', 'Poblacion', 'Pulang Lupa', 
+    'Punta', 'Quinaweyanan', 'San Isidro', 'Second District', 'Special District', 'Third District'
+  ],
+  'Pililla': [
+    'Bagumbayan', 'Halayhayin', 'Hulo', 'Imatong', 'Malaya', 'Niogan', 'Poblacion', 
+    'Quisao', 'Wawa'
+  ],
 
   // Pampanga Cities
   'Angeles': [
@@ -178,6 +233,50 @@ const CITY_BARANGAYS: Record<string, string[]> = {
     'Dolores', 'Duquit', 'Lakandula', 'Mabiga', 'Marcos Village', 'Poblacion', 
     'Poblacion II', 'Poblacion III', 'Poblacion IV', 'Poblacion V', 'Poblacion VI', 
     'Poblacion VII', 'Poblacion VIII', 'Poblacion IX', 'Poblacion X', 'Santa Ines', 'Sapang Biabas', 'Tabun'
+  ],
+  'Apalit': [
+    'Balucuc', 'Calantipe', 'Cansinala', 'Capalangan', 'Colgante', 'Paligui', 
+    'Sampaloc', 'San Juan', 'San Vicente', 'Sucad', 'Sulipan', 'Poblacion'
+  ],
+  'Macabebe': [
+    'Batasan', 'Castuli', 'Consuelo', 'Dalayap', 'Dolores', 'Lacmit', 'Lagundi', 
+    'Mabuanbuan', 'Malusac', 'Poblacion', 'San Francisco', 'San Isidro', 'San Rafael', 
+    'Santa Lutgarda', 'Santa Maria', 'Santa Rita', 'Santo Niño', 'Santo Rosario', 'Tacasan'
+  ],
+  'Masantol': [
+    'Alauli', 'Alis', 'Balibago', 'Bebe Anac', 'Bebe Matua', 'Bulacus', 'Cambasi', 
+    'Nigui', 'Paguiruan', 'Palimpe', 'Poblacion', 'San Agustin', 'San Isidro', 
+    'San Nicolas I', 'San Nicolas II', 'San Pablo', 'San Pedro I', 'San Pedro II', 
+    'Santa Lucia I', 'Santa Lucia II', 'Santa Monica', 'Santo Niño'
+  ],
+  'Mexico': [
+    'Acli', 'Anao', 'Bagong Sikat', 'Barangka', 'Buenavista', 'Camuning', 'Cawayan', 
+    'Concepcion', 'Culubasa', 'Divisoria', 'Dolores', 'Eden', 'Gandus', 'Lagundi', 
+    'Laput', 'Laug', 'Masamat', 'Masangsang', 'Panasahan', 'Pandacaqui', 'Pangclara', 
+    'Panipuan', 'Poblacion', 'Sabanilla', 'San Antonio', 'San Carlos', 'San Jose Malino', 
+    'San Juan', 'San Lorenzo', 'San Matias', 'San Nicolas', 'San Pablo', 'San Patricio', 
+    'San Rafael', 'San Roque', 'San Vicente', 'Santa Cruz', 'Santa Maria', 'Santiago', 
+    'Santo Cristo', 'Santo Domingo', 'Santo Niño', 'Santo Rosario'
+  ],
+  'Santa Rita': [
+    'Becuran', 'Dila Dila', 'San Agustin', 'San Basilio', 'San Isidro', 'San Jose', 
+    'San Juan', 'San Matias', 'San Pedro', 'Santa Monica', 'Santo Niño'
+  ],
+  'Guagua': [
+    'Ascomo', 'Bancal', 'Lambac', 'Maquiapo', 'Natividad', 'Pulungmasle', 'San Agustin', 
+    'San Isidro', 'San Jose', 'San Juan', 'San Manuel', 'San Matias', 'San Miguel', 
+    'San Nicolas I', 'San Nicolas II', 'San Pablo', 'San Pedro', 'San Roque', 'San Vicente', 
+    'Santa Cruz', 'Santa Filomena', 'Santa Ines', 'Santo Cristo', 'Santo Niño'
+  ],
+  'Lubao': [
+    'Balantacan', 'Bancal Pugad', 'Bancal Sinubli', 'Baruya', 'Calangain', 'Concepcion', 
+    'De La Paz', 'Lourdes', 'Prado Siongco', 'Remedios', 'San Agustin', 'San Antonio', 
+    'San Francisco', 'San Isidro', 'San Jose Gumi', 'San Jose Malino', 'San Juan', 
+    'San Matias', 'San Miguel', 'San Nicolas I', 'San Nicolas II', 'San Pablo', 
+    'San Pedro Palcarangan', 'San Roque Arbol', 'San Vicente', 'Santa Barbara', 
+    'Santa Catalina', 'Santa Cruz', 'Santa Maria', 'Santa Monica', 'Santa Rita', 
+    'Santa Teresa I', 'Santa Teresa II', 'Santiago', 'Santo Domingo', 'Santo Niño', 
+    'Santo Tomas'
   ],
 
   // Cavite Cities

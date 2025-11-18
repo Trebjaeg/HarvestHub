@@ -336,7 +336,7 @@ const ReportPage = () => {
           <div class="summary-grid">
             <div class="summary-item">
               <h3>Total Sales</h3>
-              <p>₱{(printableData?.totalRevenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+              <p>₱${(printableData?.totalRevenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
             </div>
             <div class="summary-item">
               <h3>Total Orders</h3>
@@ -367,7 +367,7 @@ const ReportPage = () => {
                   <tr>
                     <td>${product.name}</td>
                     <td>${product.totalSold}</td>
-                    <td>₱{product.revenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td>₱${product.revenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                   </tr>
                 `).join('')}
               </tbody>

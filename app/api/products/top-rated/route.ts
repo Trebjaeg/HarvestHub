@@ -209,7 +209,7 @@ export async function GET(request: NextRequest) {
       timestamp: Date.now()
     };
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       products: sortedProducts,
       total: sortedProducts.length,
@@ -219,6 +219,11 @@ export async function GET(request: NextRequest) {
         limit
       }
     });
+    
+    // Add cache headers - 5 minutes
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    
+    return response;
 
   } catch (error) {
     console.error('Error fetching top-rated products:', error);

@@ -63,6 +63,10 @@ let configCache: ITopFarmersConfig | null = null;
 let configCacheTime = 0;
 let rankingsCache: Record<string, number> | null = null;
 let rankingsCacheTime = 0;
+// Cache for real-time rankings (most expensive operation)
+let realTimeRankingsCache: Record<string, FarmerStats> | null = null;
+let realTimeRankingsCacheTime = 0;
+const REALTIME_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
 export async function GET(request: NextRequest) {
   // Apply rate limiting: 150 requests per 15 minutes for top farmers browsing
@@ -272,7 +276,7 @@ export async function GET(request: NextRequest) {
     // Get dynamic categories with counts
     const categoryFilters = await getDynamicCategoryFilters(config, baseQuery);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       farmers: enhancedFarmers,
       performanceFilters,
       categoryFilters,
@@ -302,6 +306,11 @@ export async function GET(request: NextRequest) {
       },
       message: 'Top farmers fetched successfully'
     });
+
+    // Add cache headers for browser and CDN caching
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    
+    return response;
 
   } catch (error) {
     console.error('Error fetching top farmers:', error);
@@ -499,6 +508,14 @@ async function getTopFarmerRankings(config: ITopFarmersConfig) {
 
 // Compute top farmer rankings in real-time from actual product sales
 async function getTopFarmerRankingsRealTime(config: ITopFarmersConfig): Promise<Record<string, FarmerStats>> {
+  // Check cache first - HUGE performance boost!
+  const now = Date.now();
+  const cacheValid = realTimeRankingsCache && (now - realTimeRankingsCacheTime) < REALTIME_CACHE_TTL;
+  
+  if (cacheValid) {
+    return realTimeRankingsCache!;
+  }
+  
   const { topFarmersCriteria } = config;
   
   // Get all verified active farmers/sellers
@@ -598,6 +615,10 @@ async function getTopFarmerRankingsRealTime(config: ITopFarmersConfig): Promise<
       };
     })
   );
+
+  // Cache the results for 5 minutes
+  realTimeRankingsCache = rankings;
+  realTimeRankingsCacheTime = Date.now();
 
   return rankings;
 }

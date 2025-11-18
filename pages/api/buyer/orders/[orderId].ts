@@ -50,7 +50,7 @@ async function getOrderDetails(req: NextApiRequest, res: NextApiResponse, orderI
       _id: orderId, 
       buyerId: buyerId 
     })
-    .select('orderNumber orderDate products totalAmount deliveryFee finalAmount status paymentStatus paymentMethod estimatedDelivery actualDelivery deliveryAddress sellerId sellerName refusalReason refusalDate refusalProof cancellationRequest createdAt updatedAt')
+    .select('orderNumber orderDate products totalAmount deliveryFee finalAmount status paymentStatus paymentMethod estimatedDelivery actualDelivery deliveryAddress sellerId sellerName buyerId buyerName buyerEmail refusalReason refusalDate refusalProof cancellationRequest createdAt updatedAt')
     .lean()
     .exec();
 
@@ -60,6 +60,13 @@ async function getOrderDetails(req: NextApiRequest, res: NextApiResponse, orderI
         message: 'Order not found or access denied' 
       });
     }
+
+    // Fetch buyer phone number from User collection
+    const User = (await import('../../../../models/User')).default;
+    const buyer = await User.findById(buyerId)
+      .select('phone')
+      .lean()
+      .exec();
 
     // Fetch product images from Product collection
     const Product = (await import('../../../../models/Product')).default;
@@ -179,8 +186,14 @@ async function getOrderDetails(req: NextApiRequest, res: NextApiResponse, orderI
         city: orderData.deliveryAddress.city,
         province: orderData.deliveryAddress.province,
         zipCode: orderData.deliveryAddress.zipCode,
+        fullName: orderData.deliveryAddress.fullName,
+        phone: orderData.deliveryAddress.phone,
         fullAddress: `${orderData.deliveryAddress.street}, ${orderData.deliveryAddress.city}, ${orderData.deliveryAddress.province} ${orderData.deliveryAddress.zipCode}`
       },
+      buyerId: orderData.buyerId,
+      buyerName: orderData.buyerName,
+      buyerEmail: orderData.buyerEmail,
+      buyerPhone: buyer?.phone || orderData.deliveryAddress?.phone || null,
       sellerId: orderData.sellerId,
       sellerName: orderData.sellerName,
       notes: orderData.notes || null,

@@ -28,8 +28,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleAuth = () => {
+    // Navigate immediately without waiting for modal close animation
     router.push('/auth');
-    handleClose();
+    // Close modal in background
+    onClose();
   };
 
   if (!isOpen) return null;

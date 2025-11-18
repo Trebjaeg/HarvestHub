@@ -40,6 +40,12 @@ const HomePageContent = () => {
   const [authModalMessage, setAuthModalMessage] = useState("You need to be logged in to access this feature.");
   const [authModalAction, setAuthModalAction] = useState("Please log in or sign up to continue.");
 
+  // Preload auth page for instant navigation
+  useEffect(() => {
+    // Prefetch the auth page when component mounts
+    router.prefetch('/auth');
+  }, [router]);
+
   // Function to show auth modal with custom message
   const showAuthRequired = (message?: string, actionDescription?: string) => {
     if (message) setAuthModalMessage(message);

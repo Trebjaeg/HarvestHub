@@ -155,11 +155,14 @@ export async function verifyToken(request: NextRequest): Promise<AuthResult> {
     
     // Fetch user from database to get current status
     await dbConnect();
-    const user = await User.findById(decoded.userId).select('status email role');
+    const user = await User.findById(decoded.userId).select('status email role isVerified');
     
     if (!user || user.status === 'deleted') {
       return { success: false, error: 'User not found' };
     }
+    
+    // Note: We don't block unverified users from basic features like chat/messaging
+    // Only specific features (like becoming a seller) require email verification
     
     return { 
       success: true, 
@@ -168,6 +171,7 @@ export async function verifyToken(request: NextRequest): Promise<AuthResult> {
         email: user.email || decoded.email,
         role: user.role || decoded.role,
         status: user.status || 'active',
+        isVerified: user.isVerified || false,
         iat: decoded.iat,
         exp: decoded.exp
       }

@@ -381,21 +381,37 @@ export default function SellerChatPage() {
       const formData = new FormData();
       formData.append('file', file);
 
+      console.log('🔼 Uploading file:', { name: file.name, size: file.size, type: file.type });
+
       const response = await fetch('/api/chat/upload', {
         method: 'POST',
         credentials: 'include',
         body: formData
       });
 
+      console.log('📥 Upload response:', { status: response.status, ok: response.ok });
+
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Upload successful:', data);
         setAttachments(prev => [...prev, data.file]);
       } else {
-        const error = await response.json();
-        const errorMessage = error.details ? `${error.error}: ${error.details}` : error.error || 'Failed to upload file';
-        alert(errorMessage);
+        const contentType = response.headers.get('content-type');
+        console.error('❌ Upload failed:', { status: response.status, contentType });
+        
+        if (contentType?.includes('application/json')) {
+          const error = await response.json();
+          const errorMessage = error.details ? `${error.error}: ${error.details}` : error.error || 'Failed to upload file';
+          alert(errorMessage);
+        } else {
+          // Got HTML instead of JSON
+          const htmlText = await response.text();
+          console.error('❌ Got HTML response instead of JSON:', htmlText.substring(0, 200));
+          alert('Failed to upload file. Please make sure you are logged in and try again.');
+        }
       }
     } catch (error) {
+      console.error('❌ Upload error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to upload file. Please try again.';
       alert(errorMessage);
     } finally {
