@@ -77,11 +77,9 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Special handling for chat upload - let the route handle its own auth
-  // This prevents middleware from redirecting to auth page (which returns HTML)
-  // The route will properly return JSON 401 if auth fails
+  // COMPLETELY SKIP MIDDLEWARE FOR CHAT UPLOAD - route handles its own auth
+  // Middleware was interfering with file uploads from mobile/new accounts
   if (pathname === '/api/chat/upload') {
-    console.log('💬 Chat upload endpoint - route handles own auth');
     return response;
   }
 

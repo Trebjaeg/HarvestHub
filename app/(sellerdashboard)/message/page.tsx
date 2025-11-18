@@ -345,19 +345,35 @@ export default function SellerChatPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Check if it's a video file
-    const isVideo = file.type.startsWith('video/');
-    
-    // Validate file size (100MB for videos, 10MB for others)
-    const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      alert(`File size must be less than ${isVideo ? '100MB' : '10MB'}`);
-      return;
-    }
+    console.log('📁 File selected:', { 
+      name: file.name, 
+      type: file.type, 
+      size: file.size,
+      extension: file.name.split('.').pop()
+    });
 
-    // Validate file type
+    // Get file extension (mobile cameras often don't set MIME type correctly)
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    
+    // Check if valid by extension (primary check for mobile)
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'];
+    const videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'mkv'];
+    const docExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'];
+    const allExtensions = [...imageExtensions, ...videoExtensions, ...docExtensions];
+    
+    const isValidByExtension = allExtensions.includes(fileExtension || '');
+    
+    // For mobile camera photos without extension, check if MIME type looks like image
+    const isImageByMime = file.type.startsWith('image/');
+    const isVideoByMime = file.type.startsWith('video/');
+    
+    // Determine if it's a video (for size validation)
+    const isVideo = videoExtensions.includes(fileExtension || '') || isVideoByMime;
+    const isImage = imageExtensions.includes(fileExtension || '') || isImageByMime;
+    
+    // Validate file type - be more lenient for mobile uploads
     const allowedTypes = [
-      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif',
       'video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska',
       'application/pdf', 'application/msword', 
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -366,12 +382,25 @@ export default function SellerChatPage() {
       'text/plain'
     ];
 
-    // Additional check for MOV files by extension (iOS sometimes reports wrong MIME type)
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const isValidByExtension = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'mov', 'avi', 'mkv', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'].includes(fileExtension || '');
-
-    if (!allowedTypes.includes(file.type) && !isValidByExtension) {
+    // Accept if: has valid extension OR valid MIME type OR empty MIME (mobile camera)
+    const hasValidMime = allowedTypes.includes(file.type);
+    const emptyMime = !file.type || file.type === '' || file.type === 'application/octet-stream';
+    
+    if (!hasValidMime && !isValidByExtension && !emptyMime) {
+      console.error('❌ Invalid file type:', { type: file.type, extension: fileExtension });
       alert('Invalid file type. Please upload images (JPEG, PNG, GIF, WebP), videos (MP4, WebM, MOV), or documents (PDF, Word, Excel, Text).');
+      return;
+    }
+    
+    // If empty MIME but no extension, assume it's an image from mobile camera
+    if (emptyMime && !isValidByExtension && isImageByMime) {
+      console.log('📸 Mobile camera photo detected (no extension)');
+    }
+    
+    // Validate file size (100MB for videos, 10MB for others)
+    const maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(`File size must be less than ${isVideo ? '100MB' : '10MB'}`);
       return;
     }
 
