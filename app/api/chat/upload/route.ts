@@ -8,6 +8,14 @@ export const runtime = 'nodejs';
 export const maxDuration = 60; // 60 seconds
 export const dynamic = 'force-dynamic';
 
+// Critical: Set body size limit for large uploads (in bytes)
+export const config = {
+  api: {
+    bodyParser: false, // Disable default body parser
+    responseLimit: false,
+  },
+};
+
 // Maximum file sizes - INCREASED FOR DEFENSE
 const MAX_IMAGE_SIZE = 50 * 1024 * 1024; // 50MB for images
 const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB for videos
@@ -108,16 +116,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse FormData with error handling
+    // Parse FormData with error handling (with timeout protection)
     let formData;
     try {
+      // Clone request for debugging if needed
+      const requestClone = request.clone();
+      
       formData = await request.formData();
       console.log('✅ FormData parsed successfully');
+      
+      // Log FormData contents for debugging
+      const fileEntry = formData.get('file');
+      console.log('📦 File in FormData:', {
+        hasFile: !!fileEntry,
+        type: fileEntry ? typeof fileEntry : 'none',
+        isFile: fileEntry instanceof File,
+        name: fileEntry instanceof File ? fileEntry.name : 'N/A'
+      });
+      
     } catch (formError) {
       console.error('❌ Failed to parse FormData:', formError);
+      console.error('FormData parse error stack:', formError instanceof Error ? formError.stack : 'No stack');
+      
+      // Try to get raw body for debugging
+      try {
+        const rawBody = await request.text();
+        console.log('📝 Raw request body length:', rawBody.length);
+        console.log('📝 Raw request body preview:', rawBody.substring(0, 200));
+      } catch (bodyError) {
+        console.error('❌ Could not read raw body:', bodyError);
+      }
+      
       return NextResponse.json(
         { 
-          error: 'Failed to parse form data. Please try again.',
+          error: 'Failed to parse form data. The file may be too large or corrupted. Please try again with a smaller file.',
           details: formError instanceof Error ? formError.message : 'Unknown error'
         },
         { 
@@ -210,27 +242,27 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Determine correct content type (fix wrong MIME types from iOS)
-    let contentType = file.type || 'application/octet-stream';
+    // Determine correct content type for storage (fix wrong MIME types from iOS)
+    let fileContentType = file.type || 'application/octet-stream';
     if (!file.type || file.type === 'application/octet-stream') {
       // Set correct content type based on extension
-      if (fileExtension === 'mov') contentType = 'video/quicktime';
-      else if (fileExtension === 'mp4') contentType = 'video/mp4';
-      else if (fileExtension === 'webm') contentType = 'video/webm';
-      else if (fileExtension === 'avi') contentType = 'video/x-msvideo';
-      else if (fileExtension === 'mkv') contentType = 'video/x-matroska';
-      else if (fileExtension === 'jpg' || fileExtension === 'jpeg') contentType = 'image/jpeg';
-      else if (fileExtension === 'png') contentType = 'image/png';
-      else if (fileExtension === 'gif') contentType = 'image/gif';
-      else if (fileExtension === 'webp') contentType = 'image/webp';
-      else if (fileExtension === 'heic') contentType = 'image/heic';
-      else if (fileExtension === 'heif') contentType = 'image/heif';
-      else if (fileExtension === 'pdf') contentType = 'application/pdf';
-      else contentType = 'image/jpeg'; // Default for mobile camera photos
+      if (fileExtension === 'mov') fileContentType = 'video/quicktime';
+      else if (fileExtension === 'mp4') fileContentType = 'video/mp4';
+      else if (fileExtension === 'webm') fileContentType = 'video/webm';
+      else if (fileExtension === 'avi') fileContentType = 'video/x-msvideo';
+      else if (fileExtension === 'mkv') fileContentType = 'video/x-matroska';
+      else if (fileExtension === 'jpg' || fileExtension === 'jpeg') fileContentType = 'image/jpeg';
+      else if (fileExtension === 'png') fileContentType = 'image/png';
+      else if (fileExtension === 'gif') fileContentType = 'image/gif';
+      else if (fileExtension === 'webp') fileContentType = 'image/webp';
+      else if (fileExtension === 'heic') fileContentType = 'image/heic';
+      else if (fileExtension === 'heif') fileContentType = 'image/heif';
+      else if (fileExtension === 'pdf') fileContentType = 'application/pdf';
+      else fileContentType = 'image/jpeg'; // Default for mobile camera photos
     }
 
     // Upload to DigitalOcean Spaces
-    const fileUrl = await uploadToSpaces(buffer, uniqueFileName, contentType, 'chat');
+    const fileUrl = await uploadToSpaces(buffer, uniqueFileName, fileContentType, 'chat');
 
     if (!fileUrl) {
       return NextResponse.json(

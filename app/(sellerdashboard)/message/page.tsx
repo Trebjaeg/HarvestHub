@@ -407,10 +407,27 @@ export default function SellerChatPage() {
     setUploading(true);
 
     try {
+      // Check file size before upload (client-side validation)
+      const MAX_IMAGE_SIZE = 50 * 1024 * 1024; // 50MB
+      const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB
+      const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|avi|mkv)$/i.test(file.name);
+      const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+      
+      if (file.size > maxSize) {
+        alert(`File is too large. Maximum size is ${isVideo ? '500MB' : '50MB'}. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+        setUploading(false);
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
 
-      console.log('🔼 Uploading file:', { name: file.name, size: file.size, type: file.type });
+      console.log('🔼 Uploading file:', { 
+        name: file.name, 
+        size: file.size, 
+        type: file.type,
+        sizeInMB: (file.size / 1024 / 1024).toFixed(2) + 'MB'
+      });
 
       // Get token from localStorage for mobile browsers (cookies don't always work on mobile)
       const token = localStorage.getItem('hh_token') || localStorage.getItem('auth-token');
@@ -420,6 +437,7 @@ export default function SellerChatPage() {
         credentials: 'include',
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          // Don't set Content-Type - browser will set it automatically with boundary
         },
         body: formData
       });
