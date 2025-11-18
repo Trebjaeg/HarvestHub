@@ -779,7 +779,6 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
           <span className="mx-2 text-gray-400">/</span>
           <Link href="/shop" className="text-gray-500 hover:text-gray-700">Shop</Link>
           <span className="mx-2 text-gray-400">/</span>
-          <span className="text-gray-900">{product.name}</span>
           <span className="text-gray-900">{extractUnitFromName(product.name).cleanName}</span>
         </nav>
 
@@ -940,7 +939,6 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                {product.name}
                 {extractUnitFromName(product.name).cleanName}
               </h1>
               
