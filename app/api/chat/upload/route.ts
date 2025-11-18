@@ -45,25 +45,40 @@ export async function POST(request: NextRequest) {
   console.log('📤 Chat upload API called');
   
   try {
-    // Verify authentication
+    // Verify authentication with detailed logging
     const authResult = await verifyToken(request);
+    
+    // Check for auth cookies for debugging
+    const cookies = request.cookies.getAll();
+    const hasCookie = cookies.some(c => c.name.includes('auth') || c.name.includes('token'));
     
     console.log('🔐 Chat upload auth check:', {
       success: authResult.success,
       hasUser: !!authResult.user,
       userId: authResult.user?.id,
       userRole: authResult.user?.role,
-      error: authResult.error
+      error: authResult.error,
+      hasCookie,
+      cookieNames: cookies.map(c => c.name)
     });
     
     if (!authResult.success || !authResult.user) {
       console.error('❌ Chat upload: Unauthorized attempt', {
         error: authResult.error,
-        hasAuthResult: !!authResult
+        hasAuthResult: !!authResult,
+        hasCookie,
+        headers: {
+          authorization: request.headers.get('authorization') ? 'present' : 'missing',
+          cookie: request.headers.get('cookie') ? 'present' : 'missing'
+        }
       });
       return NextResponse.json({ 
         error: 'Unauthorized',
-        details: authResult.error || 'Please log in to upload files'
+        details: authResult.error || 'Please log in to upload files',
+        debug: process.env.NODE_ENV === 'development' ? {
+          hasCookie,
+          authError: authResult.error
+        } : undefined
       }, { status: 401 });
     }
 
