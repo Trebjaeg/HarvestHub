@@ -41,8 +41,25 @@ const ALLOWED_DOCUMENT_TYPES = [
 
 const ALL_ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES, ...ALLOWED_DOCUMENT_TYPES];
 
+// Handle OPTIONS for CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': request.headers.get('origin') || '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Max-Age': '86400',
+    },
+  });
+}
+
 export async function POST(request: NextRequest) {
   console.log('📤 Chat upload API called');
+  
+  // Add CORS headers for production
+  const origin = request.headers.get('origin') || '';
   
   try {
     // Verify authentication with detailed logging
@@ -79,7 +96,13 @@ export async function POST(request: NextRequest) {
           hasCookie,
           authError: authResult.error
         } : undefined
-      }, { status: 401 });
+      }, { 
+        status: 401,
+        headers: {
+          'Access-Control-Allow-Origin': origin || '*',
+          'Access-Control-Allow-Credentials': 'true',
+        }
+      });
     }
 
     const userId = authResult.user.id;
@@ -88,7 +111,13 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File;
 
     if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+      return NextResponse.json({ error: 'No file provided' }, { 
+        status: 400,
+        headers: {
+          'Access-Control-Allow-Origin': origin || '*',
+          'Access-Control-Allow-Credentials': 'true',
+        }
+      });
     }
 
     // Determine file type category
@@ -186,6 +215,11 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'File uploaded successfully',
       file: fileInfo
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': origin || '*',
+        'Access-Control-Allow-Credentials': 'true',
+      }
     });
 
   } catch (error: unknown) {
@@ -198,7 +232,13 @@ export async function POST(request: NextRequest) {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': origin || '*',
+          'Access-Control-Allow-Credentials': 'true',
+        }
+      }
     );
   }
 }
