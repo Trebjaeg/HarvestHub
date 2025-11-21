@@ -131,7 +131,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await connectToDatabase();
 
-    const { items, shippingAddress, paymentMethod, shippingFee, lalamoveQuotationId } = req.body;
+    const { items, shippingAddress, paymentMethod, shippingFee, lalamoveQuotationId, voucher } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       clearTimeout(timeoutId);
@@ -362,6 +362,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       await session.commitTransaction();
+
+      // Track voucher usage if a voucher was applied (works for BOTH new and old accounts)
+      if (voucher && voucher.code && insertedOrders.length > 0) {
+        try {
+          const Voucher = (await import('@/models/Voucher')).default;
+          const voucherUpdateResult = await Voucher.findOneAndUpdate(
+            { code: voucher.code.toUpperCase() },
+            {
+              $inc: { currentUsage: 1 },
+              $push: {
+                usedBy: {
+                  userId: String(userId), // Ensure string for consistent comparison
+                  usedAt: new Date(),
+                  orderId: insertedOrders[0]._id.toString()
+                }
+              }
+            },
+            { new: true } // Return updated document
+          );
+          
+          if (voucherUpdateResult) {
+            console.log(`✅ Voucher ${voucher.code} usage tracked for user ${userId} (Total uses: ${voucherUpdateResult.currentUsage})`);
+          } else {
+            console.warn(`⚠️ Voucher ${voucher.code} not found when trying to track usage`);
+          }
+        } catch (voucherError) {
+          console.error('❌ Error tracking voucher usage:', voucherError);
+          // Don't fail the order if voucher tracking fails
+        }
+      }
 
       orderIdempotencyCache.set(idempotencyKey, { orderId: createdOrders[0], timestamp: Date.now() });
       if (orderIdempotencyCache.size > 100) {

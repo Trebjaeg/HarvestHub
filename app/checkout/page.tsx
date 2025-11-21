@@ -1047,7 +1047,14 @@ export default function CheckoutPage() {
           subtotal: checkoutData.subtotal,
           shippingFee: currentDeliveryFee,
           total: checkoutData.subtotal + currentDeliveryFee
-        }
+        },
+        // Include voucher if applied
+        voucher: appliedVoucher ? {
+          code: appliedVoucher.code,
+          type: appliedVoucher.type,
+          discount: appliedVoucher.discount,
+          freeDelivery: appliedVoucher.freeDelivery
+        } : undefined
       };
 
       const response = await fetch('/api/orders/create', {

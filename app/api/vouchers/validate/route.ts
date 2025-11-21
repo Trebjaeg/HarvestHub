@@ -67,26 +67,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'This voucher has reached its usage limit' }, { status: 400 });
     }
 
-    // Check if user has already used this voucher
-    const userUsageCount = voucher.usedBy.filter(u => u.userId === userId).length;
+    // Check if user has already used this voucher (convert both to string for comparison)
+    const userUsageCount = voucher.usedBy.filter(u => String(u.userId) === String(userId)).length;
+    console.log('User usage check:', { userId, userUsageCount, maxUsagePerUser: voucher.maxUsagePerUser });
+    
     if (voucher.maxUsagePerUser > 0 && userUsageCount >= voucher.maxUsagePerUser) {
+      console.log('Voucher validation failed: User has already used this voucher');
       return NextResponse.json({ error: 'You have already used this voucher' }, { status: 400 });
     }
 
     // Check if for new users only
     if (voucher.forNewUsersOnly) {
-      console.log('Checking if user is new user...');
+      console.log('Checking if user is new user...', { userId, voucherCode: voucher.code });
+      
+      // Check for ANY completed or delivered orders
       const userOrderCount = await Order.countDocuments({ 
-        buyerId: userId,
+        buyerId: String(userId),
         status: { $in: ['completed', 'delivered'] }
       });
       
-      console.log('User order count:', userOrderCount);
+      console.log('User completed/delivered order count:', userOrderCount);
       
+      // A new user should have 0 completed/delivered orders
+      // If they have pending orders, that's fine - they're still "new" until they complete their first order
       if (userOrderCount > 0) {
-        console.log('Voucher validation failed: Not a new user');
-        return NextResponse.json({ error: 'This voucher is for new users only' }, { status: 400 });
+        console.log('Voucher validation failed: User has completed orders, not a new user');
+        return NextResponse.json({ 
+          error: 'This voucher is for new users only. You have already completed an order.' 
+        }, { status: 400 });
       }
+      
+      console.log('User is eligible: New user with no completed orders');
     }
 
     // Calculate discount

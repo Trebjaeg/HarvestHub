@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
     const eligibleVouchers = [];
 
     for (const voucher of allVouchers) {
-      // Check if user has already used this voucher
-      const userUsageCount = voucher.usedBy.filter(u => u.userId === userId).length;
+      // Check if user has already used this voucher (convert both to string for comparison)
+      const userUsageCount = voucher.usedBy.filter(u => String(u.userId) === String(userId)).length;
       if (voucher.maxUsagePerUser > 0 && userUsageCount >= voucher.maxUsagePerUser) {
         continue; // Skip if user has reached usage limit
       }
@@ -36,11 +36,12 @@ export async function GET(request: NextRequest) {
       // Check if for new users only
       if (voucher.forNewUsersOnly) {
         const userOrderCount = await Order.countDocuments({
-          buyerId: userId,
+          buyerId: String(userId),
           status: { $in: ['completed', 'delivered'] }
         });
+        // New users should have 0 completed/delivered orders
         if (userOrderCount > 0) {
-          continue; // Skip if not a new user
+          continue; // Skip if not a new user (has completed orders)
         }
       }
 
